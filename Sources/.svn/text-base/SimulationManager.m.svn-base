@@ -1,0 +1,22 @@
+classdef SimulationManager
+    %SIMULATIONMANAGER Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties
+    end
+    
+    methods
+        %constructeur
+        function
+            
+        end
+        
+        
+        %
+        function LanceSimulation
+            
+        end
+    end
+    
+end
+

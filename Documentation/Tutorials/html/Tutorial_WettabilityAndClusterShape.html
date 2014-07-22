@@ -1,0 +1,319 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Tutoriel Wettability and ClusterShape</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-07-11"><meta name="DC.source" content="Tutorial_WettabilityAndClusterShape.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Tutoriel Wettability and ClusterShape</h1><pre class="codeinput"><span class="comment">%Dans ce tutoriel nous allons voir comment faire une invasion percolation</span>
+<span class="comment">%en d&eacute;finissant nous m&ecirc;me les angles de contact. Nous allons apprendre &agrave;</span>
+<span class="comment">%g&eacute;rer les poreData et les linkData qui contiennent les propri&eacute;t&eacute;s des</span>
+<span class="comment">%pores et des liens. Enfin nous allons exporter le r&eacute;seau et les r&eacute;sultats</span>
+<span class="comment">%de simulation vers Paraview pour visualiser les r&eacute;sultats.</span>
+</pre><pre class="codeinput"><span class="comment">%Commen&ccedil;ons par cr&eacute;er un r&eacute;seau 3D.</span>
+[ network,viewer ]=CreateNetwork(<span class="string">'1block3D'</span>);
+
+inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
+</pre><pre class="codeoutput">G&#65533;n&#65533;ration du r&#65533;seau...
+R&#65533;seau g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 43.703342 s.
+</pre><pre class="codeinput"><span class="comment">%L'objet network contient des data associ&eacute;es aux pores et liens. Ce peut</span>
+<span class="comment">%etre les propri&eacute;t&eacute;es g&eacute;om&eacute;triques des pores et liens, des r&eacute;sultats de</span>
+<span class="comment">%simulations...</span>
+<span class="comment">%On peut acc&eacute;der aux poresData et linkData directement dans l'interface</span>
+<span class="comment">%graphique de Matlab en double cliquant sur l'objet network. Il est aussi</span>
+<span class="comment">%possible de les manipuler en ligne de commande.</span>
+<span class="comment">%</span>
+<span class="comment">%Ces donn&eacute;es peuvent servir dans les algorithmes physiques</span>
+<span class="comment">%(conductances, tailles...). C'est le cas pour l'invasion percolation qui</span>
+<span class="comment">%utilise les diametres des liens et les angles de contact dans les liens.</span>
+<span class="comment">%Pour faire une invasion percolation avec des angles de contact</span>
+<span class="comment">%personnalises, il faut ajouter a la liste des link data un tableau</span>
+<span class="comment">%contenant les angles de contact. On utilise la fonction AddNewLinkData</span>
+<span class="comment">%avec le nom 'ContactAngle'.</span>
+
+contactAngle=80;
+theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
+network.AddNewLinkData(theta,<span class="string">'ContactAngle'</span>);
+
+network.GetLinkDataList
+
+network.GetLinkDataList.ContactAngle;
+</pre><pre class="codeoutput">
+ans = 
+
+    ContactAngle: [1x9975 double]
+
+</pre><pre class="codeinput"><span class="comment">%Calculons donc une invasion percolation avec l'angle de contact de 80&deg;</span>
+<span class="comment">%defini a l'etape precedente. Pour visualiser les pores envahis dans</span>
+<span class="comment">%Paraview ult&eacute;rieurement, il faut rajouter une liste de pores envahis aux</span>
+<span class="comment">%poreData du r&eacute;seau. On voit aussi que la fonction</span>
+<span class="comment">%ComputeInvasionPercolation a rajoute la liste des diametres de liens qui</span>
+<span class="comment">%lui manquait.</span>
+
+[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,<span class="string">'currentWettability'</span>);
+
+network.AddNewPoreData(cluster.GetInvadedPoresBooleans,<span class="string">'InvadedPores_80'</span>);
+
+network.GetPoreDataList
+
+network.GetLinkDataList
+</pre><pre class="codeoutput">Calcul du diam&#65533;tre des liens...
+Calcul du diam&#65533;tre des liens termin&#65533;. Dur&#65533;e : 1 minutes 55.974487 s.
+Calcul d'invasion percolation...
+Calcul d'invasion percolation termin&#65533;. Dur&#65533;e : 0 minutes 18.020365 s.
+
+ans = 
+
+    InvadedPores_80: [1x1096 double]
+
+
+ans = 
+
+    ContactAngle: [1x9975 double]
+        Diameter: [1x9975 double]
+
+</pre><pre class="codeinput"><span class="comment">%Faisons maintenant une invasion percolation avec un angle de contact</span>
+<span class="comment">%uniforme de 110&deg;. On retire d'abord l'ancien linkData 'ContactAngle', on</span>
+<span class="comment">%ajoute le nouveau puis .</span>
+
+contactAngle=110;
+network.RemoveLinkData(<span class="string">'ContactAngle'</span>);
+theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
+network.AddNewLinkData(theta,<span class="string">'ContactAngle'</span>);
+
+[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,<span class="string">'currentWettability'</span>);
+
+network.AddNewPoreData(cluster.GetInvadedPoresBooleans,<span class="string">'InvadedPores_110'</span>);
+
+
+network.GetPoreDataList
+
+network.GetLinkDataList
+</pre><pre class="codeoutput">Calcul d'invasion percolation...
+Calcul d'invasion percolation termin&#65533;. Dur&#65533;e : 0 minutes 8.248737 s.
+
+ans = 
+
+     InvadedPores_80: [1x1096 double]
+    InvadedPores_110: [1x1096 double]
+
+
+ans = 
+
+        Diameter: [1x9975 double]
+    ContactAngle: [1x9975 double]
+
+</pre><pre class="codeinput"><span class="comment">%Calculons maintenant la diffusion. Pour visualiser les concentrations dans</span>
+<span class="comment">%Paraview ult&eacute;rieurement, il faut rajouter les concentrations aux data du</span>
+<span class="comment">%r&eacute;seau.</span>
+
+concentrations=ComputeDiffusion(network, cluster, inletLink, outletLink);
+network.AddNewPoreData(concentrations,<span class="string">'DiffusionConcentrations'</span>);
+</pre><pre class="codeoutput">Calcul des conductances de Diffusion...
+Calcul des conductances de diffusion termin&#65533;. Dur&#65533;e : 0 minutes 1.714278 s.
+Elapsed time is 0.023504 seconds.
+</pre><pre class="codeinput"><span class="comment">%La fonction ComputeDiffusion utilise les conductances de diffusion des</span>
+<span class="comment">%liens. Si 'ConductancesDiffusion' n'est pas encore defini dans les</span>
+<span class="comment">%linkData du reseau, la fonction la calcule et l'ajoute au reseau pour une</span>
+<span class="comment">%future utilisation.</span>
+
+network.GetLinkDataList
+</pre><pre class="codeoutput">
+ans = 
+
+                 Diameter: [1x9975 double]
+             ContactAngle: [1x9975 double]
+    ConductancesDiffusion: [1x9975 double]
+
+</pre><pre class="codeinput"><span class="comment">%On peut visualiser le reseau dans Matlab avec le viewer. Neanmoins les</span>
+<span class="comment">%fonctionnalites du viewer sont moins etendues en 3D qu'en 2D et le rendu est moins bon.</span>
+<span class="comment">%Cela est du aux limitations des outils de visualisation de Matlab.</span>
+
+viewer.View(<span class="string">'Network'</span>)
+</pre><img vspace="5" hspace="5" src="Tutorial_WettabilityAndClusterShape_01.png" alt=""> <pre class="codeinput"><span class="comment">%Il est possible d'exporter le reseau dans Paraview pour une meilleure visualisation. Pour cela on ecrit un</span>
+<span class="comment">%fichier .vtk. Dans ce fichier il y aura des informations sur la geometrie</span>
+<span class="comment">%du reseau et les data associes aux pores, liens etc... Il y a deux types</span>
+<span class="comment">%de rendu d'un reseau, Ball and Stick et maillage. Le rendu maillage est</span>
+<span class="comment">%disponible seulement pour les reseaux des classes PoreNetworkMesh et</span>
+<span class="comment">%classes derivees.</span>
+
+network.ExportToParaview(<span class="string">'NetworkTutorial_Wettability'</span>)
+</pre><pre class="codeoutput">G&#65533;n&#65533;ration du fichier VTK...
+Fichier VTK g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 43.368388 s.
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Tutoriel Wettability and ClusterShape
+%Dans ce tutoriel nous allons voir comment faire une invasion percolation
+%en définissant nous même les angles de contact. Nous allons apprendre à
+%gérer les poreData et les linkData qui contiennent les propriétés des
+%pores et des liens. Enfin nous allons exporter le réseau et les résultats 
+%de simulation vers Paraview pour visualiser les résultats. 
+
+%%
+%Commençons par créer un réseau 3D. 
+[ network,viewer ]=CreateNetwork('1block3D');
+
+inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
+
+
+%%
+%L'objet network contient des data associées aux pores et liens. Ce peut 
+%etre les propriétées géométriques des pores et liens, des résultats de 
+%simulations... 
+%On peut accéder aux poresData et linkData directement dans l'interface
+%graphique de Matlab en double cliquant sur l'objet network. Il est aussi
+%possible de les manipuler en ligne de commande. 
+%
+%Ces données peuvent servir dans les algorithmes physiques 
+%(conductances, tailles...). C'est le cas pour l'invasion percolation qui
+%utilise les diametres des liens et les angles de contact dans les liens.
+%Pour faire une invasion percolation avec des angles de contact
+%personnalises, il faut ajouter a la liste des link data un tableau
+%contenant les angles de contact. On utilise la fonction AddNewLinkData
+%avec le nom 'ContactAngle'. 
+
+contactAngle=80;
+theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
+network.AddNewLinkData(theta,'ContactAngle');
+
+network.GetLinkDataList
+
+network.GetLinkDataList.ContactAngle;
+
+
+%%
+%Calculons donc une invasion percolation avec l'angle de contact de 80°
+%defini a l'etape precedente. Pour visualiser les pores envahis dans
+%Paraview ultérieurement, il faut rajouter une liste de pores envahis aux 
+%poreData du réseau. On voit aussi que la fonction
+%ComputeInvasionPercolation a rajoute la liste des diametres de liens qui
+%lui manquait.
+
+[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability');
+
+network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_80');
+
+network.GetPoreDataList
+
+network.GetLinkDataList
+
+
+
+%%
+%Faisons maintenant une invasion percolation avec un angle de contact
+%uniforme de 110°. On retire d'abord l'ancien linkData 'ContactAngle', on
+%ajoute le nouveau puis . 
+
+contactAngle=110;
+network.RemoveLinkData('ContactAngle');
+theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
+network.AddNewLinkData(theta,'ContactAngle');
+
+[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability');
+
+network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_110');
+
+
+network.GetPoreDataList
+
+network.GetLinkDataList
+
+%%
+%Calculons maintenant la diffusion. Pour visualiser les concentrations dans
+%Paraview ultérieurement, il faut rajouter les concentrations aux data du
+%réseau. 
+    
+concentrations=ComputeDiffusion(network, cluster, inletLink, outletLink);
+network.AddNewPoreData(concentrations,'DiffusionConcentrations');
+
+
+%%
+%La fonction ComputeDiffusion utilise les conductances de diffusion des
+%liens. Si 'ConductancesDiffusion' n'est pas encore defini dans les
+%linkData du reseau, la fonction la calcule et l'ajoute au reseau pour une
+%future utilisation. 
+
+network.GetLinkDataList
+
+
+%%
+%On peut visualiser le reseau dans Matlab avec le viewer. Neanmoins les 
+%fonctionnalites du viewer sont moins etendues en 3D qu'en 2D et le rendu est moins bon.
+%Cela est du aux limitations des outils de visualisation de Matlab. 
+
+viewer.View('Network')
+
+
+%%
+%Il est possible d'exporter le reseau dans Paraview pour une meilleure visualisation. Pour cela on ecrit un
+%fichier .vtk. Dans ce fichier il y aura des informations sur la geometrie
+%du reseau et les data associes aux pores, liens etc... Il y a deux types
+%de rendu d'un reseau, Ball and Stick et maillage. Le rendu maillage est
+%disponible seulement pour les reseaux des classes PoreNetworkMesh et
+%classes derivees.
+
+network.ExportToParaview('NetworkTutorial_Wettability')
+
+
+##### SOURCE END #####
+--></body></html>

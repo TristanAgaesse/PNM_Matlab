@@ -1,0 +1,18 @@
+function [clusterLiquide,criticalPressures,breakthroughPressure] = ComputeInvasionPercolation(poreNetwork,numInlet,numOutlet,wettability)
+%COMPUTEINVASIONPERCOLATIONRESERVOIR Calcule invasion percolation avec
+%condition limite réservoir, avec un unique cluster
+%Input :- network
+%       - numInlet : numero de la frontiere inlet
+%       - numOutlet : numero de la frontiere outlet
+%       - wettability : 'hydrophobic', 'hydrophilic' or 'mixtedWettability'
+
+
+
+
+
+    linkInlet=poreNetwork.GetLinksFrontiere(numInlet);
+    linkOutlet=poreNetwork.GetLinksFrontiere(numOutlet);
+
+    [clusterLiquide,criticalPressures,breakthroughPressure] = ComputeInvasionPercolation(poreNetwork,linkInlet,linkOutlet,wettability);
+end
+

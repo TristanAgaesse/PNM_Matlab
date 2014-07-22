@@ -1,0 +1,1472 @@
+classdef Mailleur 
+    %Mailleur Outil de pr�-traitement
+    %   G�n�ration de r�seau de pore � partir d'une g�om�trie macroscopique
+    
+    properties (SetAccess=immutable)
+        GeometrieMacroscopique
+    end
+    
+    methods
+        %Constructeur
+        function mailleur=Mailleur(output_struct)
+            %constructeur � partir de output_struct provenant d'un reader
+            %initialisation des propri�t�s
+            output_struct.GeometrieMacroscopique.Vertices=output_struct.GeometrieMacroscopique.ATTRIBUTE.ConvertToMeters*output_struct.GeometrieMacroscopique.Vertices;
+            mailleur.GeometrieMacroscopique=output_struct.GeometrieMacroscopique;
+        end
+        
+        %BuildNetwork 
+        function network=BuildNetwork(mailleur)
+            %construction d'un network � partir de l'input geometrie_macroscopique
+            %qui doit renseigner toutes les properties de la geometrie consid�r�e
+            assert(strcmp(class(mailleur),'Mailleur'),'BuildNetwork prend un Mailleur en argument');
+            
+            geometrie_macroscopique=mailleur.GeometrieMacroscopique;
+            type_reseau=geometrie_macroscopique.ATTRIBUTE.Type;
+            switch type_reseau
+                case 'PoreNetworkUnstructuredMesh'
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,~,~,~]=Mailleur.GenerateMesh(geometrie_macroscopique);
+                    
+                    network=PoreNetworkMesh(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices);
+                
+                case 'PoreNetworkUnstructuredMeshFibrous'
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges]=Mailleur.GenerateMesh(geometrie_macroscopique);
+                    epaisseur_edges=Mailleur.GenerateEdgeThickness(edges,vertices,geometrie_macroscopique);    
+                    
+                    network=PoreNetworkMeshFibrous(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges);
+                
+                case 'ChannelNetwork'
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges]=Mailleur.GenerateMesh(geometrie_macroscopique);
+                    epaisseur_edges=Mailleur.GenerateEdgeThickness(edges,vertices,geometrie_macroscopique); 
+                    
+                    network=ChannelNetwork(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges);
+            end
+        end %BuildNetwork 
+        
+    end   
+    
+    methods (Static=true)      
+        
+        %GenerateMesh
+        function [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges]=GenerateMesh(geometrie_macroscopique)
+            %g�n�re un maillage en fonction de la g�om�trie macroscopique.
+            %input : g�om�trie macroscopique
+            %output : 
+            %   - vertices : tableau dont les lignes contiennent les coordonn�es des vertices
+            %   - faces : 1*NombreFaces cell array
+            %   - cellules : 1*NombreCells cell array
+            %   - owners, neighbours : m�me chose que propri�t�s de
+            %     g�om�trie, avec faces non renum�rot�es
+            %   - faces_des_frontieres_exterieures : cell array taille
+            %   NombreFrontieresExt�rieures (=toutes les boundaries sauf les
+            %   interfaces internes)
+            %   faces_des_frontieres_exterieures{i}={numero de la boundary associ�e, [num�ro des faces li�es � la fronti�re ext�rieure i]}   
+            
+            dimension=geometrie_macroscopique.ATTRIBUTE.Dimension;
+            
+            %Anisotropie : dilation d'une zone du maillage
+            geometrie_macroscopique=Mailleur.GereAnisotropieDebut(geometrie_macroscopique);
+            
+            %tirage al�atoire des points de base de voronoi dans les blocks
+            nbre_blocks=length(geometrie_macroscopique.Blocks.Block);
+            points_in_blocks=cell(1,nbre_blocks); %points_in_blocks{i}=tableau contenant les coordonn�es des points dans le bloc i
+            
+            for indice_block=1:nbre_blocks
+                block_vertices=geometrie_macroscopique.Vertices(geometrie_macroscopique.Blocks.Block(indice_block).VertexNumbers,:);
+                parametres_tirage_aleatoire=geometrie_macroscopique.Blocks.Block(indice_block).Remplissage;
+                points_in_blocks{indice_block}=Mailleur.GenerateRandomPoints(block_vertices,parametres_tirage_aleatoire);                
+            end
+            
+            %Remodelage des fronti�res : le maillage doit �tre modifi� au
+            %voisinage des interfaces entre blocks et des fronti�res ext�rieures
+            [points_in_blocks,indices_cellules_esclaves]=Mailleur.RemodelerFrontieres(points_in_blocks,geometrie_macroscopique);
+            
+            %G�n�ration du pavage de voronoi � partir des points de
+            %tous les blocks mis en commun. Cel� permet d'avoir un maillage 
+            %coh�rent aux interfaces entre blocks. 
+            %Mise � jour des r�f�rences vers les cellules esclaves 
+            %des fronti�res pour tenir compte de la nouvelle num�rotation
+            %due � la mise en commun des points/cellules.
+            [sommets_voronoi,cellules_voronoi,indices_cellules_esclaves]=Mailleur.ProcedurePavage(points_in_blocks,indices_cellules_esclaves,geometrie_macroscopique);
+            
+            %Nettoyage du r�seau : s�lection des cellules de voronoi et des
+            %sommets ad�quats. Il faut faire le m�nage car on a utilis� des
+            %points en dehors du bloc pour former les fronti�res ext�rieures.
+            cellules_inutiles=Mailleur.ListerCellulesInutiles(cellules_voronoi,sommets_voronoi,indices_cellules_esclaves,geometrie_macroscopique);
+            
+            %Extraction des faces et de leurs pores voisins : cr�ation de
+            %face, owners, neighbour,faces_des_frontieres_exterieures
+            [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures]=Mailleur.FaceExtraction(cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,geometrie_macroscopique,sommets_voronoi);
+            
+            %Nettoyage des listes cellules et vertices
+            [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules]=Mailleur.MiseAJourCellulesSommets(cellules_voronoi,sommets_voronoi,cellules_inutiles);                                                                                                          
+                        
+            %Nettoyage de la liste des faces, renum�rotation des faces
+            %aux fronti�res et mise en ordre des sommets des faces
+            [faces,owners,neighbours,boundaries]=Mailleur.RenumerotationFaces(dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,geometrie_macroscopique.Boundaries.Boundary,new_numeros_cellules,new_numeros_sommets,vertices,geometrie_macroscopique.Vertices);
+            
+            %Cr�ation de la liste cells : cellules to faces
+            cells=Mailleur.BuildPoresToLinks(owners,neighbours,nombre_cellules);
+            
+            %Anisotropie : dilatation inverse
+            [geometrie_macroscopique,vertices]=Mailleur.GereAnisotropieFin(geometrie_macroscopique,vertices);
+            
+            %Extraction des edges
+            [edges,vertices_to_edges,faces_to_edges]=Mailleur.ExtractEdges(vertices,faces,geometrie_macroscopique.ATTRIBUTE.Type);
+        end %GenerateMesh
+        
+        %ProcedurePavage   
+        function [sommets_pavage,cellules_pavage,indices_cellules_esclaves]=ProcedurePavage(points_in_blocks,indices_cellules_esclaves,geometrie_macroscopique)
+            
+            %Cr�ation liste commune pour tous les points
+            dimension=geometrie_macroscopique.ATTRIBUTE.Dimension;
+            nombre_points_total=sum(cellfun('length',points_in_blocks));
+            points=zeros(nombre_points_total,dimension);
+            indice_debut_block_courant=1;
+            nbre_blocks=length(geometrie_macroscopique.Blocks.Block);
+            indices_debut_blocs=zeros(1,nbre_blocks);
+            for index_block=1:nbre_blocks
+                indices_debut_blocs(index_block)=indice_debut_block_courant;
+                points(indice_debut_block_courant:indice_debut_block_courant+length(points_in_blocks{index_block})-1,:)=points_in_blocks{index_block}; 
+                indice_debut_block_courant=indice_debut_block_courant+length(points_in_blocks{index_block});
+            end
+            assert(indice_debut_block_courant==nombre_points_total+1,'Pb lors de la mise en commun des points g�n�rateurs du pavage');
+            
+            %Mise � jour des r�f�rences vers les cellules esclaves pour
+            %prendre en compte les changements de num�ros dus �
+            %la mise en commun des points de tous les blocs
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)
+                indice_block=Mailleur.TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary);
+                indices_cellules_esclaves{indice_boundary}=indices_cellules_esclaves{indice_boundary}+indices_debut_blocs(indice_block)-1;
+            end
+            
+            %G�n�ration maillage
+            type_pavage=geometrie_macroscopique.ATTRIBUTE.Pavage;
+            switch type_pavage
+                case 'RandomVoronoi'
+                    [sommets_pavage,cellules_pavage]=voronoin(points);
+                case 'RandomDelaunay'
+                    sommets_pavage=points;
+                    cellules=delaunay(points(:,1),points(:,2));
+                    cellules_pavage=num2cell(cellules,2);
+                otherwise
+                    error('Type de pavage non reconnu');
+            end
+            
+            
+        end %ProcedurePavage
+        
+        %GenerateRandomPoints
+        function points=GenerateRandomPoints(domain_vertices,parametres_tirage_aleatoire)
+            %Tire des points al�atoirement dans un domaine poly�drique.
+            %input:   - domain_vertices : coordonn�es des sommets du
+            %       domaine poly�drique dans lequel les points al�atoire
+            %       sont tir�s
+            %         - parametres_tirage_aleatoire : param�tres de la loi
+            %        de probabilit� : geometrie_macroscopique.Blocks.Block(indice_block).Remplissage;
+            %output : - points : tableau contenant les coordonn�es des points [x y (z) ; x y (z) ; ....]  
+            
+            dimension=length(domain_vertices(1,:));
+            nombre_points=parametres_tirage_aleatoire.ATTRIBUTE.NombrePoints;
+            
+            %cas o� le bloc est pav� align� avec les axes :
+            
+            switch dimension
+                case 2
+                    xmin=min(domain_vertices(:,1));
+                    xmax=max(domain_vertices(:,1));
+                    ymin=min(domain_vertices(:,2));
+                    ymax=max(domain_vertices(:,2));
+                    nombre_points_in=0;
+                    for iteration=1:5
+                        if nombre_points_in<nombre_points
+                            X=xmin+(xmax-xmin)*rand(2^(iteration-1)*nombre_points,1);
+                            Y=ymin+(ymax-ymin)*rand(2^(iteration-1)*nombre_points,1);
+                            poi=[X,Y];
+                            points=poi(transpose(find(inhull(poi,domain_vertices))),:);
+                            nombre_points_in=length(points);
+                        end
+                        if nombre_points_in>nombre_points
+                            points=points(1:nombre_points,:);
+                            nombre_points_in=length(points);
+                        end
+                    end
+                case 3
+                    xmin=min(domain_vertices(:,1));
+                    xmax=max(domain_vertices(:,1));
+                    ymin=min(domain_vertices(:,2));
+                    ymax=max(domain_vertices(:,2));
+                    zmin=min(domain_vertices(:,3));
+                    zmax=max(domain_vertices(:,3));
+                    nombre_points_in=0;
+                    for iteration=1:5
+                        if nombre_points_in<nombre_points
+                            X=xmin+(xmax-xmin)*rand(2^(iteration-1)*nombre_points,1);
+                            Y=ymin+(ymax-ymin)*rand(2^(iteration-1)*nombre_points,1);
+                            Z=zmin+(zmax-zmin)*rand(2^(iteration-1)*nombre_points,1);
+                            poi=[X,Y,Z];
+                            points=poi(transpose(find(inhull(poi,domain_vertices))),:);
+                            nombre_points_in=length(points);
+                        end
+                        if nombre_points_in>nombre_points
+                            points=points(1:nombre_points,:);
+                            nombre_points_in=length(points);
+                        end
+                    end
+            end            
+            
+            if isfield(parametres_tirage_aleatoire.ATTRIBUTE,'Density')
+                switch parametres_tirage_aleatoire.ATTRIBUTE.Density
+                    case 'Uniforme'
+                        points=points;
+                        
+                    case 'Puissance'
+                        direction=parametres_tirage_aleatoire.ATTRIBUTE.Direction;
+                        factor=parametres_tirage_aleatoire.ATTRIBUTE.Factor;
+                        switch direction
+                            case 'x'
+                                indice=1;
+                            case 'y'
+                                indice=2;
+                            case 'z'
+                                indice=3;
+                        end
+                        Vmin=min(domain_vertices(:,indice));
+                        Vmax=max(domain_vertices(:,indice));
+                        points(:,indice)=Vmin+(1/(Vmax-Vmin)^(factor-1))*(points(:,indice)-Vmin).^factor;
+                        
+                end
+                
+            end
+            
+            
+        end %GenerateRandomPoints
+        
+        %RemodelerFrontieres
+        function [points_in_blocks,indices_cellules_esclaves]=RemodelerFrontieres(points_in_blocks,geometrie_macroscopique)
+            %Remodelage des fronti�res : aux fronti�res des blocks le
+            %maillage change. On veut traiter :
+            %   - interfaces 'raide' ou '3e couche' entre deux blocks
+            %   - surfaces ext�rieures 'plat' ou 'rough'
+            %   - conditions limites periodiques ('cyclic') entre deux
+            %   faces oppos�es
+            %Algorithme : 
+            %   - modifier la r�partition des points de base voronoi
+            %   au voisinage de la fronti�re en ajoutant ou enlevant des 
+            %points judicieusement choisis. L'ajout de points � ceux tir�s
+            %   dans le corps du bloc se fait  en respectant l'ordre de 
+            %   gestion des fronti�re suivant : interfaces internes puis 
+            %   surfaces rough puis surfaces plan puis limites p�riodiques
+            %   - on cr�e le maillage de voronoi � partir de tous les
+            %   points d�finis pr�cedemment (int�rieur blocks + fronti�res)
+            %   - on nettoye ensuite le maillage des cellules en trop
+            %   introduites pr�s de chaque fronti�re.
+
+            indices_cellules_esclaves=cell(1,length(geometrie_macroscopique.Boundaries.Boundary)); 
+            %indices_cellules_esclaves{i} : cellules potentiellement en trop pr�s de la boundary i 
+            
+            %Remodelage fronti�res : interfaces entre les blocks
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)
+%                 if strcmp(geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.Type,'interface')           
+%                   
+%                     name_neighbour=geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.NeighbourPatch;
+% 
+%                     indice_block=Mailleur.TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary);
+%                     random_points_in_block=points_in_blocks{indice_block};
+%                     infos_block=geometrie_macroscopique.Blocks.Block(indice_block);
+%                     infos_frontiere=geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
+%                     vertices_geo_macro=geometrie_macroscopique.Vertices;
+%                     
+%                     [nouveaux_points,ind_cells_esclaves]=Mailleur.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro);
+%                     points_in_blocks{indice_block}=nouveaux_points;
+%                     indices_cellules_esclaves{indice_boundary}=ind_cells_esclaves;
+%                 end
+            end
+            
+            %Remodelage fronti�res : fronti�res ext�rieures rugueuses ou planes                                       
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)
+               if strcmp(geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.Type,'surface')    
+                    indice_block=Mailleur.TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary);
+                    random_points_in_block=points_in_blocks{indice_block};
+                    infos_block=geometrie_macroscopique.Blocks.Block(indice_block);
+                    infos_frontiere=geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
+                    vertices_geo_macro=geometrie_macroscopique.Vertices;
+                    
+                    [nouveaux_points,ind_cells_esclaves]=Mailleur.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro);
+                    points_in_blocks{indice_block}=nouveaux_points;
+                    indices_cellules_esclaves{indice_boundary}=ind_cells_esclaves; %les num�ros des cellules changeront apr�s mise en commun voronoi
+               end
+            end
+            
+            %Remodelage fronti�res : limites periodiques
+            liste_patch_periodiques_trouves=[];
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)
+               if strcmp(geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.Type,'cyclic')
+                   %on traite la condition limite periodique lorqu'on a
+                   %trouv� la deuxi�me fronti�re de la paire
+                    if false %la premi�re fronti�re est d�j� trouv�e                                                           %A FAIRE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        indice_block=Mailleur.TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary);
+                        random_points_in_block=points_in_blocks{indice_block};
+                        infos_block=geometrie_macroscopique.Blocks.Block(indice_block);
+                        infos_frontiere=geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
+                        vertices_geo_macro=geometrie_macroscopique.Vertices;
+                        
+                        [nouveaux_points,ind_cells_esclaves]=Mailleur.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro);
+                        points_in_blocks{indice_block}=nouveaux_points;
+                        indices_cellules_esclaves{indice_boundary}=ind_cells_esclaves;      
+                        
+                        %supprimer le nom de la premiere frontiere de 
+                        %liste_patch_periodiques_trouves                                                                %A FAIRE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    else
+                        %ajouter le nom de cette frontiere a la liste                                                    %A FAIRE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        
+                    end
+               end
+            end
+            %verifier que liste_patch_periodiques_trouves est bien vide                                                 %A FAIRE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            
+            
+            
+        end %RemodelerFrontieres
+        
+        %GererUneFrontiere
+        function [nouveaux_points_du_block,indices_cellules_esclaves]=GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro)
+            %Modifie la r�partition des points de base voronoi au voisinage
+            %d'une fronti�re et indique les cellules esclaves de cette 
+            %fronti�re, ie celles que cette frontiere pourra supprimer 
+            %lors de la phase de nettoyage du maillage
+            %input :  - infos_block=geometrie_macroscopique.Blocks.Block(indice_block)
+            %           sauf pour conditions cyclic ou interface, auquel cas c'est une
+            %           2 cell contenant les infos_block des deux blocs concern�s
+            %         - infos_frontiere=geometrie_macroscopique.Boundaries.Boundary(indice_boundary)
+            %           sauf si conditions cyclic, auquel cas c'est une
+            %           2 cell contenant les infos_frontiere des deux blocs concern�s
+            %
+            %output : - nouveaux_points_du_block  : liste des points du
+            %           bloc mise � jour apr�s ajout et retrait de points
+            %           pr�s de la fronti�re
+            %         - indices_cellules_esclaves
+            
+            %homog�n�isation des input car ils ont une forme diff�rente
+            %selon le type de boundary
+            if iscell(infos_frontiere)
+                type='cyclic';
+            else
+                type=infos_frontiere.ATTRIBUTE.Type;
+            end
+            switch type
+                case 'cyclic'
+                    nbre_frontieres=2;
+                    inf_frontiere=infos_frontiere;
+                    if iscell(infos_block)
+                        assert(length(infos_block)==2,'cyclic entre 2 blocks maximum')
+                        nbre_blocks=2;
+                        initial_points=random_points_in_block;
+                        inf_block=infos_block;
+                        test_coherence_frontiere_block_1=isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),ones(1,length(inf_frontiere{1}.face)));
+                        test_coherence_frontiere_block_2=isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),ones(1,length(inf_frontiere{2}.face)));
+                        assert(test_coherence_frontiere_block_1&&test_coherence_frontiere_block_2,'Pb infos frontieres bloc cyclic');
+                    else
+                        nbre_blocks=1;
+                        initial_points{1}=random_points_in_block;         
+                        inf_block{1}=infos_block;
+                    end
+                case 'interface'
+                    nbre_frontieres=1;
+                    inf_frontiere{1}=infos_frontiere;
+                    nbre_blocks=2;
+                    initial_points{1}=random_points_in_block;
+                    initial_points{2}=random_points_in_block;
+                    inf_block=infos_block;
+                case 'surface'
+                    nbre_frontieres=1;
+                    inf_frontiere{1}=infos_frontiere;
+                    nbre_blocks=1;
+                    initial_points{1}=random_points_in_block;
+                    inf_block{1}=infos_block;
+            end
+            
+            dimension=length(vertices_geo_macro(1,:));
+            epsilon=max(vertices_geo_macro(:,1))-min(vertices_geo_macro(:,1));
+
+            %v�rification que la surface est plane
+            for i=1:nbre_frontieres
+                indices_vertex=inf_frontiere{i}.Face;
+                assert(isequal(unique(indices_vertex),sort(indices_vertex)),'Points face identiques');
+                vertices_frontiere=vertices_geo_macro(indices_vertex,:);
+                switch dimension
+                    case 2
+                        assert(length(indices_vertex)==2,'Frontiere non plane');
+                    case 3
+                        %assert(length(indices_vertex)==4&&det(vertices_frontiere([1,2,3],:))<10^(-10)*epsilon^3&&det(vertices_frontiere([1,2,4],:))<10^(-10)*epsilon^3,'Frontiere non plane');
+                        
+                                                                    %A FAIRE
+                end
+            end
+            
+            %calcul des distance des point voronoi � la fronti�re pour
+            %trouver les points proches de la fronti�re
+            for num_frontiere=1:nbre_frontieres
+                distances_a_la_frontiere=cell(1,nbre_frontieres);
+                for num_block=1:nbre_blocks
+                    distances_a_la_frontiere{num_block}=zeros(length(initial_points{num_block}(:,1)),1);
+                    vertices_frontiere=vertices_geo_macro(inf_frontiere{num_frontiere}.Face,:);
+%                     switch dimension
+%                         case 2
+%                             base_vect=(vertices_frontiere(2,:)-vertices_frontiere(1,:));
+%                             base_vect=base_vect/norm(base_vect);
+%                             for num_point=1:length(initial_points{num_block}(:,1))
+%                                 distances_a_la_frontiere{num_block}(num_point)=abs(det([base_vect;initial_points{num_block}(num_point,:)-vertices_frontiere(1,:)]));
+%                             end
+%                         case 3
+%                             %base_vect_1 et base_vect_2 : base de la
+%                             %fronti�re orthonorm�e
+%                             base_vect_1=(vertices_frontiere(2,:)-vertices_frontiere(1,:));
+%                             base_vect_1=base_vect_1/norm(base_vect_1);
+%                             base_vect_2=(vertices_frontiere(3,:)-vertices_frontiere(1,:));
+%                             base_vect_2=base_vect_2-dot(base_vect_1,base_vect_2)*base_vect_1;
+%                             if  norm(base_vect_2)<10^(-10)*epsilon % cas � �viter o� les points de la face choisis sont colin�aire
+%                                 base_vect_2=(vertices_frontiere(4,:)-vertices_frontiere(1,:));
+%                                 base_vect_2=base_vect_2-dot(base_vect_1,base_vect_2)*base_vect_1;
+%                                 base_vect_2=base_vect_2/norm(base_vect_2);
+%                             else
+%                                 base_vect_2=base_vect_2/norm(base_vect_2);
+%                             end
+%                             for num_point=1:length(initial_points{num_block}(:,1))
+%                                 distances_a_la_frontiere{num_block}(num_point)=abs(det([base_vect_1;base_vect_2;initial_points{num_block}(num_point,:)-vertices_frontiere(1,:)]));
+%                             end
+                %end
+                    for num_point=1:length(initial_points{num_block}(:,1))
+                        distances_a_la_frontiere{num_block}(num_point)=Mailleur.DistancePointFrontierePlane(initial_points{num_block}(num_point,:),vertices_frontiere);
+                    end
+                end
+            end        
+            
+             
+            
+                    
+            %modification des points voronoi pr�s de la fronti�re et cr�ation de indices_cellules_esclaves        
+            switch type
+                
+                case 'interface'
+                    x_pourcent=0.3
+                    
+                    
+                    
+                    
+                    nouveaux_points_du_block=random_points_in_block;
+                
+                %surface ext�rieure rugueuse ou plane
+                case 'surface'
+                    type_surface=inf_frontiere{1}.ATTRIBUTE.Surface;
+                    [dist_sorted,indices_sorted]=sort(distances_a_la_frontiere{1});
+                    nbre_points_initiaux=length(initial_points{1}(:,1));
+                    switch type_surface
+                        case 'rough'
+                            %on inspecte les x% de points plus proches de la fronti�re, 
+                            x_pourcent=0.3;
+                            %et on tire de nouveaux points de l'autre c�t�
+                            %de la fronti�re sur une �paisseur �gale �
+                            %celle occup�e par ces x% de points.
+                            nbre_points_proches_in=ceil(x_pourcent*length(indices_sorted));
+                            indices_points_proches_in=transpose(indices_sorted(1:nbre_points_proches_in));
+                            %d�finition de la zone o� tirer les points
+                            dist_max_in=dist_sorted(nbre_points_proches_in);
+                            centre_block=mean(vertices_geo_macro(infos_block.VertexNumbers,:));
+                            vect_perp=Mailleur.ComputeVecteurNormalOrienteExterieurBlock(vertices_frontiere,centre_block);
+                            vertices_decales=vertices_frontiere+dist_max_in*ones(length(vertices_frontiere(:,1)),1)*vect_perp;
+                            zone_vertices=[vertices_frontiere;vertices_decales];
+                            
+                            parametres_tirage_aleatoire.ATTRIBUTE.NombrePoints=nbre_points_proches_in;
+                            %tirer les points 
+                            points_out_proches_surface=Mailleur.GenerateRandomPoints(zone_vertices,parametres_tirage_aleatoire);
+                            %les ajouter aux points du bloc
+                            nouveaux_points_du_block=vertcat(initial_points{1},points_out_proches_surface);
+                            %indices_cellules_esclaves : points_in et points_out
+                            indices_points_out=(nbre_points_initiaux+1):(nbre_points_initiaux+nbre_points_proches_in);
+                            indices_cellules_esclaves=horzcat(indices_points_proches_in,indices_points_out);
+                            
+                            
+                        case 'flat'
+                           %on inspecte les x% de points plus proches de la fronti�re, 
+                            x_pourcent=0.4;
+                            %et on mirore ces points par rapport � la
+                            %frontiere
+                            nbre_points_proches_in=ceil(x_pourcent*length(indices_sorted));
+                            %indices_points_proches_in=transpose(indices_sorted(1:nbre_points_proches_in));
+                            
+                            centre_block=mean(vertices_geo_macro(infos_block.VertexNumbers,:));
+                            vect_perp=Mailleur.ComputeVecteurNormalOrienteExterieurBlock(vertices_frontiere,centre_block);
+                           
+                            points_out_proches_surface=zeros(nbre_points_proches_in,dimension);
+                            for num_point=1:nbre_points_proches_in
+                                points_out_proches_surface(num_point,:)=initial_points{1}(indices_sorted(num_point),:)-2*dot(vect_perp,(initial_points{1}(indices_sorted(num_point),:)-vertices_frontiere(1,:)))*vect_perp;
+                            end
+                            %les ajouter aux points du bloc
+                            nouveaux_points_du_block=vertcat(initial_points{1},points_out_proches_surface);
+                            %indices_cellules_esclaves : points_out
+                            indices_points_out=(nbre_points_initiaux+1):(nbre_points_initiaux+nbre_points_proches_in);
+                            
+                            nbre_points_proches_in=ceil(x_pourcent*length(indices_sorted));
+                            indices_points_proches_in=transpose(indices_sorted(1:nbre_points_proches_in));
+                            indices_cellules_esclaves=horzcat(indices_points_proches_in,indices_points_out);
+                        otherwise
+                            nouveaux_points_du_block=random_points_in_block;
+                            indices_cellules_esclaves=[];
+                            
+                    end
+                %periodic boundary condition    
+                case 'cyclic'
+                    %v�rifier que les sommets des deux patchs sont
+                    %g�om�triquement identiques 
+                    
+                    %translater les points proches des deux frontieres 
+                    %indices_cellules_esclaves : points_in proches des deux
+                    %       frontieres et points translat�s
+                                
+                    nouveaux_points_du_block=random_points_in_block;                                    %A FAIRE
+
+                    indices_cellules_esclaves=[];
+            
+
+            
+            end
+
+        end %GererUneFrontiere
+        
+        %TrouverCellulesInutilesFrontiere
+        function useless_cells=TrouverCellulesInutilesFrontiere(indices_cellules_esclaves,cellules_inutiles,sommets_voronoi,cellules_voronoi,infos_block,infos_frontiere,vertices_geo_macro)
+            %Trouve les cellules inutiles au maillage parmis les cellules 
+            %esclaves d'une fronti�re donn�e
+            %output: - useless_cells : tableau des indices des cellules inutiles
+            %        pour cette frontiere.
+            
+            %homog�n�isation des input car ils ont une forme diff�rente
+            %selon le type de boundary
+            if iscell(infos_frontiere)
+                type='cyclic';
+            else
+                type=infos_frontiere.ATTRIBUTE.Type;
+            end
+            switch type
+                case 'cyclic'
+                    nbre_frontieres=2;
+                    inf_frontiere=infos_frontiere;
+                    if iscell(infos_block)
+                        assert(length(infos_block)==2,'cyclic entre 2 blocks maximum')
+                        nbre_blocks=2;
+                        inf_block=infos_block;
+                        test_coherence_frontiere_block_1=isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),ones(1,length(inf_frontiere{1}.face)));
+                        test_coherence_frontiere_block_2=isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),ones(1,length(inf_frontiere{2}.face)));
+                        assert(test_coherence_frontiere_block_1&&test_coherence_frontiere_block_2,'Pb infos frontieres bloc cyclic');
+                    else
+                        nbre_blocks=1;
+                        inf_block{1}=infos_block;
+                    end
+                case 'interface'
+                    nbre_frontieres=1;
+                    inf_frontiere{1}=infos_frontiere;
+                    nbre_blocks=2;
+                    inf_block=infos_block;
+                case 'surface'
+                    nbre_frontieres=1;
+                    inf_frontiere{1}=infos_frontiere;
+                    nbre_blocks=1;
+                    inf_block{1}=infos_block;
+            end
+            
+            dimension=length(vertices_geo_macro(1,:));
+            epsilon=max(vertices_geo_macro(:,1))-min(vertices_geo_macro(:,1));
+            
+          
+            switch type
+                case 'surface'
+                    type_surface=inf_frontiere{1}.ATTRIBUTE.Surface;
+                    critere ='barycentre';
+                    switch type_surface
+                    
+                        case 'rough'
+                            %enlever les cellules qui sont li�es au sommet 
+                            %� l'infini ou qui ne v�rifient pas le crit�re
+                            useless_cells=[];
+                            
+                            for num_cell=indices_cellules_esclaves
+                                if  cellules_inutiles(num_cell)
+                                    useless_cells=[useless_cells,num_cell];
+                                else
+                                    
+                                    switch critere
+%                                         case 'volume'
+%                                             %au moins la moiti� du volume
+%                                             %dans le bloc
+%                                             sommets_cell=sommets_voronoi(transpose(cellules_voronoi{num_cell}),:);
+%                                             sommets_block=vertices_geo_macro(transpose(inf_block{1}.VertexNumbers),:);
+%                                             proportion_volume_in=Mailleur.ProportionVolumeIn(sommets_cell,sommets_block);
+%                                             if proportion_volume_in<0.5
+%                                                 useless_cells=[useless_cells,num_cell];
+%                                             end
+                                        case 'barycentre'
+                                            %barycentre du bon côté de la
+                                            %frontiere
+                                            sommets_cell=sommets_voronoi(transpose(cellules_voronoi{num_cell}),:);
+                                            barycentre=mean(sommets_cell);
+                                            
+                                            sommets_block=vertices_geo_macro(transpose(infos_block.VertexNumbers),:);
+                                            vertices_frontiere=vertices_geo_macro(infos_frontiere.Face,:);
+                                            centre_block=mean(vertices_geo_macro(infos_block.VertexNumbers,:));
+                                            vect_perp=Mailleur.ComputeVecteurNormalOrienteExterieurBlock(vertices_frontiere,centre_block);
+                                            
+                                            if dot( (barycentre-vertices_frontiere(1,:)),vect_perp)>0
+                                                useless_cells=[useless_cells,num_cell];
+                                            end  
+                                    end
+                                end
+                            end
+                            
+                        case 'flat'
+                            %enlever les cellules qui sont li�es au sommet 
+                            %� l'infini ou qui ne v�rifient pas le crit�re
+                            useless_cells=[];
+                            
+                            for num_cell=indices_cellules_esclaves
+                                if  cellules_inutiles(num_cell)
+                                    useless_cells=[useless_cells,num_cell];
+                                else
+                                    switch critere
+%                                         case 'volume'
+%                                             %au moins la moiti� du volume
+%                                             %dans le bloc
+%                                             sommets_cell=sommets_voronoi(transpose(cellules_voronoi{num_cell}),:);
+%                                             sommets_block=vertices_geo_macro(transpose(inf_block{1}.VertexNumbers),:);
+%                                             proportion_volume_in=Mailleur.ProportionVolumeIn(sommets_cell,sommets_block);
+%                                             if proportion_volume_in<0.5
+%                                                 useless_cells=[useless_cells,num_cell];
+%                                             end
+                                        case 'barycentre'
+                                            %barycentre du bon côté de la
+                                            %frontiere
+                                            sommets_cell=sommets_voronoi(transpose(cellules_voronoi{num_cell}),:);
+                                            barycentre=mean(sommets_cell);
+                                            
+                                            sommets_block=vertices_geo_macro(transpose(infos_block.VertexNumbers),:);
+                                            vertices_frontiere=vertices_geo_macro(infos_frontiere.Face,:);
+                                            centre_block=mean(vertices_geo_macro(infos_block.VertexNumbers,:));
+                                            vect_perp=Mailleur.ComputeVecteurNormalOrienteExterieurBlock(vertices_frontiere,centre_block);
+                                            
+                                            if dot( (barycentre-vertices_frontiere(1,:)),vect_perp)>0
+                                                useless_cells=[useless_cells,num_cell];
+                                            end  
+                                            
+                                    end
+                                 end
+                             end
+                        otherwise    
+                            useless_cells=[];
+                    
+                    end
+                    
+                case 'cyclic'    
+                   useless_cells=[];
+                otherwise
+                   useless_cells=[] ;                                                       %A FAIRE
+
+            end
+            
+        end %TrouverCellulesInutilesFrontiere       
+        
+        %ListerCellulesInutiles
+        function cellules_inutiles=ListerCellulesInutiles(cellules_voronoi,sommets_voronoi,indices_cellules_esclaves,geometrie_macroscopique)
+            %Dresse la liste des cellules � supprimer lors du nettoyage.
+
+            cellules_inutiles=zeros(1,length(cellules_voronoi));  %cellules_inutiles(i)=1 si la cellule i est � enlever, 0 sinon
+
+            %Voronoin g�n�re un sommet � l'infini et parfois des sommets
+            %tr�s �loign�s des blocks. Il faudra les enlever.
+            tol=1.3;
+            sommets_proches=zeros(1,length(sommets_voronoi));
+            for num_block=1:length(geometrie_macroscopique.Blocks.Block)
+                vertex_block=geometrie_macroscopique.Vertices(geometrie_macroscopique.Blocks.Block(num_block).VertexNumbers,:);
+                zone_proche_du_bloc=tol*vertex_block-(tol-1)*ones(length(vertex_block),1)*mean(vertex_block);
+                sommets_proches(transpose(inhull(sommets_voronoi,zone_proche_du_bloc)))=1;
+            end
+            sommets_infinis=1-sommets_proches;
+            
+            foo=find(sommets_infinis);
+            for num_cell=1:length(cellules_voronoi)
+                if ~isempty(find(ismember(cellules_voronoi{num_cell},foo),1))
+                    cellules_inutiles(num_cell)=1;
+                end
+            end 
+            
+            %Chaque boundary peut demander � supprimer des cellules parmi ses
+            %cellules esclaves, par exemple si cette cellule servait
+            %uniquement d'artifice pour remodeler la fronti�re.
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)   
+                
+                indice_block=Mailleur.TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary);
+                infos_block=geometrie_macroscopique.Blocks.Block(indice_block);
+                infos_frontiere=geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
+                vertices_geo_macro=geometrie_macroscopique.Vertices;
+                indices_useless_cells_frontiere=Mailleur.TrouverCellulesInutilesFrontiere(indices_cellules_esclaves{indice_boundary},cellules_inutiles,sommets_voronoi,cellules_voronoi,infos_block,infos_frontiere,vertices_geo_macro);
+                
+                cellules_inutiles(indices_useless_cells_frontiere)=1;
+            end
+                        
+        end %ListerCellulesInutiles
+        
+        %FaceExtraction
+        function [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures]=FaceExtraction(cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,geometrie_macroscopique,sommets_voronoi)
+            %Trouve les faces entre les cellules et renvoie les indices de
+            %leurs sommets et leurs deux cellules voisines. 
+            %Algorithme : parcourir les cellules en v�rifiant parmi leurs 
+            %voisines si elles partagent assez de sommets pour avoir une 
+            %face en commun.
+            %G�re les faces ext�rieures en mettant -1 en neighbour et en 
+            %les associant � une frontiere ext�rieure si elles
+            %ont une cellule � l'int�rieur, sinon ne les compte pas. 
+            
+            
+            %trouver les faces communes des cellules, ie plus de 2
+            %sommets communs en 2D et 3 en 3D (cellules convexes)
+            cellules_en_contact=cell(1,length(cellules_voronoi)); 
+            %cellules_en_contact{num_cell}{num_face}={num_autre_cell,[sommets_partag�s]}
+            %cellules_en_contact{num_cell}={} si pas de face avec une
+            %cellule utile.
+            %On remplit seulement si num_autre_cell>num_cell donc on
+            %ne compte qu'une fois chaque face
+
+            
+            %vertices_to_cells{i}=cell contenant les num des cellules ayant
+            %le sommet i. Utile pour trouver les cellules adjacente � une
+            %cellule donn�e
+            vertices_to_cells=cell(1,length(sommets_voronoi));
+            for iCellule=1:length(cellules_voronoi)
+                for iVertice=cellules_voronoi{iCellule}
+                    if iVertice~=1
+                        vertices_to_cells{iVertice}{length(vertices_to_cells{iVertice})+1}=iCellule;
+                    end
+                end
+            end
+            for iVertice=1:length(sommets_voronoi)
+                vertices_to_cells{iVertice}=cell2mat(vertices_to_cells{iVertice});
+            end
+            
+            for num_cell=1:length(cellules_voronoi)-1
+                
+                sommets_cell=cellules_voronoi{num_cell};
+                numero_face=1;
+                faces_cell=cell(1,0);
+                cell_useless=cellules_inutiles(num_cell);
+                
+                %recherche de face commune avec les cellules partageant au
+                %moins un sommet
+                cellules_adjacentes=cell(1,length(sommets_cell));
+                for i=1:length(sommets_cell)
+                    cellules_adjacentes{i}=vertices_to_cells{sommets_cell(i)};
+                end
+                cellules_adjacentes=cell2mat(cellules_adjacentes);
+                liste_cellules_adjacentes_d_indice_plus_grand=unique(cellules_adjacentes(cellules_adjacentes>num_cell));
+                
+                for num_autre_cell=liste_cellules_adjacentes_d_indice_plus_grand
+                    if(not(isempty(num_autre_cell)))    
+                        autre_cell_useless=cellules_inutiles(num_autre_cell);
+                        if not(cell_useless && autre_cell_useless)
+                            sommets_autre_cell=cellules_voronoi{num_autre_cell};
+                            bool_sommets_commun=ismember(sommets_cell,sommets_autre_cell);   
+                            if sum(bool_sommets_commun)>=dimension;
+                                sommets_communs=sommets_cell(logical(bool_sommets_commun));
+                                faces_cell{numero_face}={num_autre_cell,sommets_communs};
+                                numero_face=numero_face+1;
+                            end
+                        end
+                    end
+                end
+                cellules_en_contact{num_cell}=faces_cell; %cellules_en_contact{num_cell}{num_face}={num_autre_cell,[sommets_partag�s]}
+            end
+            
+            %construction de dirty_faces, dirty_owners, dirty_neighbours 
+            nbre_dirty_faces=sum(cellfun('length',cellules_en_contact)); %les faces ne sont compt�es qu'une fois dans cellules_en_contact
+            dirty_faces=cell(1,nbre_dirty_faces);     % dirty_faces : faces int�rieures avant nettoyage
+            dirty_owners=zeros(1,nbre_dirty_faces);                                  
+            dirty_neighbours=cell(1,nbre_dirty_faces);    
+            indice_courant_face=1;
+            for num_cell=1:length(cellules_voronoi)
+                for num_face=1:length(cellules_en_contact{num_cell})
+                    %cellules_en_contact{num_cell}{num_face}={num_autre_cell,[sommets_partag�s]}
+                    num_autre_cell=cellules_en_contact{num_cell}{num_face}{1};
+                    sommets_face=cellules_en_contact{num_cell}{num_face}{2};
+                    dirty_faces{indice_courant_face}=sommets_face;
+                    
+                    cell_useless=cellules_inutiles(num_cell);
+                    autre_cell_useless=cellules_inutiles(num_autre_cell);
+                    
+                    if cell_useless
+                        assert(not(autre_cell_useless),'Pb rep�rage faces')
+                        dirty_owners(indice_courant_face)=num_autre_cell; 
+                        %trouver frontiere dont la cellule est esclave
+                        dirty_neighbours{indice_courant_face}=[]; %code pour pas encore de frontiere associ�e
+                        for num_frontiere=1:length(indices_cellules_esclaves)
+                            if ismember(num_cell,indices_cellules_esclaves{num_frontiere}) || ismember(num_autre_cell,indices_cellules_esclaves{num_frontiere})
+                                dirty_neighbours{indice_courant_face}=[-num_frontiere,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associ�e
+                            end
+                        end
+                    elseif autre_cell_useless
+                        dirty_owners(indice_courant_face)=num_cell;
+                        %trouver frontiere dont la cellule est esclave
+                        dirty_neighbours{indice_courant_face}=[]; %code pour pas encore de frontiere associ�e
+                        for num_frontiere=1:length(indices_cellules_esclaves)
+                            if ismember(num_cell,indices_cellules_esclaves{num_frontiere}) || ismember(num_autre_cell,indices_cellules_esclaves{num_frontiere})
+                                dirty_neighbours{indice_courant_face}=[-num_frontiere,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associ�e
+                            end
+                        end
+                    else
+                        dirty_owners(indice_courant_face)=num_cell; 
+                        dirty_neighbours{indice_courant_face}=num_autre_cell; %ici num_autre_cell>num_cell
+                    end
+                                        
+                    indice_courant_face=indice_courant_face+1;
+                end
+            end
+            assert(indice_courant_face==nbre_dirty_faces+1,'Pb rep�rage des faces');
+ 
+                        
+            %Construction de faces_des_frontieres_exterieures permettant de
+            %passer d'une frontiere aux faces frontieres associ�es.
+            nombre_frontieres_exterieures=0;
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)   
+                if strcmp(geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.Type,'surface')
+                    nombre_frontieres_exterieures=nombre_frontieres_exterieures+1;
+                    
+                end
+            end
+            faces_des_frontieres_exterieures=cell(1,nombre_frontieres_exterieures);                             
+            %faces_des_frontieres_exterieures{i}={numero de la boundary associ�e, [num�ro des faces li�es � la fronti�re i]}
+            
+            indice_frontiere_exterieure=1;
+            
+            a=zeros(1,nbre_dirty_faces);
+            for i=1:length(a)
+                if length(dirty_neighbours{i})>0
+                    if dirty_neighbours{i}(1)<=0
+                        a(i)=1;
+                    end
+                end
+            end
+            
+            
+            b=ismember(dirty_owners,(1-cellules_inutiles).*(1:length(cellules_inutiles)));
+            assert(sum(and(a,not(b)))==0,'Pb rep�rage faces ext�rieures');
+            for indice_boundary=1:length(geometrie_macroscopique.Boundaries.Boundary)   
+                if strcmp(geometrie_macroscopique.Boundaries.Boundary(indice_boundary).ATTRIBUTE.Type,'surface')
+                    
+                    faces_des_frontieres_exterieures{indice_frontiere_exterieure}{1}=indice_boundary;
+                    %trouver numeros_faces_frontiere : faces entre
+                    %une cellule utile esclave de la frontiere
+                    %et une cellule inutile 
+                    
+                    d=zeros(1,nbre_dirty_faces);
+                    for i=1:length(d)
+                      if ismember(-indice_boundary,dirty_neighbours{i})
+                        d(i)=1;
+                      end
+                    end
+                                            
+                    numeros_faces_frontiere=find(b &d);
+                    %crit�re : neighbour=-indice_boundary, owner est utile
+                    faces_des_frontieres_exterieures{indice_frontiere_exterieure}{2}=numeros_faces_frontiere;
+
+                    indice_frontiere_exterieure=indice_frontiere_exterieure+1;
+                end
+            end     
+            nbre_faces_frontieres_repertoriees=0;
+            for i=1:nombre_frontieres_exterieures
+                nbre_faces_frontieres_repertoriees=nbre_faces_frontieres_repertoriees+length(faces_des_frontieres_exterieures{i}{2});
+            end
+            %cas o� des faces ext�rieures appartiennent � 2+ frontieres
+            face_to_front=zeros(1,nbre_dirty_faces);
+            indice_doublon=1;
+            doublons={};
+            if sum(a)~=nbre_faces_frontieres_repertoriees 
+                %rep�rage des faces appartenant � 2 ou plus fronti�res
+                for indice_frontiere_exterieure=1:nombre_frontieres_exterieures
+                    for num_face=faces_des_frontieres_exterieures{indice_frontiere_exterieure}{2}
+                        if face_to_front(num_face)==0
+                            face_to_front(num_face)=indice_frontiere_exterieure;
+                        elseif face_to_front(num_face)<0 %cas doublon d�j� rep�r� (face appartenant � 3+ frontieres)
+                            doublons{-face_to_front(num_face)}{2}=[doublons{-face_to_front(num_face)}{2},indice_frontiere_exterieure];
+                        else %cas nouveau doublon
+                            doublons{indice_doublon}{1}=num_face; 
+                            doublons{indice_doublon}{2}=[face_to_front(num_face),indice_frontiere_exterieure];
+                            face_to_front(num_face)=-indice_doublon;
+                            indice_doublon=indice_doublon+1;
+                        end
+                    end
+                end
+                %rer�partition des doublons dans les fronti�res : la face
+                %appartient � la  fronti�re la plus proche de son centre
+                for indice_doublon=1:length(doublons)
+                    num_face=doublons{indice_doublon}{1};
+                    sommets=dirty_faces{num_face};
+                    centre_face=mean(sommets_voronoi(sommets,:));
+                    distances_frontieres=zeros(1,length(doublons{indice_doublon}{2}));
+                    for j=1:length(doublons{indice_doublon}{2})
+                        vertices_frontiere=geometrie_macroscopique.Vertices(geometrie_macroscopique.Boundaries.Boundary(doublons{indice_doublon}{2}(j)).Face,:);
+                        distances_frontieres(j)=Mailleur.DistancePointFrontierePlane(centre_face,vertices_frontiere);
+                    end
+                    [~,position_min]=min(distances_frontieres);
+                    num_new_frontiere=doublons{indice_doublon}{2}(position_min);
+                    %enlever la face des frontieres trop eloign�es
+                    for k=doublons{indice_doublon}{2}
+                        if k~=num_new_frontiere
+                            old_faces=faces_des_frontieres_exterieures{k}{2};
+                            new_faces=old_faces(old_faces~=num_face);
+                            faces_des_frontieres_exterieures{k}{2}=new_faces;
+                        end
+                    end
+                end
+            end
+            %Remettre -1 en neighbour des faces frontieres
+            dirty_neighb=dirty_neighbours;
+            dirty_neighbours=zeros(1,nbre_dirty_faces);
+            for i=1:nbre_dirty_faces
+                if length(dirty_neighb{i})>0 && dirty_neighb{i}(1)>0
+                    dirty_neighbours(i)= dirty_neighb{i}(1);
+                else
+                    dirty_neighbours(i)= -1;
+                end
+              
+            end
+            
+        end %FaceExtraction
+        
+        %MiseAJourCellulesSommets
+        function [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules_utiles]=MiseAJourCellulesSommets(cellules_voronoi,sommets_voronoi,cellules_inutiles)                                                                                                         
+
+                %D�terminer les sommets utiles � partir des cellules utiles
+                %sommet utile=utile pour au moins une cellule
+            cellules_utiles=1-cellules_inutiles;
+            
+            sommets_utiles=zeros(1,length(sommets_voronoi));   
+            for indice_cellule=find(cellules_utiles)
+                for indice_sommet=cellules_voronoi{indice_cellule}  
+                    sommets_utiles(indice_sommet)=1;
+                end             
+            end
+                %renum�roter les sommets et r�organiser les cellules
+                %d�terminer les nouveaux num�ros des sommets
+            new_numeros_sommets=zeros(1,length(sommets_voronoi));  % new_numeros_sommets(ancien_numero)=nouveau_numero
+            numero_courant_sommet=1;
+            for i=1:length(sommets_voronoi)
+                if sommets_utiles(i)==1
+                    new_numeros_sommets(i)=numero_courant_sommet;     %vectoriser ces boucles
+                    numero_courant_sommet=numero_courant_sommet+1;  
+                end
+            end
+            nombre_sommets_utiles=numero_courant_sommet-1;             
+            
+                %cr�er la nouvelle liste des sommets
+            dimension=length(sommets_voronoi(1,:));
+            vertices=zeros(nombre_sommets_utiles,dimension);
+            numero_courant_sommet=1;
+            for i=1:length(sommets_voronoi)
+                if not(new_numeros_sommets(i)==0)
+                    vertices(numero_courant_sommet,:)=sommets_voronoi(i,:);     %vectoriser ces boucles
+                    numero_courant_sommet=numero_courant_sommet+1;  
+                end
+            end
+
+                %d�terminer nouveau num�ro des cellules
+            new_numeros_cellules=zeros(1,length(cellules_voronoi)); % new_numeros_cellules(ancien_numero)=nouveau_numero                
+            numero_courant_cell=1;
+            for i=1:length(cellules_voronoi)
+                if cellules_utiles(i)==1
+                    new_numeros_cellules(i)=numero_courant_cell;     %vectoriser ces boucles
+                    numero_courant_cell=numero_courant_cell+1;
+                end
+            end
+            nombre_cellules_utiles=numero_courant_cell-1;
+            
+                %cr�er la liste cells_to_vertices
+            cells_to_vertices=cell(1,nombre_cellules_utiles);
+            numero_courant_cellule=1;
+            for i=find(new_numeros_cellules)
+                    new_cell=cellules_voronoi(i);
+                    new_content_cell=zeros(1,length(cellules_voronoi{i}));
+                    for j=1:length(cellules_voronoi{i})
+                        new_content_cell(j)=new_numeros_sommets(cellules_voronoi{i}(j));
+                    end
+                    new_cell{1}=new_content_cell;
+                    cells_to_vertices(numero_courant_cellule)=new_cell;    
+                    numero_courant_cellule=numero_courant_cellule+1;  
+            end
+            
+        end %MiseAJourCellulesSommets
+        
+        %%BuildPoresToLinks
+        function pores=BuildPoresToLinks(owners,neighbours,nombrePores)
+            %construit cellules : cellules{i}=liste des faces de la cellule
+            %i
+            pores=cell(1,nombrePores);
+            for num_face=1:length(owners)
+                pores{owners(num_face)}=[pores{owners(num_face)},num_face];
+                if neighbours(num_face)>0
+                    pores{neighbours(num_face)}=[pores{neighbours(num_face)},num_face];
+                end
+            end
+        end %BuildPoresToLinks
+        
+        %%RenumerotationFaces
+        function [faces,owners,neighbours,boundaries]=RenumerotationFaces(dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,boundary_geo_macro,new_numeros_cellules,new_numeros_sommets,vertices,vertices_macro)
+            %Mise � jour des listes faces, owners, neighbours.
+            %renum�rotation des faces pour acc�s rapide aux faces d'une
+            %fronti�re et codage des infos fronti�res du r�seau de pores
+            %Input : - faces, cells, owners, neighbours, faces_des_frontieres_exterieures
+            %          issus de GenerateMesh, avec les num�ros des faces avant renum�rotation
+            %        - structure boundaries de la g�om�trie macroscopique : geometrie_macroscopique.Boundaries.Boundary
+            %Output : - newfaces, newcells, newowners, newneighbours avec nouveaux
+            %           num�ros des faces, structur�es comme les propri�t�s
+            %           de la g�om�trie
+            %         - newboundaries : infos structur�es pour l'output r�seau
+            %           de pores
+            
+                        
+            %Mise � jour des listes faces, owners, neighbours pour �tre
+            %coh�rent avec les nouveaux num�ros des sommets et cellules.
+            nbre_faces=length(dirty_owners);
+            new_faces=cell(1,nbre_faces);
+            new_owners=zeros(1,nbre_faces);
+            new_neighbours=zeros(1,nbre_faces);
+            for indice_face=1:nbre_faces
+                new_faces{indice_face}=new_numeros_sommets(dirty_faces{indice_face});
+                new_owners(indice_face)=new_numeros_cellules(dirty_owners(indice_face));
+                if not(dirty_neighbours(indice_face)==-1)
+                    new_neighbours(indice_face)=new_numeros_cellules(dirty_neighbours(indice_face));
+                else
+                    new_neighbours(indice_face)=-1;
+                end
+            end
+            
+            %Etablissement de la renum�rotation des faces fronti�res
+            nFrontiere=length(faces_des_frontieres_exterieures); 
+            infos_liens_frontieres=cell(1,nFrontiere);
+            for i=1:nFrontiere
+                infos_liens_frontieres{i}=faces_des_frontieres_exterieures{i}{2};
+            end
+            
+            [boundaries,owners,neighbours,faces]=Mailleur.RenumerotationLiensFrontieres(infos_liens_frontieres,new_owners,new_neighbours,new_faces);
+            
+            %Ordonner sommmets des faces selon l'ordre trigonom�trique ou
+            %anti-trigonom�trique, de fa�on � avoir les ar�tes des faces
+            dimension=length(vertices(1,:));
+            switch dimension
+                case 2
+                    %rien � faire, voronoin renvoie d�j� les sommets ordonn�s en 2D
+                case 3
+                    nFaces=length(faces);
+                    for iFace=1:nFaces
+                        this_face=faces{iFace};
+                        coordonnees_polygone=vertices(this_face,:);                          
+                        %coordonnees_planes=PolygoneProjetterDansPlan(coordonnees_polygone);
+                        %faces{iFace}=this_face(PolygoneOrdonnerSommetsDansPlan(coordonnees_planes));
+                        [~,I]=angleSort3d(coordonnees_polygone);
+                        faces{iFace}=this_face(I);
+                        
+                    end
+            end
+            
+            %Ajout d'informations de GeometrieMacroscopique dans la structure boundaries
+            
+            for indice_frontiere=1:nFrontiere
+                boundaries.Boundary(indice_frontiere).CONTENT=[];
+                boundaries.Boundary(indice_frontiere).ATTRIBUTE.Name=boundary_geo_macro(faces_des_frontieres_exterieures{indice_frontiere}{1}).ATTRIBUTE.Name;
+                boundaries.Boundary(indice_frontiere).ATTRIBUTE.Type=boundary_geo_macro(faces_des_frontieres_exterieures{indice_frontiere}{1}).ATTRIBUTE.Type;
+                
+                boundaryVertices=vertices_macro(boundary_geo_macro(faces_des_frontieres_exterieures{indice_frontiere}{1}).Face,:);
+                dimension=length(boundaryVertices(1,:));
+                switch dimension
+                    case 3
+                        boundaries.Boundary(indice_frontiere).ATTRIBUTE.Area=abs(polygonArea3d(boundaryVertices));
+                    case 2
+                        boundaries.Boundary(indice_frontiere).ATTRIBUTE.Area=abs(polygonArea(boundaryVertices));
+                end
+            end
+            
+            
+        end %RenumerotationFaces
+        
+        %RenumerotationFacesFrontieres
+        function [boundaries,owners,neighbours,faces]=RenumerotationLiensFrontieres(infos_liens_frontieres,old_owners,old_neighbours,old_faces)
+            
+            
+            nLink=length(old_owners);
+            nombre_frontieres_exterieures=length(infos_liens_frontieres);      
+            boundary(nombre_frontieres_exterieures)=struct;
+
+            correspondance_numeros_liens=zeros(1,nLink);
+            indice_face_debut_frontiere=1 ; 
+            
+            for indice_frontiere=1:nombre_frontieres_exterieures  
+                
+                nombre_faces=length(infos_liens_frontieres{indice_frontiere});
+                boundary(indice_frontiere).ATTRIBUTE.NombreFaces=nombre_faces;
+                boundary(indice_frontiere).ATTRIBUTE.StartFace=indice_face_debut_frontiere;
+                
+                for indice_face=1:nombre_faces
+                    assert(correspondance_numeros_liens(infos_liens_frontieres{indice_frontiere}(indice_face))==0);
+                    correspondance_numeros_liens(infos_liens_frontieres{indice_frontiere}(indice_face))=indice_face_debut_frontiere+indice_face-1;
+                end
+                indice_face_debut_frontiere=indice_face_debut_frontiere+nombre_faces;
+            end
+            boundaries.Boundary=boundary;
+
+            nbre_faces_frontieres=0;
+            for i=1:nombre_frontieres_exterieures
+                nbre_faces_frontieres=nbre_faces_frontieres+length(infos_liens_frontieres{i});
+            end
+            
+            correspondance_numeros_liens(correspondance_numeros_liens==0)=(nbre_faces_frontieres+1):nLink;
+%            assert(isequal(ismember(correspondance_numeros_faces,(1:nombre_faces)),(1:nombre_faces)),'Pb renumerotation faces')
+
+            %Renum�rotation des liens fronti�res
+            faces=cell(1,nLink);
+            owners=zeros(1,nLink);
+            neighbours=zeros(1,nLink);
+            for ancien_numero=1:nLink
+                nouveau_numero=correspondance_numeros_liens(ancien_numero);
+                faces{nouveau_numero}=old_faces{ancien_numero};
+                owners(nouveau_numero)=old_owners(ancien_numero);
+                neighbours(nouveau_numero)=old_neighbours(ancien_numero);
+            end
+            
+        end   %RenumerotationFacesFrontieres
+        
+        
+        
+        %TrouverBlockDeCetteFrontiere
+        function indice_block=TrouverBlockDeCetteFrontiere(geometrie_macroscopique,indice_boundary)            
+            %Renvoie l'indice du bloc auquel appartient la fronti�re
+            %num�ro indice_boundary
+            face_vertices=geometrie_macroscopique.Boundaries.Boundary(indice_boundary).Face;
+            block_found=false;
+            for num_block=1:length(geometrie_macroscopique.Blocks.Block)
+                if block_found==false
+                        block_vertices=geometrie_macroscopique.Blocks.Block(num_block).VertexNumbers;
+                    if  isequal(ismember(face_vertices,block_vertices),ones(1,length(face_vertices)))
+                        block_found=true;
+                        indice_block=num_block;
+                    end
+                end
+            end
+
+        end %TrouverBlockDeCetteFrontiere
+        
+        %ExtractEdges
+        function [edges,vertices_to_edges,faces_to_edges]=ExtractEdges(vertices,faces,type_reseau)
+            %Extrait les ar�tes du maillage.
+            %output : - edges : edges(i,:)=[un sommets de l'edge i, l'autre sommet de l'edge i]
+            %         - vertices_to_edges{i}=[num des edges du sommet i] :
+            %         pour passer des sommets aux ar�tes
+            
+            dimension=length(vertices(1,:));
+            
+            if dimension==2 && strcmp(type_reseau,'PoreNetworkUnstructuredMeshFibrous')
+                %dans ce cas les edges sont les vertices
+                edges=horzcat((1:length(vertices)).',(1:length(vertices)).');
+                vertices_to_edges=cell(1,length(vertices));
+                for i=1:length(vertices)
+                    vertices_to_edges{i}=i;
+                end
+                nFace=length(faces);
+                faces_to_edges=cell(nFace,1);
+                for iFace=1:nFace
+                    faces_to_edges{iFace}=faces{iFace};
+                end
+                
+            else
+                %Cr�ation d'une liste d'ar�tes non uniques � partir des
+                %sommets ordonn�s des polygones. Les sommets d'une ar�te
+                %sont donn�s dans l'ordre indice_sommet_1<indice_sommet_2
+                nFace=length(faces);
+                edges_non_uniques=cell(nFace,1);
+                for iFace=1:nFace
+                    nSommet=length(faces{iFace});
+                    edges_non_uniques{iFace}=zeros(nSommet,2);
+                    for iSommet=1:(nSommet-1)
+                       edges_non_uniques{iFace}(iSommet,:)=sort([faces{iFace}(iSommet),faces{iFace}(iSommet+1)]);
+                    end
+                    edges_non_uniques{iFace}(nSommet,:)=sort([faces{iFace}(nSommet),faces{iFace}(1)]);
+                end
+                foo=cell2mat(edges_non_uniques);
+                %Filtration des ar�tes pour obtenir l'unicit� :                   
+                [edges,~,n]=unique(foo,'rows');
+
+                %Cr�ation de faces_to_edges
+                faces_to_edges=cell(nFace,1);
+                ind_courant=1;
+                for iFace=1:nFace
+                    nEdge=length(edges_non_uniques{iFace});
+                    faces_to_edges{iFace}=zeros(1,nEdge);
+                    for iEdge=1:nEdge
+                        faces_to_edges{iFace}(iEdge)=n(ind_courant);
+                        ind_courant=ind_courant+1;
+                    end
+                end
+                assert(ind_courant==length(foo)+1);
+
+                %Cr�ation de vertices_to_edges                                           
+                vertices_to_edges=cell(1,length(vertices));   
+                for iEdges=1:length(edges)
+                    sommet_1=edges(iEdges,1);
+                    vertices_to_edges{sommet_1}{length(vertices_to_edges{sommet_1})+1}=iEdges;
+                    sommet_2=edges(iEdges,2);
+                    vertices_to_edges{sommet_2}{length(vertices_to_edges{sommet_2})+1}=iEdges;                        
+                end
+                for iVertice=1:length(vertices)
+                    vertices_to_edges{iVertice}=cell2mat(vertices_to_edges{iVertice});
+                end
+                    
+            end
+                       
+        end %ExtractEdges
+        
+        %GenerateEdgeThickness
+        function epaisseur_edges=GenerateEdgeThickness(edges,vertices,geometrie_macroscopique)
+            %Attribue un �paisseur � chaque ar�te en fonction des param�tres
+            %de la g�om�trie macroscopique
+            %output: epaisseur_edges(i)=�paisseur de l'ar�te i
+            %Algorithme : classer les sommets par block. Attribuer aux
+            %ar�tes dont les deux sommets sont dans le m�me block
+            %l'�paisseur voulue dans ce block. Pour les ar�tes ayant leurs
+            %sommets dans deux blocks diff�rents, g�rer en fonction des
+            %conditions fronti�res.
+            
+            %classement des vertices par block
+            nVertices=length(vertices(:,1));
+            vertices_to_blocks=zeros(1,nVertices);
+            nBlock=length(geometrie_macroscopique.Blocks.Block);
+            for iBlock=1:nBlock
+                block_vertices=geometrie_macroscopique.Vertices(geometrie_macroscopique.Blocks.Block(iBlock).VertexNumbers,:);
+                vertices_to_blocks(inhull(vertices,block_vertices))=iBlock;
+            end
+            
+            vertices_out=find(vertices_to_blocks==0);
+            tol=0.01;
+            while not(isempty(vertices_out))    
+                tol=tol*2;
+                for iBlock=1:nBlock
+                    block_vertices=geometrie_macroscopique.Vertices(geometrie_macroscopique.Blocks.Block(iBlock).VertexNumbers,:);
+                    zone_proche_du_bloc=(1+tol)*block_vertices-(tol)*ones(length(block_vertices),1)*mean(block_vertices);
+                    vertices_to_blocks(vertices_out(inhull(vertices(vertices_out,:),zone_proche_du_bloc)))=iBlock;
+                end
+                vertices_out=find(vertices_to_blocks==0);
+            end
+            
+            %R�partition des ar�tes par block :
+            %Les ar�tes dont les deux sommets sont dans le m�me block vont
+            %dans ce block l�. Celles qui sont � cheval sur deux blocks
+            %sont attribu�s au block de plus petit edge �paisseur.
+            blocks_to_edges=cell(1,nBlock);
+            nEdges=length(edges(:,1));
+            for iEdge=1:nEdges
+                if edges(iEdge,1)==edges(iEdge,2)
+                    num_block=vertices_to_blocks(edges(iEdge,1));
+                    blocks_to_edges{num_block}{length(blocks_to_edges{num_block})+1}=iEdge;
+                else
+                    num_block_1=vertices_to_blocks(edges(iEdge,1));
+                    num_block_2=vertices_to_blocks(edges(iEdge,1));
+                    epaisseur1=geometrie_macroscopique.Blocks.Block(num_block_1).Remplissage.ATTRIBUTE.EpaisseurFibres;
+                    epaisseur2=geometrie_macroscopique.Blocks.Block(num_block_2).Remplissage.ATTRIBUTE.EpaisseurFibres;
+                    if epaisseur1<epaisseur2
+                        blocks_to_edges{num_block_1}{length(blocks_to_edges{num_block_1})+1}=iEdge;
+                    else
+                        blocks_to_edges{num_block_2}{length(blocks_to_edges{num_block_2})+1}=iEdge;
+                    end
+                end
+            end
+            for iBlock=1:nBlock
+                blocks_to_edges{iBlock}=cell2mat(blocks_to_edges{iBlock});
+            end
+            
+            %Attribution des �paisseurs des ar�tes en fonction des
+            %param�tres sp�cifi�s pour chaque block dans la g�om�trie
+            %macroscopique.
+            epaisseur_edges=zeros(1,nEdges);
+            for iBlock=1:nBlock
+                liste_sommets_1=edges(blocks_to_edges{iBlock},1);
+                liste_sommets_2=edges(blocks_to_edges{iBlock},2);
+                coordonnes_sommets_edges=horzcat(vertices(liste_sommets_1,:),vertices(liste_sommets_2,:));
+                epaisseur_edges(blocks_to_edges{iBlock})=Mailleur.GenerateEdgeThicknessOneBlock(coordonnes_sommets_edges,geometrie_macroscopique,iBlock);
+            end
+            
+        end %GenerateEdgeThickness
+        
+        %GenerateEdgeThicknessOneBlock
+        function epaisseurs=GenerateEdgeThicknessOneBlock(coordonnes_sommets_edges,geometrie_macroscopique,numero_block)
+            %input :
+            %  -  coordonnes_sommets_edges = 
+            %  tableau(nbre_edges_dans_le_block,4 ou 6) : sur une ligne les
+            %  coordonn�es des sommets de l'ar�te [X1 Y1 (Z1) X2 Y2 (Z2)]
+            %output: 
+            %  - epaisseurs : tableau(nbre_edges_dans_le_block,1)
+            nEdges=length(coordonnes_sommets_edges(:,1));
+            epaisseurs=geometrie_macroscopique.ATTRIBUTE.ConvertToMeters*geometrie_macroscopique.Blocks.Block(numero_block).Remplissage.ATTRIBUTE.EpaisseurFibres*ones(1,nEdges);
+                        
+        end %GenerateEdgeThicknessOneBlock
+
+        %GereAnisotropieDebut
+        function geometrie=GereAnisotropieDebut(geometrie_macroscopique)
+            if isfield(geometrie_macroscopique,'Anisotropie')
+                switch geometrie_macroscopique.Anisotropie.ATTRIBUTE.Direction
+                    case 'x'
+                        indice=1;
+                    case 'y'
+                        indice=2;
+                    case  'z'
+                        indice=3;
+                end
+                cvrt2mtr=geometrie_macroscopique.ATTRIBUTE.ConvertToMeters;
+                nZone=length(geometrie_macroscopique.Anisotropie.ZoneBande);
+                for iZone=1:nZone %ATTENTION, BUG POUR NZONE>1
+                    bas=min(geometrie_macroscopique.Anisotropie.ZoneBande(iZone).CONTENT)*cvrt2mtr;
+                    haut=max(geometrie_macroscopique.Anisotropie.ZoneBande(iZone).CONTENT)*cvrt2mtr;
+                    valeur=geometrie_macroscopique.Anisotropie.ZoneBande(iZone).ATTRIBUTE.Valeur;
+                    nVertice=length(geometrie_macroscopique.Vertices(:,1));
+                    for iVertice=1:nVertice
+                        if geometrie_macroscopique.Vertices(iVertice,indice)>bas
+                            geometrie_macroscopique.Vertices(iVertice,indice)=geometrie_macroscopique.Vertices(iVertice,indice)+(haut-bas)*(valeur-1);
+                        end
+                    end
+                end
+            end
+            geometrie=geometrie_macroscopique;
+        end %GereAnisotropieDebut
+        
+        %GereAnisotropieFin
+        function [geometrie,new_vertices]=GereAnisotropieFin(geometrie_macroscopique,vertices)
+            if isfield(geometrie_macroscopique,'Anisotropie')
+                switch geometrie_macroscopique.Anisotropie.ATTRIBUTE.Direction
+                    case 'x'
+                        indice=1;
+                    case 'y'
+                        indice=2;
+                    case  'z'
+                        indice=3;
+                end
+                new_vertices=vertices;
+                
+                cvrt2mtr=geometrie_macroscopique.ATTRIBUTE.ConvertToMeters;
+                nZone=length(geometrie_macroscopique.Anisotropie.ZoneBande);
+                for iZone=1:nZone %ATTENTION, BUG POUR NZONE>1
+                    bas=min(geometrie_macroscopique.Anisotropie.ZoneBande(iZone).CONTENT)*cvrt2mtr;
+                    haut=max(geometrie_macroscopique.Anisotropie.ZoneBande(iZone).CONTENT)*cvrt2mtr;
+                    valeur=geometrie_macroscopique.Anisotropie.ZoneBande(iZone).ATTRIBUTE.Valeur;
+                    
+                    nVerticeMacro=length(geometrie_macroscopique.Vertices(:,1));
+                    for iVerticeMacro=1:nVerticeMacro
+                        if geometrie_macroscopique.Vertices(iVerticeMacro,indice)>bas
+                            geometrie_macroscopique.Vertices(iVerticeMacro,indice)=geometrie_macroscopique.Vertices(iVerticeMacro,indice)-(haut-bas)*(valeur-1);
+                        end
+                    end
+                    nVertice=length(vertices(:,1));
+                    for iVertice=1:nVertice
+                        hauteur=new_vertices(iVertice,indice);
+                        if hauteur>=bas+(haut-bas)*valeur
+                            new_vertices(iVertice,indice)=new_vertices(iVertice,indice)-((haut-bas)*(valeur-1));
+                        elseif hauteur>bas
+                            new_vertices(iVertice,indice)=bas+(new_vertices(iVertice,indice)-bas)/valeur;
+                        end
+                    end
+                    
+                end
+                geometrie=geometrie_macroscopique;
+            else
+                new_vertices=vertices;
+                geometrie=geometrie_macroscopique;
+            end
+            
+        end %GereAnisotropieFin
+               
+        %DistancePointFrontierePlane
+        function distance=DistancePointFrontierePlane(point,vertices_frontiere)
+            %retoune la distance d'un point � une fronti�re plane
+            
+            centreFrontiere=mean(vertices_frontiere);
+            dimension=length(point);
+            assert(dimension==length(vertices_frontiere(1,:)),'Pb coh�rence dimensions');
+            normale=Mailleur.ComputeVecteurNormal(vertices_frontiere);
+            distance=abs(dot(normale,point-centreFrontiere));
+            
+        end %DistancePointFrontierePlane
+        
+        %ProportionVolumeIn
+        function proportion=ProportionVolumeIn(sommets_cell,sommets_block)
+            %retourne la proportion du volume de la cellule qui est �
+            %l'int�rieur du bloc.
+            
+            if ismember(Inf,sommets_cell)
+                proportion=0;
+            else
+                [~,volume_cell]=convhulln(sommets_cell);
+
+                [A_cell,b_cell,Aeq_cell,beq_cell]=vert2lcon(sommets_cell);
+                [A_block,b_block,Aeq_block,beq_block]=vert2lcon(sommets_block);
+                A=vertcat(A_cell,A_block);
+                b=vertcat(b_cell,b_block);
+                Aeq=vertcat(Aeq_cell,Aeq_block);
+                beq=vertcat(beq_cell,beq_block);
+
+                sommets_intersection=lcon2vert(A,b,Aeq,beq,1e-4);
+                if length(sommets_intersection)==0
+                    volume_intersection=0;
+                else
+                   [~,volume_intersection]=convhulln(sommets_intersection);
+                end
+
+                proportion=volume_intersection/volume_cell;
+            end
+        end %ProportionVolumeIn
+        
+        function vect_perp=ComputeVecteurNormal(points_plan)
+            %renvoie les coordonn�es d'un vecteur normal unitaire � un plan
+            %en 3D, � un segment en 2D.
+            %input : points_plan=coordonn�es de 2 (resp. 4) points
+            %         diff�rents d�finissant un hyperplan en 2D (resp. 3D).
+            dimension=length(points_plan(1,:));
+            switch dimension
+                case 2
+                    assert(length(points_plan(:,1))==2,'2 points requis');
+                    base_vect=points_plan(2,:)-points_plan(1,:);
+                    foo=norm(base_vect);
+                    base_vect=base_vect/foo;
+                    vect_perp=[base_vect(2),-base_vect(1)];
+                    
+                case 3
+                    assert(length(points_plan(:,1))==4,'4 points requis');
+
+                    base_vect_1=(points_plan(2,:)-points_plan(1,:));
+                    base_vect_1=base_vect_1/norm(base_vect_1);
+                    base_vect_2=(points_plan(3,:)-points_plan(1,:));
+                    base_vect_2=base_vect_2/norm(base_vect_2);
+                    
+                    if dot(base_vect_1,base_vect_2)<1e-8
+                        base_vect_2=(points_plan(4,:)-points_plan(1,:));
+                        base_vect_2=base_vect_2/norm(base_vect_2);
+                    end
+                    foo=dot(base_vect_1,base_vect_2);
+                    assert(abs(foo)>1e-6);
+                    vect_perp=cross(base_vect_1,base_vect_2);
+                    vect_perp=vect_perp/norm(vect_perp);
+            end
+        end
+        
+        function vect_perp=ComputeVecteurNormalOrienteExterieurBlock(points_plan,centre_block)
+            vect_perp=Mailleur.ComputeVecteurNormal(points_plan);
+            dir_int=centre_block-points_plan(1,:);
+            dir_int=dir_int/norm(dir_int);
+            if dot(vect_perp,dir_int)>0
+                vect_perp=-vect_perp;
+            end
+        end
+    end 
+end
+

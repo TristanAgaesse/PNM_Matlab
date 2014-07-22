@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<PNM_Matlab Type="MacroscopicGeometry">
+   <MacroscopicGeometry  Dimension="2" Type="PoreNetworkMeshFibrous" ConvertToMeters="0.000001" Pavage="RandomVoronoi">
+         <Vertices>
+           0 0
+           0 1000
+           1000 0
+           1000 1000
+         </Vertices>
+
+        <Block>
+            <VertexNumbers>  1 2 3 4  </VertexNumbers>
+            <Filling FiberThickness="0" PoreNumber="1000"/>
+        </Block>
+
+
+        <Boundary Name="gauche" Type="surface" Rugosity='rough'>
+            <Face>  1 2 </Face>
+        </Boundary>
+
+        <Boundary Name="droit" Type="surface" Rugosity='rough'>
+            <Face> 3 4 </Face>
+        </Boundary>
+
+        <Boundary Name="haut" Type="surface" Rugosity='rough'>
+            <Face>  2 4 </Face>
+        </Boundary>
+
+        <Boundary Name="bas" Type="surface" Rugosity='rough'>
+            <Face> 1 3 </Face>
+        </Boundary>
+
+   </MacroscopicGeometry>
+</PNM_Matlab>
+

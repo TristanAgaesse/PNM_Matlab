@@ -1,0 +1,125 @@
+function [initialyInvadedPores,secondaryInvadedPores,envahissementTemporel]=ComputeFloodingDegradationPTFE(poreNetwork,numInlet,numOutlet)
+    
+    linkInlet=poreNetwork.GetLinksFrontiere(numInlet);
+    linkOutlet=poreNetwork.GetLinksFrontiere(numOutlet);
+    
+    %Invasion initiale du r�seau
+    [clusterLiquide,criticalPressures,breakthroughPressure] = ComputeInvasionPercolation(poreNetwork,linkInlet,linkOutlet,'Hydrophobic' );
+    initialyInvadedPores=clusterLiquide.GetInvadedPores;
+    
+    disp('Recherche du chemin de percolation');
+    chemin_percolation=clusterLiquide.FindPercolationPath(numInlet,numOutlet,poreNetwork);
+    chemin_percolation=chemin_percolation{1};
+    taille_initiale_chemin=length(chemin_percolation);
+    
+    pression_reference=0.9*breakthroughPressure;
+    
+    %Initialisation des param�tres de d�gradation
+    taux_degradation_faces=zeros(1,poreNetwork.GetNumberOfLinks);
+    [ ~ , ~, fluidVelocity, ~ ] = ComputeDebitPressionVitesse(poreNetwork,clusterLiquide,numInlet,numOutlet);
+    coeff_degradation=ComputeCoefficientDegradation(poreNetwork,clusterLiquide,fluidVelocity);
+    
+    disp('Envahissement secondaire sous l''effet de la perte d''hydrophobie')
+    nombre_iterations=300;
+    temps=0;
+    envahissementTemporel=cell(1,nombre_iterations);
+    for i=1:nombre_iterations
+        disp(i);
+        [indexInvadedLink,timeStep]=FindNextInvadedLink(poreNetwork,clusterLiquide,criticalPressures,pression_reference,taux_degradation_faces,coeff_degradation);
+        temps=temps+timeStep;
+        
+        %en cas d'envahissement :
+        if indexInvadedLink>0
+            envahissementTemporel{i}{1}=temps;
+            truc=clusterLiquide.GetInterfaceLinks;
+            envahissementTemporel{i}{2}=truc(indexInvadedLink);
+            
+            %mise � jour localisation de l'eau :
+            linksToUpdatePressure=clusterLiquide.InvadeNewPore(indexInvadedLink,poreNetwork);
+            criticalPressures=clusterLiquide.UpdateCriticalPressure(criticalPressures,linksToUpdatePressure,linkInlet,linkOutlet,poreNetwork);
+            %envahissement �ventuel des pores voisins
+            [minPressure,indexMinPressureLink]=min(criticalPressures(clusterLiquide.GetInterfaceLinks));
+            while minPressure<pression_reference
+                truc=clusterLiquide.GetInterfaceLinks;
+                envahissementTemporel{i}{2}=[envahissementTemporel{i}{2},truc(indexMinPressureLink)];
+                
+                linksToUpdatePressure=clusterLiquide.InvadeNewPore(indexMinPressureLink,poreNetwork);
+                criticalPressures=clusterLiquide.UpdateCriticalPressure(criticalPressures,linksToUpdatePressure,linkInlet,linkOutlet,poreNetwork);
+                [minPressure,indexMinPressureLink]=min(criticalPressures(clusterLiquide.GetInterfaceLinks));
+                
+            end
+            
+            %mise � jour vitesses et parametres degradation
+            taux_degradation_faces=taux_degradation_faces+timeStep*coeff_degradation;
+            [ ~ , ~, fluidVelocity, ~ ] = ComputeDebitPressionVitesse(poreNetwork,clusterLiquide,numInlet,numOutlet);
+            coeff_degradation=ComputeCoefficientDegradation(poreNetwork,clusterLiquide,fluidVelocity);
+        end
+    end
+    foofoo=clusterLiquide.GetInvadedPores;
+    secondaryInvadedPores=foofoo((taille_initiale_chemin+1):end);
+
+    
+    
+    function [indexInvadedLink,temps]=FindNextInvadedLink(poreNetwork,clusterLiquide,criticalPressures,pression_reference,taux_degradation_faces,coeff_degradation)
+        option='linearDecreaseOfCriticalPressure';
+        
+        if strcmp(option,'linearDecreaseOfCriticalPressure')
+            temps_invasion_potentielle=zeros(1,poreNetwork.GetNumberOfLinks);
+            foo=(200*(1-((pression_reference*ones(1,poreNetwork.GetNumberOfLinks))./criticalPressures))-taux_degradation_faces);
+
+            for j=clusterLiquide.GetInterfaceLinks
+                if coeff_degradation(j)~=0 && poreNetwork.GetFrontiereOfLink(j)==0
+                    temps_invasion_potentielle(j)=foo(j)/coeff_degradation(j);
+                end
+            end
+
+            temps_potentiels_valables=temps_invasion_potentielle(and(temps_invasion_potentielle>0,taux_degradation_faces<100));
+
+            temps=min(temps_potentiels_valables);
+            ind=find(temps_invasion_potentielle==temps);
+            indexInvadedLink=find(clusterLiquide.GetInterfaceLinks==ind);
+        
+        elseif strcmp(option,'meniscusOnFibersWithCoalescence')
+        
+        
+        end
+    end
+
+
+
+    function coeff_degradation=ComputeCoefficientDegradation(poreNetwork,cluster,fluidVelocity)
+        %coeff degradation(face)=moyenne des vitesse sur les faces des
+        %pores_voisins
+        coeff_degradation=zeros(1,poreNetwork.GetNumberOfLinks);
+        option='sommeVitesses';
+        
+        if strcmp(option,'sommeVitesses')
+            for num_face=cluster.GetInterfaceLinks
+                faces_of_owner=poreNetwork.Cells{poreNetwork.FaceOwners(num_face)};
+                moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_owner)))/length(faces_of_owner);
+
+                if poreNetwork.FaceNeighbours(num_face)~=-1
+                    faces_of_neighbour=poreNetwork.Cells{poreNetwork.FaceNeighbours(num_face)};
+                    moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_neighbour)))/length(faces_of_neighbour);
+                else
+                    moyenne_vitesse_neighbour=0;
+                end
+                coeff_degradation(num_face)=0.5*(moyenne_vitesses_owner+moyenne_vitesse_neighbour);
+            end
+        elseif strcmp(option,'sommeDebits')
+%             for num_face=cluster.GetInterfaceLinks
+%                faces_of_owner=poreNetwork.Cells{poreNetwork.FaceOwners(num_face)};
+%                 moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_owner)))/length(faces_of_owner);
+% 
+%                 if poreNetwork.FaceNeighbours(num_face)~=-1
+%                     faces_of_neighbour=poreNetwork.Cells{poreNetwork.FaceNeighbours(num_face)};
+%                     moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_neighbour)))/length(faces_of_neighbour);
+%                 else
+%                     moyenne_vitesse_neighbour=0;
+%                 end
+%                 coeff_degradation(num_face)=0.5*(moyenne_vitesses_owner+moyenne_vitesse_neighbour);
+%             end
+        end
+    end
+
+end

@@ -1,0 +1,247 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Premiers pas</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-07-09"><meta name="DC.source" content="PremiersPas.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Premiers pas</h1><!--introduction--><!--/introduction--><pre class="codeinput"><span class="comment">%Pour creer un reseau de pores il faut avoir un fichier geometrie</span>
+<span class="comment">%macroscopique qui decrit la forme des materiaux poreux.</span>
+<span class="comment">%Nous allons utiliser la fonction createNetwork pour construire un reseau</span>
+<span class="comment">%de pores ainsi que son outil de visualisation a partir du fichier de</span>
+<span class="comment">%geometrie macroscopique '1block2D';</span>
+[ network,viewer ]=CreateNetwork(<span class="string">'1block2D'</span>);
+</pre><pre class="codeoutput">G&#65533;n&#65533;ration du r&#65533;seau...
+R&#65533;seau g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 9.001929 s.
+</pre><pre class="codeinput"><span class="comment">%La fonction CreateNetwork a cree en memoire deux objets, network et</span>
+<span class="comment">%viewer. Nous allons voir que ces objets appartiennent a des classes.</span>
+
+ class(network)
+ class(viewer)
+</pre><pre class="codeoutput">
+ans =
+
+PoreNetworkMeshFibrous
+
+
+ans =
+
+Viewer
+
+</pre><p>On voit que le reseau est un objet de la classe PoreNetworkMeshFibrous. Ouvrons la documentation de cette classe a l'aide de la fonction 'doc'.</p><pre class="codeinput">doc <span class="string">PoreNetworkMeshFibrous</span>
+<span class="comment">%</span>
+<span class="comment">%     La documentation nous indique que cette classe est un cas particulier</span>
+<span class="comment">%  (sous-classe) de la classe g&eacute;n&eacute;rale PoreNetwork. Ce r&eacute;seau de pore-ci est</span>
+<span class="comment">%  d&eacute;fini &agrave; partir d&#8217;un maillage (d&#8217;o&ugrave; le Mesh), et  la position des parties</span>
+<span class="comment">%  solides est d&eacute;fini implicitement par des fibres situ&eacute;es sur les ar&ecirc;tes du</span>
+<span class="comment">%  maillage (d&#8217;o&ugrave; le Fibrous).</span>
+<span class="comment">%</span>
+<span class="comment">%     La documentation nous indique aussi que cette classe a des m&eacute;thodes</span>
+<span class="comment">% et des propri&eacute;t&eacute;s. Les propri&eacute;t&eacute;s des objets de PNM_Matlab doivent &ecirc;tre</span>
+<span class="comment">% consid&eacute;r&eacute;es comme priv&eacute;es, c&#8217;est-&agrave;-dire qu&#8217;elles sont g&eacute;r&eacute;es par la classe</span>
+<span class="comment">% elle-m&ecirc;me et qu&#8217;on ne doit pas s&#8217;en pr&eacute;occuper. Les propri&eacute;t&eacute;s sont une</span>
+<span class="comment">% affaire d&#8217;impl&eacute;mentation interne au code, l&#8217;utilisateur n&#8217;a pas besoin de</span>
+<span class="comment">% s&#8217;en pr&eacute;occuper.</span>
+<span class="comment">%</span>
+<span class="comment">%     Ce qui nous int&eacute;resse plut&ocirc;t ce sont les m&eacute;thodes des objets,</span>
+<span class="comment">% c&#8217;est-&agrave;-dire des fonctionnalit&eacute;s qui leur sont associ&eacute;es. Ce sont-elles qui</span>
+<span class="comment">% vont nous permettre d&#8217;interagir avec eux pour construire des simulations.</span>
+<span class="comment">% La documentation permet de cliquer sur le nom des m&eacute;thodes pour avoir plus</span>
+<span class="comment">% d&#8217;informations.</span>
+</pre><pre class="codeoutput">Warning: The class file for 'PoreNetworkEuclidien' has been changed,
+but the change cannot be applied because objects based on the old
+class file still exist. If you use those objects, you might get
+unexpected results. You can use the 'clear' command to remove those
+objects. See 'help clear' for information on how to remove those
+objects. 
+</pre><pre class="codeinput"><span class="comment">%Pour voir une liste des m&eacute;thodes de l&#8217;objet network il est possible aussi de taper</span>
+methods(network)
+</pre><pre class="codeoutput">
+Methods for class PoreNetworkMeshFibrous:
+
+AddNewEdgeData                      GetNumberOfEdges                    
+AddNewLinkData                      GetNumberOfLinks                    
+AddNewPoreData                      GetNumberOfPores                    
+AddNewVerticeData                   GetNumberOfVertices                 
+ComputeAllLinkDiameter              GetPoreCenter                       
+ComputeAllPoreVolume                GetPoreDataList                     
+ComputeExtrudePolygonParFibre       GetPoreDiameter                     
+ComputeLinkDiameter                 GetPoresFrontiere                   
+ComputePoreVolume                   GetPoresOfLink                      
+CreateVoidCluster                   GetPoresVoisinsOfPore               
+ExportToBabe                        GetVertice                          
+ExportToParaview                    GetVerticeDataList                  
+FindComposantesConnexes             GetVerticesOfEdge                   
+GetAllVerticesCoordinates           GetVerticesOfEdgeNumber             
+GetCommonFace                       GetVerticesOfLink                   
+GetDimension                        GetVerticesOfLinkNumber             
+GetEdgeDataList                     GetVerticesOfPore                   
+GetEdgesOfLink                      GetVerticesOfPoreNumber             
+GetEdgesOfPore                      PoreNetworkMeshFibrous              
+GetEdgesOfVertice                   PrivateBabeOutputStruct             
+GetFrontiereOfLink                  PrivateInternalOutputStruct         
+GetLinkCenter                       PrivateVTKOutputStructBallAndStick  
+GetLinkDataList                     PrivateVTKOutputStructPolydataMesh  
+GetLinkDiameter                     RemoveEdgeData                      
+GetLinksFrontiere                   RemoveLinkData                      
+GetLinksOfEdge                      RemovePoreData                      
+GetLinksOfPore                      RemoveVerticeData                   
+GetNeighbourEdgesOfVerticeInPore    
+GetNeighbourLinksOfEdgeInPore       
+
+</pre><pre class="codeinput"><span class="comment">%On peut &eacute;galement utiliser</span>
+<span class="comment">% l&#8217;auto compl&eacute;tion pour voir les m&eacute;thodes et propri&eacute;t&eacute;s de l&#8217;objet : taper</span>
+<span class="comment">% network. puis taper sur tab, un menu d&eacute;roulant s&#8217;affiche alors.</span>
+</pre><pre class="codeinput"><span class="comment">%Pour visualiser le r&eacute;seau, on va utiliser la m&eacute;thode View du viewer.</span>
+
+ help <span class="string">viewer.View</span>
+</pre><pre class="codeoutput"> Input : (option, varargin)
+  'Network': affichage du maillage
+  'PoreList': affiche une liste de pores : liste_cellules=varargin{1}
+  'PoreField' : affichage d'un champ scalaire sur les cellules, champ=varargin{1}
+  'LinkField' : affichage d'un champ scalaire sur les liens, champ=varargin{1}
+  'Boundaries': affichage des faces du maillage, avec code couleur pour les fronti&#65533;res
+  'Edges' : affichage des ar&#65533;tes du maillage, avec code couleur pour les fronti&#65533;res
+  'Sommets' : affichage des fibres avec des disques
+
+</pre><pre class="codeinput"><span class="comment">%On voit que la m&eacute;thode View peut prendre plusieurs options. Pour voir le</span>
+<span class="comment">%r&eacute;seau (avec une couleur diff&eacute;rente pour chaque cellule), tapez</span>
+ viewer.View(<span class="string">'Network'</span>)
+</pre><img vspace="5" hspace="5" src="PremiersPas_01.png" alt=""> <pre class="codeinput"><span class="comment">%Pour afficher les liens situ&eacute;s sur les fronti&egrave;res, qui vont &ecirc;tre utiles</span>
+<span class="comment">%pour d&eacute;finir des conditions limites.</span>
+ figure; <span class="comment">%cree une nouvelle figure</span>
+ viewer.View(<span class="string">'Boundaries'</span>)
+</pre><img vspace="5" hspace="5" src="PremiersPas_02.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Premiers pas
+
+%%
+%Pour creer un reseau de pores il faut avoir un fichier geometrie
+%macroscopique qui decrit la forme des materiaux poreux. 
+%Nous allons utiliser la fonction createNetwork pour construire un reseau
+%de pores ainsi que son outil de visualisation a partir du fichier de
+%geometrie macroscopique '1block2D';
+[ network,viewer ]=CreateNetwork('1block2D');
+
+%% 
+%La fonction CreateNetwork a cree en memoire deux objets, network et
+%viewer. Nous allons voir que ces objets appartiennent a des classes.
+
+ class(network)
+ class(viewer)
+
+%%
+% On voit que le reseau est un objet de la classe PoreNetworkMeshFibrous.
+% Ouvrons la documentation de cette classe a l'aide de la fonction 'doc'.
+
+doc PoreNetworkMeshFibrous
+% 
+%     La documentation nous indique que cette classe est un cas particulier
+%  (sous-classe) de la classe générale PoreNetwork. Ce réseau de pore-ci est 
+%  défini à partir d’un maillage (d’où le Mesh), et  la position des parties 
+%  solides est défini implicitement par des fibres situées sur les arêtes du 
+%  maillage (d’où le Fibrous).
+%  
+%     La documentation nous indique aussi que cette classe a des méthodes 
+% et des propriétés. Les propriétés des objets de PNM_Matlab doivent être 
+% considérées comme privées, c’est-à-dire qu’elles sont gérées par la classe 
+% elle-même et qu’on ne doit pas s’en préoccuper. Les propriétés sont une 
+% affaire d’implémentation interne au code, l’utilisateur n’a pas besoin de 
+% s’en préoccuper. 
+% 
+%     Ce qui nous intéresse plutôt ce sont les méthodes des objets, 
+% c’est-à-dire des fonctionnalités qui leur sont associées. Ce sont-elles qui
+% vont nous permettre d’interagir avec eux pour construire des simulations.
+% La documentation permet de cliquer sur le nom des méthodes pour avoir plus 
+% d’informations. 
+
+%%
+%Pour voir une liste des méthodes de l’objet network il est possible aussi de taper 
+methods(network) 
+
+
+%%
+%On peut également utiliser 
+% l’auto complétion pour voir les méthodes et propriétés de l’objet : taper 
+% network. puis taper sur tab, un menu déroulant s’affiche alors.
+
+%% 
+%Pour visualiser le réseau, on va utiliser la méthode View du viewer. 
+
+ help viewer.View   
+ 
+%%
+%On voit que la méthode View peut prendre plusieurs options. Pour voir le 
+%réseau (avec une couleur différente pour chaque cellule), tapez 
+ viewer.View('Network') 
+
+
+%%
+%Pour afficher les liens situés sur les frontières, qui vont être utiles 
+%pour définir des conditions limites.
+ figure; %cree une nouvelle figure
+ viewer.View('Boundaries') 
+
+
+##### SOURCE END #####
+--></body></html>

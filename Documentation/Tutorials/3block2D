@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<PNM_Matlab Type="MacroscopicGeometry">
+   <MacroscopicGeometry  Dimension="2" Type="PoreNetworkMeshFibrous" ConvertToMeters="0.001" Pavage="RandomVoronoi">
+         <Vertices>
+           0 0
+           0 1
+           1 0
+           1 1
+           2 0
+           2 1
+           3 0
+           3 1           
+         </Vertices>
+
+        <Block>
+            <VertexNumbers>  1 2 3 4 </VertexNumbers>
+            <Filling FiberThickness="0.001" PoreNumber="500"/>
+        </Block>
+        <Block>
+            <VertexNumbers>  3 4 5 6   </VertexNumbers>
+            <Filling FiberThickness="0.001" PoreNumber="500"/>
+        </Block>
+        <Block>
+            <VertexNumbers>  5 6 7 8   </VertexNumbers>
+            <Filling FiberThickness="0.001" PoreNumber="500"/>
+        </Block>
+
+
+
+        <Boundary Name="Bottom1" Type="surface" Rugosity='flat'>
+            <Face>  1 3 </Face>
+        </Boundary>
+
+        <Boundary Name="Bottom2" Type="surface" Rugosity='flat'>
+            <Face>  3 5 </Face>
+        </Boundary>
+
+        <Boundary Name="Bottom3" Type="surface" Rugosity='flat'>
+            <Face>  5 7 </Face>
+        </Boundary>
+
+        <Boundary Name="Top1" Type="surface" Rugosity='flat'>
+            <Face>  2 4 </Face>
+        </Boundary>
+
+        <Boundary Name="Top2" Type="surface" Rugosity='flat'>
+            <Face>  4 6 </Face>
+        </Boundary>
+
+        <Boundary Name="Top3" Type="surface" Rugosity='rough'>
+            <Face>  6 8 </Face>
+        </Boundary>
+
+        <Boundary Name="Left" Type="surface" Rugosity='rough'>
+            <Face>  1 2 </Face>
+        </Boundary>
+
+        <Boundary Name="Right" Type="surface" Rugosity='rough'>
+            <Face>  7 8 </Face>
+        </Boundary>
+
+   </MacroscopicGeometry>
+</PNM_Matlab>
+
+

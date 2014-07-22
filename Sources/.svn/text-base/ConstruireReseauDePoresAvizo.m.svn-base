@@ -1,0 +1,183 @@
+%ConstruireReseauDePores
+
+%Script pour creer un reseau de pores dans Matlab a partir d'une
+%segmentation des pores faite par Avizo sur une image 3D
+
+
+%----------------------------------------------------------------
+% Commencez par charger les fichier Avizo .mat dans Matlab svp
+%----------------------------------------------------------------
+
+nombreFrontieres=6;
+Avizo_frontiere=cell(1,nombreFrontieres);
+
+%----------------------------------------------------------------
+% Indiquez ici les variables Matlab contenant ces fichiers svp
+%----------------------------------------------------------------
+
+% Interfaces entre les pores dilatées d'un pixel et numérotées
+Avizo_interface=Avizo_OUTPUT_LiensDilates_mat; 
+
+% Pores numérotés
+Avizo_pore=Avizo_OUTPUT_PoresSegmentes_mat;   
+
+% Ortho-slices des pores au niveau de toutes les frontieres
+Avizo_frontiere{1}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice_mat; 
+Avizo_frontiere{2}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice2_mat;
+Avizo_frontiere{3}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice3_mat;
+Avizo_frontiere{4}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice4_mat;
+Avizo_frontiere{5}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice5_mat;
+Avizo_frontiere{6}=Avizo_OUTPUT_PoresSegmentes_Ortho_Slice6_mat;
+
+
+
+
+
+%----------------------------------------------------------------
+% Script construisant le réseau
+%----------------------------------------------------------------
+
+
+%Recherche des tables de voisinage à partir des fichiers Avizo donnant les voxels des pores et des
+%interfaces entre pores
+
+nInterface=max(max(max(Avizo_interface(1,:,:,:))));
+nPore=max(max(max(Avizo_pore(1,:,:,:))));
+
+interface=cell(1,nInterface);
+for i=1:nInterface
+    interface{i}=find(Avizo_interface(1,:,:,:)==i);
+end
+
+pore=cell(1,nPore);
+for i=1:nPore
+    pore{i}=find(Avizo_pore(1,:,:,:)==i);
+end
+
+p2i=cell(1,nPore);
+for j=1:nPore
+    for i=1:nInterface
+        p2i{j}(i)=length(intersect(pore{j},interface{i}));
+    end
+end
+
+% poreToInterface=cell(1,nPore);
+% for j=1:nPore
+%     poreToInterface{j}=find(p2i{j});
+% end
+
+i2p=cell(1,nInterface);
+for j=1:nInterface
+    for i=1:nPore
+        i2p{j}(i)=p2i{i}(j);   
+    end
+end
+
+interfaceToPore=cell(1,nInterface);
+for j=1:nInterface
+    interfaceToPore{j}=find(i2p{j});
+end
+
+
+%Gestion des liens internes
+
+nInternalLink=nInterface;
+
+linksOwners=zeros(1,nInternalLink);
+linksNeighbours=zeros(1,nInternalLink);
+linkArea=zeros(1,nInternalLink);
+badLink=zeros(1,nInternalLink);
+
+FOO=0;
+
+for iLink=1:nInternalLink
+    
+    %gestion des cas il n'y a pas deux pores dans interfaceToPore{iLink}
+    poreVoisin=interfaceToPore{iLink};
+    nVoisin=length(poreVoisin);
+    
+    if nVoisin==2
+        linksOwners(iLink)=poreVoisin(1);
+        linksNeighbours(iLink)=poreVoisin(2);
+        linkArea(iLink)=FOO;
+
+    elseif nVoisin<2
+        if nVoisin==0
+            disp('interface avec 0 pores voisins !!!');
+        end
+        %supprimer ce lien
+        badLink(iLink)=1;
+         %poreToInterface{poreVoisin}=setdiff(poreToInterface{poreVoisin},iLink);
+
+    elseif nVoisin>2
+        %ne compter que les 2 voisins principaux (les autres sont des erreurs)
+
+        [~,ordreDecroissant]=sort(i2p{iLink}(poreVoisin),'descend');
+        linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
+        linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
+        linkArea(iLink)=FOO;
+%             
+%             for iBadVoisin=poreVoisin(ordreDecroissant(3:end));
+%                 poreToInterface{iBadVoisin}=setdiff(poreToInterface{iBadVoisin},iLink);
+%             end
+    end    
+    
+end
+linksOwners=linksOwners(not(badLink));
+linksNeighbours=linksNeighbours(not(badLink));
+linkArea=linkArea(not(badLink));
+% pores=poreToInterface;
+
+
+%Gestion des liens frontiere
+
+iCurrentLink=length(linksOwners)+1;
+infos_liens_frontieres=cell(1,nombreFrontieres);
+
+for iFrontiere=1:nombreFrontieres
+    
+    poreList=unique(Avizo_frontiere{iFrontiere});
+    poreList=setdiff(poreList,0);
+    nLinkFrontiere=length(poreList);
+    infos_liens_frontieres{iFrontiere}=iCurrentLink:(iCurrentLink+nLinkFrontiere-1);
+
+    linksOwners=[linksOwners,zeros(1,nLinkFrontiere)];
+    linksNeighbours=[linksNeighbours,zeros(1,nLinkFrontiere)];
+    linkArea=[linkArea,zeros(1,nLinkFrontiere)];
+    
+    for iLinkFrontiere=1:nLinkFrontiere
+        
+        numPoreOwner=poreList(iLinkFrontiere);
+        
+        linksOwners(iCurrentLink)=numPoreOwner;
+        linksNeighbours(iCurrentLink)=-1;
+        linkArea(iCurrentLink)=length(Avizo_frontiere{iFrontiere}==numPoreOwner);
+        
+%         pores{numPoreOwner}=[pores{numPoreOwner},iCurrentLink];
+        
+        iCurrentLink=iCurrentLink+1;
+    end
+    
+end
+
+nLink=length(linksOwners);
+
+
+
+
+%Création du réseau de pores
+ 
+[boundaries,owners,neighbours,~]=Mailleur.RenumerotationLiensFrontieres(infos_liens_frontieres,linksOwners,linksNeighbours,cell(1,nLink));
+
+pores=Mailleur.BuildPoresToLinks(owners,neighbours,nPore);
+
+poreCenter=zeros(1,nPore);
+ 
+linkCenter=zeros(1,nLink);
+dimension=3;
+
+poreNetwork=PoreNetworkEuclidien(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter);
+ 
+%poreNetwork.AddNewPoreData(Volume....)
+% poreNetwork.AddNewLinkData(Diameter....)
+
