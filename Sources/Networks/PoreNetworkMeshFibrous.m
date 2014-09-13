@@ -285,29 +285,6 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         
         
         
-        function linkDiameter = ComputeLinkDiameter(network, numLink)
-            %Calcule le diametre equivalent d'un lien en extrudant les
-            %fibres
-            %input : network, numLink
-            %output : linkDiameter
-            
-            verticesExtrudes = network.ComputeExtrudePolygonParFibre(numLink);
-            
-            switch network.Dimension
-                case 2
-                    if ~isempty(verticesExtrudes)
-                        linkDiameter = norm(verticesExtrudes(1,:)-verticesExtrudes(2,:));
-                    else
-                        linkDiameter = 0;
-                    end
-                case 3
-                    surface = abs(polygonArea(verticesExtrudes));%librairie mathgeom
-                    linkDiameter = sqrt(4*surface/pi); %diam�tre �quivalent
-            end
-        end
-        
-        
-        
         function diameter = ComputeAllLinkDiameter(network)
             %input : network
             %output : diameter
@@ -319,100 +296,32 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             end
         end  
 
-        
-        
-        function verticesExtrudes=ComputeExtrudePolygonParFibre(network, numLink)
-            %renvoie les sommets du polygone obtenu en extrudant une face
-            %par des fibres.
+        function linkDiameter = ComputeLinkDiameter(network, numLink)
+            %Calcule le diametre equivalent d'un lien en extrudant les
+            %fibres
             %input : network, numLink
-            %output : verticesExtrudes
+            %output : linkDiameter
             
             dimension = network.Dimension;
-            switch dimension
-                case 2
-                    numVertices = network.Faces{numLink};
-                    vertices = network.Vertices(numVertices,:);
-                    foo = vertices(2,:)-vertices(1,:);
-                    largeur = norm(foo);
-                    foo = foo/largeur;
-                    
-                    numEdges = network.FacesToEdges{numLink};
-                    r1 = network.GetEdgeDataList.FiberDiameter(numEdges(1))/2;
-                    r2 = network.GetEdgeDataList.FiberDiameter(numEdges(2))/2;
-                    if largeur>r1+r2
-                        verticesExtrudes = zeros(2,2);
-                        verticesExtrudes(1,:) = vertices(1,:)+r1*foo;
-                        verticesExtrudes(2,:) = vertices(2,:)-r2*foo;
-                    else
-                        verticesExtrudes = [];
-                    end
-                    
-                case 3
-                    methode = 'hardcore_clipping';
-                    
-                    numVertices = network.Faces{numLink};
-                    polygon = PolygoneProjetterDansPlan(network.Vertices(numVertices,:));
-                    %polygon = polygon(PolygoneOrdonnerSommetsDansPlan(polygon),:);
-                    numEdges = network.FacesToEdges{numLink};
-                    
-                    if strcmp(methode,'hardcore_clipping')
-                        for i=1:length(numVertices)
-                            thisVertice = numVertices(i);
-                            if i<length(numVertices)
-                                otherVertice = numVertices(i+1);
-                            else
-                                otherVertice = numVertices(1);
-                            end
-                            numFibre = numEdges(i);
-                            diametreFibre = network.GetEdgeDataList.FiberDiameter(numFibre);
+            
+            numVertices = network.Faces{numLink};
+            numEdges = network.FacesToEdges{numLink};
+            vertices = network.Vertices(numVertices,:);
+            diametreFibres=network.GetEdgeDataList.FiberDiameter(numEdges);
+            
 
-                            line = parallelLine(createLine(thisVertice, otherVertice),-diametreFibre/2);
-                            polygon = clipPolygonHP(polygon, line);%librairie mathgeom
-                        end 
-                        verticesExtrudes = polygon;
-                        
-                    elseif strcmp(methode,'smart_clipping')
-                        %Deplacer les sommets de la face au niveau de
-                        %l'intersection entre les deux fibres voisines
-                        verticesExtrudes = polygon;
-                        
-                        for i=1:length(numVertices)
-                            
-                            thisVerticeNumber = numVertices(i);
-                            thisVertice = network.Vertices(thisVerticeNumber,:);
-                            if i<length(numVertices)
-                                nextVerticeNumber = numVertices(i+1);
-                            else
-                                nextVerticeNumber = numVertices(1);
-                            end
-                            nextVertice = network.Vertices(nextVerticeNumber,:);
-                            if i>1
-                                lastVerticeNumber = numVertices(i-1);
-                            else
-                                lastVerticeNumber = numVertices(end);
-                            end
-                            lastVertice = network.Vertices(lastVerticeNumber,:);
-                            
-                            numNextFibre = numEdges(i);
-                            diametreNextFibre = network.GetEdgeDataList.FiberDiameter(numFibre);
-                            if i==1
-                                numLastFibre = length(numVertices);
-                            else
-                                numLastFibre = i-1;
-                            end
-                            diametreLastFibre = network.GetEdgeDataList.FiberDiameter(numLastFibre);
-                            
-                            angle = acos(nextVertice-thisVertice,lastVertice-thisVertice);
-                            L = sqrt(((diametreNextFibre-diametreLastFibre*cos(pi-angle))/sin(pi-angle))^2+diametreLastFibre^2);
-                            %verticesExtrudes(i,:);
-                            
-  
-                        end
-                        
-                        %Verifier s'il n'y a pas d'arête complètement
-                        %recouverte, auquel cas l'étape précédente doit
-                        %être modifiée                       
+            switch network.Dimension
+                case 2
+                    verticesExtrudes = PoreNetworkMeshFibrous.ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres);
+                    if ~isempty(verticesExtrudes)
+                        linkDiameter = norm(verticesExtrudes(1,:)-verticesExtrudes(2,:));
+                    else
+                        linkDiameter = 0;
                     end
+                case 3
+                    verticesExtrudes = PoreNetworkMeshFibrous.ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres);
+                    surface = abs(polygonArea(verticesExtrudes));%librairie mathgeom
+                    linkDiameter = sqrt(4*surface/pi); %diam�tre �quivalent
             end
         end
         
@@ -646,5 +555,108 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         end
                        
     end
+    
+    
+    methods (Static = true)
+    
+    
+        function verticesExtrudes=ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres)
+            %renvoie les sommets du polygone obtenu en extrudant une face
+            %par des fibres.
+            %input : dimension, vertices, diametreFibres
+            %output : verticesExtrudes
+            
+            
+            
+            switch dimension
+                case 2
+                    foo = vertices(2,:)-vertices(1,:);
+                    largeur = norm(foo);
+                    foo = foo/largeur;
+                    
+                    r1 = diametreFibres(1)/2;
+                    r2 = diametreFibres(2)/2;
+                    if largeur>r1+r2
+                        verticesExtrudes = zeros(2,2);
+                        verticesExtrudes(1,:) = vertices(1,:)+r1*foo;
+                        verticesExtrudes(2,:) = vertices(2,:)-r2*foo;
+                    else
+                        verticesExtrudes = [];
+                    end
+                    
+                case 3
+                    methode = 'hardcore_clipping';
+                    
+                    vertices = PolygoneProjetterDansPlan(vertices);
+                    
+                    ordreTrigonometrique=PolygoneOrdonnerSommetsDansPlan(vertices);
+                    vertices = vertices(ordreTrigonometrique,:);
+                    diametreFibres=diametreFibres(ordreTrigonometrique);
+                    
+                    polygon=vertices;
+                    
+                    nVertice=length(vertices(:,1));
+                    if strcmp(methode,'hardcore_clipping')
+                        for i=1:nVertice
+                            thisVertice = vertices(i,:);
+                            if i<nVertice
+                                otherVertice = vertices(i+1,:);
+                            else
+                                otherVertice = vertices(1,:);
+                            end
+                            rayonFibre = diametreFibres(i)/2;
+                            
+                            fibreAxis=createLine(thisVertice, otherVertice);
+                            line = parallelLine(fibreAxis,-rayonFibre);
+                            polygon = clipPolygonHP(polygon, line);%librairie mathgeom
+                        end 
+                        verticesExtrudes = polygon;
+                        
+%                     elseif strcmp(methode,'smart_clipping')
+%                         %Deplacer les sommets de la face au niveau de
+%                         %l'intersection entre les deux fibres voisines
+%                         verticesExtrudes = polygon;
+%                         
+%                         for i=1:length(numVertices)
+%                             
+%                             thisVerticeNumber = numVertices(i);
+%                             thisVertice = network.Vertices(thisVerticeNumber,:);
+%                             if i<length(numVertices)
+%                                 nextVerticeNumber = numVertices(i+1);
+%                             else
+%                                 nextVerticeNumber = numVertices(1);
+%                             end
+%                             nextVertice = network.Vertices(nextVerticeNumber,:);
+%                             if i>1
+%                                 lastVerticeNumber = numVertices(i-1);
+%                             else
+%                                 lastVerticeNumber = numVertices(end);
+%                             end
+%                             lastVertice = network.Vertices(lastVerticeNumber,:);
+%                             
+%                             numNextFibre = numEdges(i);
+%                             diametreNextFibre = network.GetEdgeDataList.FiberDiameter(numFibre);
+%                             if i==1
+%                                 numLastFibre = length(numVertices);
+%                             else
+%                                 numLastFibre = i-1;
+%                             end
+%                             diametreLastFibre = network.GetEdgeDataList.FiberDiameter(numLastFibre);
+%                             
+%                             angle = acos(nextVertice-thisVertice,lastVertice-thisVertice);
+%                             L = sqrt(((diametreNextFibre-diametreLastFibre*cos(pi-angle))/sin(pi-angle))^2+diametreLastFibre^2);
+%                             %verticesExtrudes(i,:);
+
+                        %Verifier s'il n'y a pas d'arête complètement
+                        %recouverte, auquel cas l'étape précédente doit
+                        %être modifiée                       
+                    end
+            end
+        end
+        
+        
+        
+    end
+    
     
 end

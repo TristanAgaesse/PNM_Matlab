@@ -326,7 +326,7 @@ classdef MacroscopicGeometry < handle
                 
                 band.Direction = geometry.AnisotropyBand(iBand).ATTRIBUTE.Direction ;
                 band.Intensity = geometry.AnisotropyBand(iBand).ATTRIBUTE.Intensity ;           
-                band.Location = geometry.AnisotropyBand(iBand).ATTRIBUTE.Location ;
+                band.Location = str2num(geometry.AnisotropyBand(iBand).ATTRIBUTE.Location) ;
                 
                 myGeometry.AddAnisotropyBand(band);
             end

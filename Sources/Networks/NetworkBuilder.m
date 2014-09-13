@@ -1631,14 +1631,19 @@ classdef NetworkBuilder
                     bas = min(location);
                     haut = max(location);
                     intensity = myGeometry.GetAnisotropyBandIntensity(iBand);
-                    nVertice = myGeometry.GetNumberOfVertices;
+                    nMacroVertice = myGeometry.GetNumberOfVertices;
                     
-                    for iVertice = 1:nVertice
-                        vertice=myGeometry.GetVertice(iVertice);
-                        if vertice(indice)>bas
+                    for iMacroVertice = 1:nMacroVertice
+                        vertice=myGeometry.GetVertice(iMacroVertice);
+                        if vertice(indice)>haut
                             newCoordinates=vertice;
                             newCoordinates(indice) =  newCoordinates(indice)+(haut-bas)*(intensity-1);
-                            myGeometry.ChangeVertice(iVertice,newCoordinates);
+                            myGeometry.ChangeVertice(iMacroVertice,newCoordinates);
+                        
+                        elseif vertice(indice)>bas
+                            newCoordinates=vertice;
+                            newCoordinates(indice) =  bas+(newCoordinates(indice)-bas)*intensity;
+                            myGeometry.ChangeVertice(iMacroVertice,newCoordinates);
                         end
                     end
                 end
