@@ -553,7 +553,18 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             disp(sprintf('Fichier VTK g�n�r�. Dur�e : %d minutes %f s.',minutes,secondes));
             writer.delete;clear('writer','file_name','file_content','donnees_output','duree','minutes','secondes');
         end
-                       
+        
+        function ExportToFreecad(network,folderName)
+            writer = FileWriterFreecad(folderName);
+            tic;
+            disp('Generation des fichier freecad...');
+            donnees_output = network.PrivateVTKOutputStructPolydataMesh;
+            writer.Write(donnees_output);
+            duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
+            disp(sprintf('Fichiers freecad generes. Dur�e : %d minutes %f s.',minutes,secondes));
+            writer.delete;clear('writer','file_name','file_content','donnees_output','duree','minutes','secondes');
+        end
+        
     end
     
     

@@ -43,9 +43,9 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
         end
         network.AddNewLinkData(contactAngles,'ContactAngle');
     end    
-        
-        
-
+    
+    
+    
     
     %Pr�paration de l'invasion : initialisation du cluster.
     disp('Calcul d''invasion percolation...');

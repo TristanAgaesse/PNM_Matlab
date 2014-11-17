@@ -150,43 +150,39 @@ classdef ClusterMonophasique < handle
                 liens = interfaceChangeInformation{iInterfacePore}{2};
                 nLien = length(liens);
                 
-                if pore == -1
-                    %liens sur une frontiere
-                    for iLien = liens
-                        if ismember(iLien,linkInlet) %inlet
-                            cluster.CriticalPressures(iLien) = Inf ;
-                        
-                        elseif ismember(iLien,linkOutlet) %outlet
-                            if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
-                                cluster.CriticalPressures(iLien) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,iLien);
-                            end
-                            
-                        else %wall
-                            cluster.CriticalPressures(iLien) = Inf ;
-                        end
+                if pore == -1 %liens sur une frontiere
+                    
+                    isLinkInlet=ismember(liens,linkInlet);%inlet
+                    cluster.CriticalPressures(liens(isLinkInlet))=Inf;
+                    
+                    isLinkOutlet=ismember(liens,linkOutlet);%outlet
+                    if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
+                        cluster.CriticalPressures(liens(isLinkOutlet)) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet));
                     end
+                    
+                    cluster.CriticalPressures(liens(not(or(isLinkInlet,isLinkOutlet)))) = Inf ;%wall
+                    
                     
                 else %liens internes
                     coordinance = length(cluster.Network.GetLinksOfPore(pore));
-                    for iLien = liens
-                        
-                        if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
-                            Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,iLien);
-                        end
-                        
-                        if strcmp(options.Coalescence,'none')
-                            cluster.CriticalPressures(iLien) = Pc;
-                           
-                        elseif strcmp(options.Coalescence,'numberOfInvadedNeighbours')
+                    
+                    if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
+                        Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens);
+                    end
+                    
+                    if strcmp(options.Coalescence,'none')
+                        cluster.CriticalPressures(liens) = Pc;
+                    
+                    elseif strcmp(options.Coalescence,'numberOfInvadedNeighbours')
+                        for iLien = liens
                             if theta(iLien)<pi/2 %cas hydrophile
                                 coalescenceFactor = (1-(nLien-1)/coordinance);
                             else %cas hydrophobe
                                 coalescenceFactor = 1;
                             end
-                            cluster.CriticalPressures(iLien) = coalescenceFactor*Pc;
                         end
                         
-                        
+                        cluster.CriticalPressures(liens) = coalescenceFactor*Pc;
                     end
                 end
             end

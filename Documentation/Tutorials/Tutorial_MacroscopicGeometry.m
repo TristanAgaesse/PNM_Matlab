@@ -23,7 +23,7 @@ myGeometry.AddVertices(V);
 
 block=struct; 
 block.VertexNumbers=1:60;
-block.Filling.PoreNumber=10000;
+block.Filling.PoreNumber=10;
 block.Filling.FiberThickness=0.0001;
 myGeometry.AddBlock(block)
 
@@ -32,7 +32,7 @@ nBoundary=length(F);
 for iBoundary=1:nBoundary
     boundary=struct;
     boundary.Face=F{iBoundary};
-    boundary.Rugosity='flat'
+    boundary.Rugosity='flat';
     boundary.Type='surface';
     
     myGeometry.AddBoundary(boundary);

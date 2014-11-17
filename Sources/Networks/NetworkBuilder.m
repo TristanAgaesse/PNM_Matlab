@@ -1763,7 +1763,9 @@ classdef NetworkBuilder
                         base_vect_2 = base_vect_2/norm(base_vect_2);
                     end
                     foo = dot(base_vect_1,base_vect_2);
-                    assert(abs(foo)>1e-6);
+                    if abs(foo)<1e-6
+                        disp('pb computing normal vector')
+                    end
                     vect_perp = cross(base_vect_1,base_vect_2);
                     vect_perp = vect_perp/norm(vect_perp);
             end
