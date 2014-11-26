@@ -97,6 +97,20 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
             
             %mise � jour contactAngle et parametres degradation
             pourcentageDegradation=pourcentageDegradation+timeStep*vitesseDegradation;
+            pourcentageDegradation=min(pourcentageDegradation,100*ones(1,length(pourcentageDegradation)));
+            
+            deltaContactAngle=30/180*pi;
+            contactAngle=cluster.Network.GetLinkDataList.ContactAngle;
+            cluster.Network.RemoveLinkData('ContactAngle');
+            
+            if not(isfield(cluster.Network.GetLinkDataList,'InitialContactAngle'))
+                cluster.Network.AddNewLinkData(contactAngle,'InitialContactAngle');
+            end
+            
+            initialContactAngle=cluster.Network.GetLinkDataList.InitialContactAngle;
+            
+            contactAngle=initialContactAngle-pourcentageDegradation/100*deltaContactAngle;
+            cluster.Network.AddNewLinkData(contactAngle,'ContactAngle');
             
             
             
@@ -111,7 +125,6 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
         
         %option='localLinearisationOfCapillaryPressure';
         methode=options.RechercheNextInvadedLink;
-        deltaContactAngle=30/180*pi;
         
         criticalPressures=cluster.GetCriticalPressures;
         
@@ -122,23 +135,13 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
             %contact. Pour trouver le prochain pas de temps, on linearise
             %la pression localement en fonction de l'angle de contact
             
-            contactAngle=cluster.Network.GetLinkDataList.ContactAngle;
-            cluster.Network.RemoveLinkData('ContactAngle');
             
-            if not(isfield(cluster.Network.GetLinkDataList,'InitialContactAngle'))
-                cluster.Network.AddNewLinkData(contactAngle,'InitialContactAngle');
-            end
-            
-            initialContactAngle=cluster.Network.GetLinkDataList.InitialContactAngle;
-            
-            contactAngle=initialContactAngle-pourcentageDegradation/100*deltaContactAngle;
-            cluster.Network.AddNewLinkData(contactAngle,'ContactAngle');
             
             interfaceUpdateInformation=cluster.GetInterfaceChangeInformation(1:length(cluster.GetInterfaceLinks));  %tous les liens frontiere
             UpdateCriticalPressure(cluster,interfaceUpdateInformation,linkInlet,linkOutlet)
             
             temps_invasion_potentielle=zeros(1,cluster.Network.GetNumberOfLinks);
-            foo=1-(pression_reference*ones(1,cluster.Network.GetNumberOfLinks))./(criticalPressures.*tan(contactAngle));
+            foo=1-(pression_reference*ones(1,cluster.Network.GetNumberOfLinks))./(criticalPressures.*tan(cluster.Network.GetLinkDataList.ContactAngle));
             
             for iLink=cluster.GetInterfaceLinks
                 if vitesseDegradation(iLink)~=0 && cluster.Network.GetFrontiereOfLink(iLink)==0
@@ -208,11 +211,12 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
             for iLink=1:network.GetNumberOfLinks
                 pores=network.GetPoresOfLink(iLink);
                 if pores(1)==-1
-                    vitesseDegradation(iLink)=vitesseMoyennePore(pores(2));
+                    vitesseDegradation(iLink)=vitesseMoyennePore(pores(2))/mean(vitesseMoyennePore(not(isnan(vitesseMoyennePore))));
                 else
-                    vitesseDegradation(iLink)=0.5*(vitesseMoyennePore(pores(1))+vitesseMoyennePore(pores(2)));
+                    vitesseDegradation(iLink)=0.5*(vitesseMoyennePore(pores(1))+vitesseMoyennePore(pores(2)))/mean(vitesseMoyennePore(not(isnan(vitesseMoyennePore))));
                 end
             end
+            vitesseDegradation(isnan(vitesseDegradation))=0;
             
         elseif strcmp(mechanismeDegradation,'sommeDebits')
 %             for num_face=cluster.GetInterfaceLinks

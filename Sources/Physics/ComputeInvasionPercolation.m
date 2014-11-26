@@ -65,8 +65,15 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     nPore = network.GetNumberOfPores;
     invasionPressureList = zeros(1,nPore);
     
+    fooCluster=network.CreateVoidCluster;
+    totalFloodCluster=fooCluster.GetComplementaryCluster;
+    percoPath=totalFloodCluster.FindPercolationPath(inletLink,1:network.GetNumberOfLinks);
+    nPoreAccessible=0;
+    for i=1:length(percoPath)
+        nPoreAccessible=nPoreAccessible+length(percoPath{i}.GetInvadedPores);
+    end
     
-    while not(outlet_reached) && time<nPore
+    while not(outlet_reached) && time<nPoreAccessible
         time = time+1;
         %trouver la face de plus petite pression critique
         

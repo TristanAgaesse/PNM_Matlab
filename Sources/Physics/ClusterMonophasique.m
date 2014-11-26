@@ -66,8 +66,10 @@ classdef ClusterMonophasique < handle
             
             if time<length(cluster.InvadedPores)+1
                 newInvadedPore  =  cluster.InterfacePoresOutward(indexInvadedLink);
-                assert(newInvadedPore>0,'Impossible d''envahir l''exterieur du domaine !');
-            
+                if newInvadedPore<=0
+                    disp('Erreur : Impossible d''envahir l''exterieur du domaine !')
+                    return
+                end
                 cluster.InvadedPores(time)  =  newInvadedPore;
 
                 %mettre a jour les listes rep�rant la position de la fronti�re
@@ -164,7 +166,6 @@ classdef ClusterMonophasique < handle
                     
                     
                 else %liens internes
-                    coordinance = length(cluster.Network.GetLinksOfPore(pore));
                     
                     if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
                         Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens);
@@ -174,6 +175,7 @@ classdef ClusterMonophasique < handle
                         cluster.CriticalPressures(liens) = Pc;
                     
                     elseif strcmp(options.Coalescence,'numberOfInvadedNeighbours')
+                        coordinance = length(cluster.Network.GetLinksOfPore(pore));
                         for iLien = liens
                             if theta(iLien)<pi/2 %cas hydrophile
                                 coalescenceFactor = (1-(nLien-1)/coordinance);
@@ -347,12 +349,13 @@ classdef ClusterMonophasique < handle
             
             linksToInitialise = cell(1,nporeOutwardUnique);
             
-            for iporeOutwardUnique = 1:length(poreOutwardUnique)
+            for iporeOutwardUnique = 1:nporeOutwardUnique
                 linksToInitialise{iporeOutwardUnique}{1} = poreOutwardUnique(iporeOutwardUnique);%numero du pore
+                linksToInitialise{iporeOutwardUnique}{2} = [];
             end
-            for iInletLink = 1:length(inletPoreOutward)
+            for iInletLink = 1:length(linkInlet)
                 iporeOutwardUnique = m(iInletLink);
-                linksToInitialise{iporeOutwardUnique}{end+1} = inletPoreOutward(iInletLink); %numeros des liens associe a ce pore
+                linksToInitialise{iporeOutwardUnique}{2} = [linksToInitialise{iporeOutwardUnique}{2},linkInlet(iInletLink)]; %numeros des liens associe a ce pore
             end
             
             

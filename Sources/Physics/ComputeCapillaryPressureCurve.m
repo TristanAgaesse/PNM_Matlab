@@ -14,7 +14,7 @@ function capillaryPressureCurve = ComputeCapillaryPressureCurve(network,numBound
     minPressure=min(invasionPressureList);
     maxPressure=max(invasionPressureList);
     
-    nStep=50;
+    nStep=500;
     pressureStep=minPressure:(maxPressure-minPressure)/(nStep-1):maxPressure;
     
     capillaryPressureCurve=horzcat(transpose(pressureStep),zeros(nStep,1));
