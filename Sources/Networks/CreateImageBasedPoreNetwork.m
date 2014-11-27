@@ -114,13 +114,13 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     %Rescaling des infos geometriques
     poreVolume=voxelEdgeLength^3*double(porePropertyVolume);
     
-    poreCenter=voxelEdgeLength*porePropertyCenter;
+    poreCenter=voxelEdgeLength*double(porePropertyCenter);
     internalLinkDiameter=voxelEdgeLength*double(internalLinkDiameter);
-    internalLinkCenter=voxelEdgeLength*internalLinkCenter;
+    internalLinkCenter=voxelEdgeLength*double(internalLinkCenter);
     
     for iBoundary=1:6
-        boundaryLinkCenter{iBoundary}=voxelEdgeLength*boundaryLinkCenter{iBoundary};
-        boundaryLinkPropertyDiameter{iBoundary}=voxelEdgeLength*boundaryLinkPropertyDiameter{iBoundary};
+        boundaryLinkCenter{iBoundary}=voxelEdgeLength*double(boundaryLinkCenter{iBoundary});
+        boundaryLinkPropertyDiameter{iBoundary}=voxelEdgeLength*double(boundaryLinkPropertyDiameter{iBoundary});
     end
     
     %Construction de la liste des liens internes
@@ -306,22 +306,22 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
             if iFrontiere==1
                 frontiere=poresImage(1,:,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(ones(nPore,1),boundaryLinkCenter{iFrontiere});
+                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*ones(nPore,1),boundaryLinkCenter{iFrontiere});
             elseif iFrontiere==2
                 frontiere=poresImage(end,:,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(imageSize(1)*ones(nPore,1),boundaryLinkCenter{iFrontiere});
+                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*imageSize(1)*ones(nPore,1),boundaryLinkCenter{iFrontiere});
             elseif iFrontiere==3
                 frontiere=poresImage(:,1,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
+                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),voxelEdgeLength*ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
             elseif iFrontiere==4
                 frontiere=poresImage(:,end,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),imageSize(2)*ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
+                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),voxelEdgeLength*imageSize(2)*ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
             elseif iFrontiere==5
                 frontiere=poresImage(:,:,1);  
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},ones(nPore,1));
+                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},voxelEdgeLength*ones(nPore,1));
             elseif iFrontiere==6
                 frontiere=poresImage(:,:,end);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},imageSize(3)*ones(nPore,1));
+                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},voxelEdgeLength*imageSize(3)*ones(nPore,1));
             end
 
             poreList=unique(frontiere);
@@ -345,9 +345,9 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
                 linksOwners(iCurrentLink)=numPoreOwner;
                 linksNeighbours(iCurrentLink)=-1;
 
-                linkDiameter(iCurrentLink)=boundaryLinkPropertyDiameter{iFrontiere}(iLinkFrontiere);
+                linkDiameter(iCurrentLink)=boundaryLinkPropertyDiameter{iFrontiere}(numPoreOwner);
 
-                linkCenter(iCurrentLink,:)=boundaryLinkCenter{iFrontiere}(iLinkFrontiere); 
+                linkCenter(iCurrentLink,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
 
 
                 iCurrentLink=iCurrentLink+1;
