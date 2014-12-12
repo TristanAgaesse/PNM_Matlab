@@ -53,59 +53,81 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
     
     %Calcul de la courbe de saturation
     
+    if isa(network,'PoreNetworkMesh') || isa(network,'PoreNetworkMeshFibrous') 
+        saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCurve,axe);
+    
+    elseif isa(network,'PoreNetworkImageBased')
+        network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'fooSatCalc_invadedPores')
+        image=network.GetImagePoreData('fooSatCalc_invadedPores');
+        
+        [~,foo]=max(abs(axe));
+        axe=[0 0 0];
+        axe(foo(1))=1;
+        
+        saturationProfile=ComputeSaturationProfileImage(image,nPointCurve,axe,codeForLiquid,codeForVoid);
+    end
+
+    
+end
+
+
+function saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCurve,axe)
     %Calcul de Cmin et Cmax des sommets pour chaque cellule (C pour
     %coordinate suivant l'axe=axialCoordinates)
-    
-    axialCoordinates=poreNetwork.GetAllVerticesCoordinates*transpose(axe);
+
+    poreVolume=network.GetPoreDataList.('Volume');
+    totalPoreVolume=sum(poreVolume);
+
+    axialCoordinates=network.GetAllVerticesCoordinates*transpose(axe);
     [cBas,indexMin]=min(axialCoordinates);
     cHaut=max(axialCoordinates);
-    
-    nPore=poreNetwork.GetNumberOfPores;
+
+    nPore=network.GetNumberOfPores;
     CmaxCmin=zeros(2,nPore);
     for iPore=1:nPore
-        foo=axialCoordinates(poreNetwork.GetVerticesOfPoreNumber(iPore));
+        foo=axialCoordinates(network.GetVerticesOfPoreNumber(iPore));
         Cmax=max(foo);
         Cmin=min(foo);
         CmaxCmin(:,iPore)=[Cmax Cmin];
     end
-    
+
     %Pour chaque point de la courbe, rep�rer les cellules situ�es totalement au
     %dessus ou au dessous du plan de coupe, et pour les cellules
     %intersectant le plan, les cliper.
     increasingInvadedVolume=zeros(1,nPointCurve);
     saturationProfile=zeros(nPointCurve,2);
     for iPointCurve=1:nPointCurve
-        
+
         CPointCurve=cBas+iPointCurve/nPointCurve*(cHaut-cBas);
         saturationProfile(iPointCurve,1)=CPointCurve;
-        
+
         invadedVolumeBeneath=0;
-        P0=poreNetwork.GetVertice(indexMin)+(CPointCurve-cBas)*axe  ;
-        
-        
-        if poreNetwork.Dimension==3;
+        P0=network.GetVertice(indexMin)+(CPointCurve-cBas)*axe  ;
+
+
+        if network.Dimension==3;
             clippingPlane=createPlane(P0,axe);
         else
             line=createLine(P0(1), P0(2), axe(1), axe(2));
             clippingLine=orthogonalLine(line, P0);
         end
-        
-        
-        
+
+
+
         for iPore=cluster.GetInvadedPores
             signe=sign(CmaxCmin(:,iPore)-CPointCurve);
             if signe(1)<=0 %pore en dessous 
-                invadedVolumeBeneath=invadedVolumeBeneath+volumePore(iPore);
-                
+                invadedVolumeBeneath=invadedVolumeBeneath+poreVolume(iPore);
+
             elseif signe(2)==1 %pore au dessus 
-                
+
             else %pore intersect�
                 assert(signe(1)==1 && signe(2)==-1)
-                NODES=poreNetwork.GetVerticesOfPore(iPore);
+                NODES=network.GetVerticesOfPore(iPore);
                 %centrePore=mean(NODES);
-                
-                
-                if poreNetwork.Dimension==3;
+
+
+                if network.Dimension==3;
                     [~,volumeSansFibres]=convhulln(NODES);
 
                     %links=poreNetwork.GetLinksOfPore(iPore);
@@ -126,7 +148,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
     %                 end
                     FACES = minConvexHull(NODES);
                     [NODES2, ~] = clipConvexPolyhedronHP(NODES, FACES, clippingPlane);
-                    
+
                     if size(NODES2,1)<4
                         volumeBeneathSansFibres=0;
                     else
@@ -137,19 +159,19 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
                     POLY2 = clipPolygonHP(NODES, clippingLine);
                     volumeBeneathSansFibres=abs(polygonArea(POLY2));
                 end
-                
+
                 %approximation sur le volume clipper pour tenir compte des fibres : on suppose
                 %que les fibres sont r�parties uniform�ment sur les
                 %ar�tes au dessus et en dessous
-                    
-                vol=volumePore(iPore)*volumeBeneathSansFibres/volumeSansFibres;
+
+                vol=poreVolume(iPore)*volumeBeneathSansFibres/volumeSansFibres;
                 invadedVolumeBeneath=invadedVolumeBeneath+vol; 
             end
         end
         increasingInvadedVolume(iPointCurve)=invadedVolumeBeneath;
     end
-    
-    volumeTranche=totalVolume/nPointCurve;%Approximation valable si le r�seau est un pav� � fronti�res planes 
+
+    volumeTranche=totalPoreVolume/nPointCurve;%Approximation valable si le r�seau est un pav� � fronti�res planes 
     for iPointCurve=1:nPointCurve
         if iPointCurve>1
             saturationProfile(iPointCurve,2)=(increasingInvadedVolume(iPointCurve)-increasingInvadedVolume(iPointCurve-1))/volumeTranche;
@@ -157,5 +179,6 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
             saturationProfile(1,2)=increasingInvadedVolume(1)/volumeTranche;
         end
     end
-end
 
+
+end
