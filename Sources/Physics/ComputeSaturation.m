@@ -1,34 +1,20 @@
-function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, poreNetwork, options, varargin )
+function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, poreNetwork, options )
 %COMPUTESATURATION Calcule la saturation totale ou la courbe de saturation
 %d'un reseau de pore envahi par un cluster.
-%Input : -cluster
-%        -network
-%        -options: 'saturationProfile' ou 'totalSaturation'
-%        -varargin: axe (axe selon lequel faire les tranches de saturation)
+% Input : -cluster
+%         -network
+%         -options : struct with the following (facultative) fields :
+%        - options.type = 'saturationProfile' ou 'totalSaturation'
+%        - options.axe = [x,y,z] axe (axe selon lequel faire les tranches de saturation)
+%        - options.nPointProfile = number of slices for profile along the axe 
+%        - options.codeForLiquid = if using image, code for the liquid phase
+%        - options.codeForSolid = if using image, code for the solid phase
 %
-%Output : [ totalSaturation, saturationProfile ]
+% Output : [ totalSaturation, saturationProfile ]
 %
 
+    [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options );
 
-
-    %Lecture des options de la fonction ComputeSaturation
-    if strcmp('saturationProfile',options)
-        mode='saturationProfile';
-        if isempty(varargin)
-            disp('Axe non d�fini pour tracer la courbe de saturation. Choix par d�faut');
-            if poreNetwork.Dimension==3;
-                axe=[0 0 1];
-            else
-                axe=[0 1];
-            end
-        elseif ismatrix(varargin{1}) && length(varargin{1})==poreNetwork.GetDimension
-            axe=varargin{1};
-            axe=axe/norm(axe);
-        end
-        nPointCurve=20;
-    else
-        mode='totalSaturation';
-    end
     
     %V�rification que les volumes des pores sont d�j� calcul�s
     if not(isfield(poreNetwork.GetPoreDataList,'Volume'))
@@ -37,7 +23,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
         volumePore=poreNetwork.ComputeAllPoreVolume;
         poreNetwork.AddNewPoreData(volumePore,'Volume');
         duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-        disp(sprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s.',minutes,secondes));
+        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s.',minutes,secondes);
     else
         volumePore=poreNetwork.GetPoreDataList.('Volume');
     end
@@ -64,7 +50,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
         axe=[0 0 0];
         axe(foo(1))=1;
         
-        saturationProfile=ComputeSaturationProfileImage(image,nPointCurve,axe,codeForLiquid,codeForVoid);
+        saturationProfile=ComputeSaturationProfileImage(image,nPointCurve,axe,codeForLiquid,codeForSolid);
     end
 
     
@@ -181,4 +167,56 @@ function saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCu
     end
 
 
+    
 end
+
+
+function [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options )
+    %Checking and reading inputs
+
+    assert(isa(cluster,'ClusterMonophasique'),'First input must be a ClusterMonophasique')
+    assert(isa(poreNetwork,'PoreNetwork'),'First input must be a PoreNetwork')
+
+    if isfield(options,'type') 
+        if strcmp(options.type,'saturationProfile')
+            mode='saturationProfile';
+
+            if isfield(options,'axe')
+                assert(ismatrix(options.axe) && length(options.axe)==poreNetwork.GetDimension,'wrong axe input')
+                axe=options.axe;
+                axe=axe/norm(axe);
+            else
+                disp('Axe non d�fini pour tracer la courbe de saturation. Choix par d�faut');
+                if poreNetwork.Dimension==3;
+                    axe=[0 0 1];
+                else
+                    axe=[0 1];
+                end
+            end
+
+            if isfield(options,'nPointProfile')
+                nPointCurve=options.nPointProfile;
+            else
+                nPointCurve=20;
+            end
+
+        end
+    else
+        mode='totalSaturation';
+    end
+    
+    if isa(poreNetwork,'PoreNetworkImageBased')
+        assert(isfield(options,'codeForLiquid') && isfield(options,'codeForSolid'),'Codes for liquid and solid required when working with images')
+        codeForLiquid=options.codeForLiquid;
+        codeForSolid=options.codeForSolid;
+    
+    else
+        codeForLiquid='foo';
+        codeForSolid='foo';
+    end
+    
+    
+    
+end
+    
+

@@ -10,7 +10,7 @@ classdef ClusterMonophasique < handle
         CriticalPressures    %tableau 1*network.GetNumberOfLink contenant les pressions critiques d'invasion
         Network
         ClusterOptions  %(optionnel) options.Coalescence = 'none' or 'numberOfInvadedNeighbours'
-                           %     options.ThroatPressure = 'criticalPressureOnFibers'
+                           %     options.ThroatPressure = 'LaplaceCylinder','PurcellToroid'
     end
     
     methods
@@ -24,9 +24,9 @@ classdef ClusterMonophasique < handle
             cluster.CriticalPressures  =  criticalPressures;
             
             if isfield(clusterOptions,'ThroatPressure')
-                clusterOptions.ThroatPressure  =  'criticalPressureOnFibers';
+                clusterOptions.ThroatPressure  =  'LaplaceCylinder';
             else
-                clusterOptions.ThroatPressure  =  'criticalPressureOnFibers';
+                clusterOptions.ThroatPressure  =  'PurcellToroid';
             end
             
             if isfield(clusterOptions,'Coalescence')
@@ -158,18 +158,18 @@ classdef ClusterMonophasique < handle
                     cluster.CriticalPressures(liens(isLinkInlet))=Inf;
                     
                     isLinkOutlet=ismember(liens,linkOutlet);%outlet
-                    if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
-                        cluster.CriticalPressures(liens(isLinkOutlet)) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet));
-                    end
+                    
+                    cluster.CriticalPressures(liens(isLinkOutlet)) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet),options);
+                    
                     
                     cluster.CriticalPressures(liens(not(or(isLinkInlet,isLinkOutlet)))) = Inf ;%wall
                     
                     
                 else %liens internes
                     
-                    if strcmp(options.ThroatPressure,'criticalPressureOnFibers')
-                        Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens);
-                    end
+                    
+                    Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens,options);
+                   
                     
                     if strcmp(options.Coalescence,'none')
                         cluster.CriticalPressures(liens) = Pc;

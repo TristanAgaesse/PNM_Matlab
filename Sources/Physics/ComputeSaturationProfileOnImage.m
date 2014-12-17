@@ -1,10 +1,10 @@
-function saturationProfile=ComputeSaturationProfileOnImage(image,nPointCurve,axe,codeForLiquid,codeForVoid)
+function saturationProfile=ComputeSaturationProfileOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid)
 %ComputeSaturationProfileOnImage Computes the saturation profile on a image
-%Input : image,nPointCurve,axe,codeForLiquid,codeForVoid
+%Input : image,nPointCurve,axe,codeForLiquid,codeForSolid
 %       -image
 %       -nPointCurve
 %       -axe= '[0 0 1]', '[0 1 0]' or '[1 0 0]'
-%       -codeForLiquid,codeForVoid
+%       -codeForLiquid,codeForSolid
 %Output : saturationProfile
     
     saturationProfile=zeros(nPointCurve,2);
@@ -28,10 +28,11 @@ function saturationProfile=ComputeSaturationProfileOnImage(image,nPointCurve,axe
         end
 
         liquidVolume=length(find(slice==codeForLiquid));
-        voidVolume=length(find(slice==codeForVoid));
+        solidVolume=length(find(slice==codeForSolid));
+        sliceVolume= numel(slice) ;
 
         saturationProfile(iPointCurve,1)=iPointCurve/nPointCurve;
-        saturationProfile(iPointCurve,2)=liquidVolume/(liquidVolume+voidVolume);
+        saturationProfile(iPointCurve,2)=liquidVolume/(sliceVolume-solidVolume);
         
     end
     
