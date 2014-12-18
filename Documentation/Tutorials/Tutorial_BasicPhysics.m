@@ -51,11 +51,18 @@ viewer.View('PoreList',cluster.GetInvadedPores)
 
 
 complementaryCluster=cluster.GetComplementaryCluster;
-newInletLink=network.GetLinksFrontiere([4,5,6]);
-newOutletLink=network.GetLinksFrontiere([1,2,3]);
 
-[ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, newInletLink, newOutletLink);
-diffusionCoefficient
+boundaryConditions=struct;
+boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
+boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
+boundaryConditions.inletType = 'Dirichlet' ;
+boundaryConditions.outletType = 'Dirichlet' ;
+boundaryConditions.inletValue = 1;
+boundaryConditions.outletValue = 0.1;
+
+
+[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+disp(diffusionCoefficient)
 
 figure
 viewer.View('PoreField',concentrations)
@@ -71,7 +78,7 @@ voidCluster=network.CreateVoidCluster;
 fullCluster=voidCluster.GetComplementaryCluster;
 
 [ pressions, debits, vitessesMoyennes, permeabilityCoefficient ]=ComputePermeability(network, fullCluster, newOutletLink, newInletLink);
-permeabilityCoefficient
+disp(permeabilityCoefficient)
 
 figure;
 viewer.View('PoreField',pressions)

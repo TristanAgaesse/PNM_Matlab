@@ -184,6 +184,7 @@ classdef  PoreNetwork
         
         %Boundaries
         
+        
         function liens_frontiere = GetLinksFrontiere(poreNetwork,num_frontieres)
             %renvoie la liste des liens attach�s � une liste de frontieres
             %macroscopiques. Si num_frontiere = 0, renvoie la liste des liens

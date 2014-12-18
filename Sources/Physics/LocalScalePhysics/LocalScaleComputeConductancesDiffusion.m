@@ -1,20 +1,8 @@
- function conductances = LocalScaleComputeConductancesDiffusion(poreNetwork,linkInlet,linkOutlet)
+ function conductances = LocalScaleComputeConductancesDiffusion(poreNetwork)
     %input : poreNetwork,linkInlet,linkOutlet
     %output : conductances
 
-    %V�rification si les diametres des liens sont d�j� calcul�s
-    if not(isfield(poreNetwork.GetLinkDataList,'Diameter'))
-        disp('Calcul du diam�tre des liens...');
-        tic;
-        nLink = poreNetwork.GetNumberOfLinks;
-        diameter = zeros(1,nLink);
-       for iLink = 1:nLink
-            diameter(iLink) = poreNetwork.ComputeLinkDiameter(iLink);
-       end
-       poreNetwork.AddNewLinkData(diameter,'Diameter');
-       duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-       disp(sprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes));
-    end
+    CheckLinkDiameter(poreNetwork) %V�rification si les diametres des liens sont d�j� calcul�s
 
     diff_O2_dans_N2 = 2e-5;
 
@@ -23,41 +11,50 @@
     linkDiameter = poreNetwork.GetLinkDataList.Diameter;
     linkSurface = (linkDiameter.^2).*(pi/4);
     dimension = poreNetwork.Dimension;
-
+    
     
     poreCenter=poreNetwork.GetPoreCenter(1:nPore);
-
     linkCenter=poreNetwork.GetLinkCenter(1:nLink);
 
+
+    allLinks=1:nLink;
+    internalLinks = poreNetwork.GetLinksFrontiere(0);
+    boundaryLinks = GetLinksFrontiere(poreNetwork,1:poreNetwork.GetNumberOfBoundaries);
+    
+    a=poreCenter(poreNetwork.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(poreNetwork.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
     
     conductances = zeros(1,nLink);
+    conductances(internalLinks)=diff_O2_dans_N2*linkSurface(internalLinks)./transpose(distance1(internalLinks)+distance2);
+    conductances(boundaryLinks)=diff_O2_dans_N2*linkSurface(boundaryLinks)./transpose(2*distance1(boundaryLinks));
     
-    internalLinks = setdiff(poreNetwork.GetLinksFrontiere(0),union(linkInlet,linkOutlet));
-    
-    a=poreCenter(poreNetwork.LinkOwners(internalLinks),:)-linkCenter(internalLinks,:);
-    b=poreCenter(poreNetwork.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
-    surface=linkSurface(internalLinks);
-    if dimension==2
-        distance1=sqrt(a(:,1).^2+a(:,2).^2) ;
-        distance2=sqrt(b(:,1).^2+b(:,2).^2) ;
-    elseif dimension==3
-        distance1=sqrt(a(:,1).^2+a(:,2).^2+a(:,3).^2) ;
-        distance2=sqrt(b(:,1).^2+b(:,2).^2+b(:,3).^2) ;
-    end
-    conductances(internalLinks)=diff_O2_dans_N2*surface./transpose(distance1+distance2);
-    
-    
-    for iLink = linkOutlet
-        surface = linkSurface(iLink);
-        distance = 2*norm(poreCenter(poreNetwork.LinkOwners(iLink),:)-linkCenter(iLink,:));
-        conductances(iLink) = diff_O2_dans_N2*surface/distance;
-    end
-
-    for iLink = linkInlet
-        surface = linkSurface(iLink);
-        distance = 2*norm(poreCenter(poreNetwork.LinkOwners(iLink),:)-linkCenter(iLink,:));
-        conductances(iLink) = diff_O2_dans_N2*surface/distance;
-    end
-
 end
 
+function CheckLinkDiameter(network)
+    if not(isfield(network.GetLinkDataList,'Diameter'))
+        disp('Calcul du diam�tre des liens...');
+        tic;
+        nLink = network.GetNumberOfLinks;
+        diameter = zeros(1,nLink);
+        for iLink = 1:nLink
+            diameter(iLink) = network.ComputeLinkDiameter(iLink);
+        end
+        network.AddNewLinkData(diameter,'Diameter');
+        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+        fprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+    end
+end
+
+
+function myNorm=FastNorm(myVect,dimension)
+    %Vectorial version of the norm function
+    if dimension==2
+        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2) ;
+    elseif dimension==3
+        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2+myVect(:,3).^2) ;
+    end
+end

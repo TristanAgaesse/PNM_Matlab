@@ -13,22 +13,13 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
 % Output : [ totalSaturation, saturationProfile ]
 %
 
+    %Checking initial state
     [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options );
-
+    CheckPoreVolume(poreNetwork);
     
-    %V�rification que les volumes des pores sont d�j� calcul�s
-    if not(isfield(poreNetwork.GetPoreDataList,'Volume'))
-        disp('Calcul des volumes des pores...');
-        tic;
-        volumePore=poreNetwork.ComputeAllPoreVolume;
-        poreNetwork.AddNewPoreData(volumePore,'Volume');
-        duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s.',minutes,secondes);
-    else
-        volumePore=poreNetwork.GetPoreDataList.('Volume');
-    end
     
     %Calcul de la saturation totale
+    volumePore=poreNetwork.GetPoreDataList.('Volume');
     totalVolume=sum(volumePore);
     invadedVolume=sum(volumePore(cluster.GetInvadedPores));
     totalSaturation=invadedVolume/totalVolume;
@@ -38,7 +29,6 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
     end
     
     %Calcul de la courbe de saturation
-    
     if isa(network,'PoreNetworkMesh') || isa(network,'PoreNetworkMeshFibrous') 
         saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCurve,axe);
     
@@ -50,10 +40,9 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
         axe=[0 0 0];
         axe(foo(1))=1;
         
-        saturationProfile=ComputeSaturationProfileImage(image,nPointCurve,axe,codeForLiquid,codeForSolid);
+        [~, saturationProfile]=ComputeSaturationOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid);
     end
 
-    
 end
 
 
@@ -214,9 +203,17 @@ function [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( clus
         codeForLiquid='foo';
         codeForSolid='foo';
     end
-    
-    
-    
+
 end
     
-
+function CheckPoreVolume(poreNetwork)
+    %V�rification que les volumes des pores sont d�j� calcul�s
+    if not(isfield(poreNetwork.GetPoreDataList,'Volume'))
+        disp('Calcul des volumes des pores...');
+        tic;
+        volumePore=poreNetwork.ComputeAllPoreVolume;
+        poreNetwork.AddNewPoreData(volumePore,'Volume');
+        duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
+        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+    end
+end

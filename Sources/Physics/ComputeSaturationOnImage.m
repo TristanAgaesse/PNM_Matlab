@@ -1,12 +1,20 @@
-function saturationProfile=ComputeSaturationProfileOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid)
-%ComputeSaturationProfileOnImage Computes the saturation profile on a image
+function [ totalSaturation, saturationProfile ]=ComputeSaturationOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid)
+%ComputeSaturationOnImage Computes the saturation profile on a image
 %Input : image,nPointCurve,axe,codeForLiquid,codeForSolid
 %       -image
 %       -nPointCurve
 %       -axe= '[0 0 1]', '[0 1 0]' or '[1 0 0]'
 %       -codeForLiquid,codeForSolid
-%Output : saturationProfile
+%Output : [ totalSaturation, saturationProfile ]
     
+
+    %Computing total saturation
+    totalLiquidVolume=length(find(image==codeForLiquid));
+    totalSolidVolume=length(find(image==codeForSolid));
+    totalVolume= numel(image) ;
+    totalSaturation=totalLiquidVolume/(totalVolume-totalSolidVolume);
+
+    %Computing saturation profile
     saturationProfile=zeros(nPointCurve,2);
     
     imThickness=size(image,find(axe));
