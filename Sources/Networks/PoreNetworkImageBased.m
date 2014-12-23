@@ -58,7 +58,7 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         function [parsedLabels,orderLabels] = ParseLabeledImage(labelImage,labelToRemove)
             
         	[sortedLabels,orderLabels] = sort(labelImage);
-            limits=find(np.roll(sortedLabels,1)-sortedLabels) ;   
+            limits=find(sortedLabels([2:end,1])-sortedLabels) ;   
             parsedLabels = limits(not(ismember(sortedLabels(limits),labelToRemove))) ;
             
             
