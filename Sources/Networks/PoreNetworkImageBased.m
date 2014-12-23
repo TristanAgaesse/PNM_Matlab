@@ -13,7 +13,7 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
     
     methods
 
-        function pore_network_image_based=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,myGeometry,voxelEdgeLength,materialImage,parsedPores,orderPore)
+        function pore_network_image_based=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,myGeometry,voxelEdgeLength,materialImage,poresImage)
             %constructeur
             %input : dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter
             %output : pore_network_image_based
@@ -21,6 +21,7 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             
             pore_network_image_based.VoxelEdgeLength=voxelEdgeLength;
             pore_network_image_based.MaterialImage=materialImage;
+            [parsedPores,orderPore]=PoreNetworkImageBased.ParseLabeledImage(poresImage,0);
             pore_network_image_based.ParsedPore=parsedPores;
             pore_network_image_based.OrderPore=orderPore;
             
@@ -52,5 +53,16 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         
         
     end
-
+    
+    methods (Static=true )
+        function [parsedLabels,orderLabels] = ParseLabeledImage(labelImage,labelToRemove)
+            
+        	[sortedLabels,orderLabels] = sort(labelImage);
+            limits=find(np.roll(sortedLabels,1)-sortedLabels) ;   
+            parsedLabels = limits(not(ismember(sortedLabels(limits),labelToRemove))) ;
+            
+            
+        end
+        
+    end
 end
