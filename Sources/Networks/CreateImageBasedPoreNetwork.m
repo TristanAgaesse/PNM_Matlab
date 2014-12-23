@@ -129,7 +129,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     end
     
     %Construction de la liste des liens internes
-    [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,i2p,internalLinkCenter,internalLinkDiameter,otherInternalLinkProperties);
+    [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,internalLinkCenter,internalLinkDiameter,otherInternalLinkProperties);
     
 
     %Construction de la liste des liens frontiere
@@ -251,7 +251,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
 
 
-    function [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,i2p,linkCenter,linkDiameter,otherLinkData)
+    function [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,linkCenter,linkDiameter,otherLinkData)
                 
         nInternalLink=length(interfaceToPore);
 
@@ -262,7 +262,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
         for iLink=1:nInternalLink
 
             %gestion des cas ou il n'y a pas exactement deux pores dans interfaceToPore{iLink}
-            poreVoisin=interfaceToPore{iLink};
+            poreVoisin=interfaceToPore{iLink,1};
             nVoisin=length(poreVoisin);
 
             if nVoisin==2
@@ -277,7 +277,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
             elseif nVoisin>2
                 %ne compter que les 2 voisins principaux (les autres sont des erreurs)
-                [~,ordreDecroissant]=sort(i2p{iLink}(poreVoisin),'descend');
+                [~,ordreDecroissant]=sort(interfaceToPore{iLink,2},'descend');
                 linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
                 linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
                 fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d) etc...',ordreDecroissant(1),ordreDecroissant(2),ordreDecroissant(3));

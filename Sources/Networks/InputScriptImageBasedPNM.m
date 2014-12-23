@@ -9,13 +9,13 @@ inputContainerMap('MaterialImage') = myImage;               %image 3D du materia
 inputContainerMap('VoxelEdgeLength') = 1e-6;                 %taille d'un voxel en mètres
 
 %Proprietes des pores (pores = espaces vides séparés par des watershed lines)
-inputContainerMap('PoresImage') =  pores;             %image des pores labelises
+inputContainerMap('PoresImage') =  imagePores;             %image des pores labelises
 inputContainerMap('PorePropertyVolume') = poreVolumes;              %tableau nPore contenant le volume de chaque pore
 inputContainerMap('PorePropertyCenter') = poreCenters;             %tableau (nPore,3) contenant le barycentre de chaque pore
 
 %Proprietes des internal links (internal link = interface entre deux pores : watershed lines)
 %inputContainerMap('InternalLinkImage') = imageLiensDilates ;               %image des internal links labelises puis dilates d'un pixel
-inputContainerMap('InternalLinkPropertyDiameter') = interfaceToPore;
+inputContainerMap('InterfaceToPore') = interfaceToPore;
 inputContainerMap('InternalLinkPropertyDiameter') = internalLinkDiameters;                %tableau contenant le diametre de chaque internal links
 inputContainerMap('InternalLinkPropertyCenter') = internalLinkBarycenters;              %tableau (nInternalLink,3) contenant le barycentre de chaque internal links
 
