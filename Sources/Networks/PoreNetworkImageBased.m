@@ -24,7 +24,6 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             [parsedPores,orderPore]=PoreNetworkImageBased.ParseLabeledImage(poresImage,0);
             pore_network_image_based.ParsedPore=parsedPores;
             pore_network_image_based.OrderPore=orderPore;
-            
         end
         
         function image=GetImage(network)
@@ -36,7 +35,12 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         end
         
         function linearIndices=GetVoxelOfPore(network,iPore)
-            linearIndices=network.OrderPore(network.ParsedPore(iPore):network.ParsedPore(iPore+1));
+            if iPore>1
+                vRange=network.ParsedPore(iPore-1)+1:network.ParsedPore(iPore);
+            elseif iPore==1
+                vRange=1:network.ParsedPore(1);
+            end
+            linearIndices=network.OrderPore(vRange);
         end
         
         function image=GetImagePoreData(network,poreDataName)
@@ -58,10 +62,8 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             
             labelImage = reshape(labelImage,[1,numel(labelImage)]);
         	[sortedLabels,orderLabels] = sort(labelImage);
-            limits=find(sortedLabels([2:end,1])-sortedLabels) ;   
-            parsedLabels = limits(not(ismember(sortedLabels(limits),labelToRemove))) ;
-            
-            
+            labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ;   
+            parsedLabels = labelEnds(not(ismember(sortedLabels(labelEnds),labelToRemove))) ;
         end
         
     end
