@@ -9,8 +9,8 @@ function [ totalSaturation, saturationProfile ]=ComputeSaturationOnImage(image,n
     
 
     %Computing total saturation
-    totalLiquidVolume=length(find(image==codeForLiquid));
-    totalSolidVolume=length(find(image==codeForSolid));
+    totalLiquidVolume=nnz(image==codeForLiquid);
+    totalSolidVolume=nnz(image==codeForSolid);
     totalVolume= numel(image) ;
     totalSaturation=totalLiquidVolume/(totalVolume-totalSolidVolume);
 
@@ -22,8 +22,7 @@ function [ totalSaturation, saturationProfile ]=ComputeSaturationOnImage(image,n
     
     for iPointCurve=1:nPointCurve
         
-        indices=sliceThickness*(iPointCurve-1):sliceThickness*iPointCurve;
-        indices=indices+1;
+        indices=sliceThickness*(iPointCurve-1)+1:sliceThickness*iPointCurve;
         
         if isequal(axe,[0 0 1])
             slice=image(:,:,indices);
@@ -35,9 +34,9 @@ function [ totalSaturation, saturationProfile ]=ComputeSaturationOnImage(image,n
             slice=image(indices,:,:);
         end
 
-        liquidVolume=length(find(slice==codeForLiquid));
-        solidVolume=length(find(slice==codeForSolid));
-        sliceVolume= numel(slice) ;
+        liquidVolume = nnz(slice==codeForLiquid);
+        solidVolume = nnz(slice==codeForSolid);
+        sliceVolume = numel(slice) ;
 
         saturationProfile(iPointCurve,1)=iPointCurve/nPointCurve;
         saturationProfile(iPointCurve,2)=liquidVolume/(sliceVolume-solidVolume);

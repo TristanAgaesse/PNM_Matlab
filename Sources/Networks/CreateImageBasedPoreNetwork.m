@@ -153,8 +153,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     % Création du réseau de pores
     dimension=3;
-    poreNetwork=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,[],voxelEdgeLength,materialImage,parsedPore,orderPore);
-
+    poreNetwork=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,[],voxelEdgeLength,materialImage,poresImage);
+    
     
     % Ajout au reseau des informations geometrique sur les pores et liens
     

@@ -11,7 +11,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
 %        - options.codeForSolid = if using image, code for the solid phase
 %
 % Output : [ totalSaturation, saturationProfile ]
-%
+
 
     %Checking initial state
     [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options );
