@@ -7,8 +7,8 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
     properties 
         VoxelEdgeLength
         MaterialImage
-        ParsedPore
-        OrderPore
+        PoreVoxelEnds
+        PoreVoxelOrder
     end
     
     methods
@@ -21,9 +21,9 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             
             pore_network_image_based.VoxelEdgeLength=voxelEdgeLength;
             pore_network_image_based.MaterialImage=materialImage;
-            [parsedPores,orderPore]=PoreNetworkImageBased.ParseLabeledImage(poresImage,0);
-            pore_network_image_based.ParsedPore=parsedPores;
-            pore_network_image_based.OrderPore=orderPore;
+            [labelEnds,orderLabels]=PoreNetworkImageBased.ParseLabeledImage(poresImage);
+            pore_network_image_based.PoreVoxelEnds=labelEnds;
+            pore_network_image_based.PoreVoxelOrder=orderLabels;
         end
         
         function image=GetImage(network)
@@ -35,12 +35,8 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         end
         
         function linearIndices=GetVoxelOfPore(network,iPore)
-            if iPore>1
-                vRange=network.ParsedPore(iPore-1)+1:network.ParsedPore(iPore);
-            elseif iPore==1
-                vRange=1:network.ParsedPore(1);
-            end
-            linearIndices=network.OrderPore(vRange);
+            vRange=network.PoreVoxelEnds(iPore)+1:network.PoreVoxelEnds(iPore+1);
+            linearIndices=network.PoreVoxelOrder(vRange);
         end
         
         function image=GetImagePoreData(network,poreDataName)
@@ -58,12 +54,11 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
     end
     
     methods (Static=true )
-        function [parsedLabels,orderLabels] = ParseLabeledImage(labelImage,labelToRemove)
+        function [labelEnds,orderLabels] = ParseLabeledImage(labelImage)
             
             labelImage = reshape(labelImage,[1,numel(labelImage)]);
         	[sortedLabels,orderLabels] = sort(labelImage);
             labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ;   
-            parsedLabels = labelEnds(not(ismember(sortedLabels(labelEnds),labelToRemove))) ;
         end
         
     end

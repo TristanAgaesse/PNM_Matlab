@@ -280,7 +280,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
                 [~,ordreDecroissant]=sort(interfaceToPore{iLink,2},'descend');
                 linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
                 linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
-                fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d) etc...',ordreDecroissant(1),ordreDecroissant(2),ordreDecroissant(3));
+                fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',ordreDecroissant(1),ordreDecroissant(2),ordreDecroissant(3));
             end    
 
         end
