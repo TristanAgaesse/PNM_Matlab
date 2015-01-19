@@ -44,8 +44,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     materialImage=inputContainerMap('MaterialImage');
     imageSize=size(materialImage);
     
-    
-    
+        
     poresImage=inputContainerMap('PoresImage');
     assert(isequal(imageSize,size(poresImage)),'wrong size of PoresImages')
     nPore=max(max(max(poresImage)));
@@ -56,22 +55,16 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePropertyCenter=inputContainerMap('PorePropertyCenter');
     assert(isequal(size(porePropertyCenter),[nPore,3]),'size(PorePropertyCenter) must equal [nPore,3]')
         
-    
-    
-%     internalLinkImage=inputContainerMap('InternalLinkImage');
-%     assert(isequal(imageSize,size(internalLinkImage)),'Pb de taille de InternalLinkImage')
-    
+
     interfaceToPore=inputContainerMap('InterfaceToPore');
-    
-    
+       
 
     internalLinkDiameter=inputContainerMap('InternalLinkPropertyDiameter');
     nInterfaceLink=length(internalLinkDiameter);
     
     internalLinkCenter=inputContainerMap('InternalLinkPropertyCenter');
     assert(isequal(size(internalLinkCenter),[nInterfaceLink,3]),'size(InternalLinkPropertyCenter) must equal [nInterfaceLink,3]')
-    
-    
+       
     
     boundaryLinkCenter=inputContainerMap('BoundaryLinkPropertyCenter');
     assert( iscell(boundaryLinkCenter) && length(boundaryLinkCenter)==6 , 'wrong size of BoundaryLinkPropertyCenter')
@@ -80,7 +73,6 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     boundaryLinkPropertyDiameter=inputContainerMap('BoundaryLinkPropertyDiameter');
     assert( iscell(boundaryLinkPropertyDiameter) && length(boundaryLinkPropertyDiameter)==6 , 'wrong size of BoundaryLinkPropertyDiameter')
     assert( length(boundaryLinkPropertyDiameter{1})==nPore , 'wrong size of BoundaryLinkPropertyDiameter')
-    
     
     
     otherPoreProperties=struct;
@@ -177,7 +169,6 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     end
 
     
-    
     %% Fin de la creation du reseau !
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
@@ -185,72 +176,10 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     
     
-    
-    
-    
+
     
     %% Utilities : fonctions utilisees  
      
-%     function [interfaceToPore,i2p,p2i,parsedPore,orderPore,parsedInterface,orderInterface]=BuildConnectivityTables(poresImage,internalLinkImage)
-%         
-%         disp('Debut de la construction des tables de connectivite');    
-%         nInterface=max(max(max(internalLinkImage)));
-%         nPores=max(max(max(poresImage)));
-% 
-%         nVoxelsInterface=numel(internalLinkImage);
-%         reshapedInterface=reshape(internalLinkImage,[1,nVoxelsInterface]);
-%         [sortedInterface,orderInterface]=sort(reshapedInterface);
-%         parsedInterface=parse_sorted_vector(sortedInterface);
-%         parsedInterface=parsedInterface(2:end);
-%         interface=cell(1,nInterface);
-%         for i=1:nInterface
-%             assert( parsedInterface{i}(1)==i )
-%             interface{i}= orderInterface(parsedInterface{i}(2):parsedInterface{i}(3));
-%         end
-% 
-%         nVoxelsPore=numel(internalLinkImage);
-%         assert(nVoxelsPore==nVoxelsInterface);
-%         reshapedPore=reshape(poresImage,[1,nVoxelsPore]);
-%         [sortedPore,orderPore]=sort(reshapedPore);
-%         parsedPore=parse_sorted_vector(sortedPore);
-%         parsedPore=parsedPore(2:end);
-%         pore=cell(1,nPores);
-%         for i=1:nPores
-%             assert( parsedPore{i}(1)==i )
-%             pore{i}=orderPore(parsedPore{i}(2):parsedPore{i}(3));
-%         end
-% 
-%         i2p=cell(1,nInterface);
-%         for j=1:nInterface
-%             i2p{j}=zeros(1,nPores);
-%             assert(reshapedInterface(interface{j}(1))==j)
-%             C= unique(reshapedPore(interface{j}));
-% 
-%             for i=C(C~=0)
-%                 i2p{j}(i)=length(find(reshapedPore(interface{j})==i));
-%             end
-%         end
-% 
-%         p2i=cell(1,nPores);
-%         for j=1:nPores
-%             p2i{j}=zeros(1,nInterface);
-%             for i=1:nInterface
-%                 p2i{j}(i)=i2p{i}(j);  
-%             end
-%         end
-% 
-%         interfaceToPore=cell(1,nInterface);
-%         for j=1:nInterface
-%             interfaceToPore{j}=find(i2p{j});
-%         end
-% 
-%         disp('Tables de connectivite construites');
-%     end
-    
-    
-
-
-
     function [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,linkCenter,linkDiameter,otherLinkData)
                 
         nInternalLink=length(interfaceToPore);
@@ -277,10 +206,11 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
             elseif nVoisin>2
                 %ne compter que les 2 voisins principaux (les autres sont des erreurs)
-                [~,ordreDecroissant]=sort(interfaceToPore{iLink,2},'descend');
+                intersectionSize=interfaceToPore{iLink,2};
+                [~,ordreDecroissant]=sort(intersectionSize,'descend');
                 linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
                 linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
-                fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',ordreDecroissant(1),ordreDecroissant(2),ordreDecroissant(3));
+                fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',intersectionSize(ordreDecroissant(1)),intersectionSize(ordreDecroissant(2)),intersectionSize(ordreDecroissant(3)));
             end    
 
         end
@@ -302,7 +232,6 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     function [linksOwners,linksNeighbours,linkDiameter,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,linkDiameter,linkCenter,boundaryLinkPropertyDiameter,boundaryLinkCenter,raw_data_link)
         
-        %geometricalDataFrontieres=boundaryLinkProperties
         
         iCurrentLink=length(linksOwners)+1;
         infos_liens_frontieres=cell(1,6);
