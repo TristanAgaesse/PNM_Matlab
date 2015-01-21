@@ -182,43 +182,42 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
      
     function [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,linkCenter,linkDiameter,otherLinkData)
                 
-        nInternalLink=length(interfaceToPore);
+        linksOwners=transpose(interfaceToPore(:,1));
+        linksNeighbours=transpose(interfaceToPore(:,2));
 
-        linksOwners=zeros(1,nInternalLink);
-        linksNeighbours=zeros(1,nInternalLink);
-        badLink=zeros(1,nInternalLink);
+        %nInternalLink=length(interfaceToPore);
+        %  badLink=zeros(1,nInternalLink);
 
-        for iLink=1:nInternalLink
+%         for iLink=1:nInternalLink
+% 
+%             %gestion des cas ou il n'y a pas exactement deux pores dans interfaceToPore{iLink}
+%             poreVoisin=interfaceToPore{iLink};
+%             nVoisin=length(poreVoisin);
+% 
+%             assert(nVoisin==2)
+%             linksOwners(iLink)=poreVoisin(1);
+%             linksNeighbours(iLink)=poreVoisin(2);
 
-            %gestion des cas ou il n'y a pas exactement deux pores dans interfaceToPore{iLink}
-            poreVoisin=interfaceToPore{iLink,1};
-            nVoisin=length(poreVoisin);
+%             elseif nVoisin<2
+%                 if nVoisin==0
+%                     disp('interface avec 0 pores voisins !!!');
+%                 end
+%                 badLink(iLink)=1; %suppression de ce lien
+% 
+%             elseif nVoisin>2
+%                 %ne compter que les 2 voisins principaux (les autres sont des erreurs)
+%                 intersectionSize=interfaceToPore{iLink,2};
+%                 [~,ordreDecroissant]=sort(intersectionSize,'descend');
+%                 linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
+%                 linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
+%                 fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',intersectionSize(ordreDecroissant(1)),intersectionSize(ordreDecroissant(2)),intersectionSize(ordreDecroissant(3)));
+%             end    
 
-            if nVoisin==2
-                linksOwners(iLink)=poreVoisin(1);
-                linksNeighbours(iLink)=poreVoisin(2);
-
-            elseif nVoisin<2
-                if nVoisin==0
-                    disp('interface avec 0 pores voisins !!!');
-                end
-                badLink(iLink)=1; %suppression de ce lien
-
-            elseif nVoisin>2
-                %ne compter que les 2 voisins principaux (les autres sont des erreurs)
-                intersectionSize=interfaceToPore{iLink,2};
-                [~,ordreDecroissant]=sort(intersectionSize,'descend');
-                linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
-                linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
-                fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',intersectionSize(ordreDecroissant(1)),intersectionSize(ordreDecroissant(2)),intersectionSize(ordreDecroissant(3)));
-            end    
-
-        end
-
-        linksOwners=linksOwners(not(badLink));
-        linksNeighbours=linksNeighbours(not(badLink));
-        linkDiameter=linkDiameter(not(badLink));
-        linkCenter=linkCenter(not(badLink),:);
+        %end
+%         linksOwners=linksOwners(not(badLink));
+%         linksNeighbours=linksNeighbours(not(badLink));
+%         linkDiameter=linkDiameter(not(badLink));
+%         linkCenter=linkCenter(not(badLink),:);
 
         datanames=fieldnames(otherLinkData);
         raw_data_link=cell(1,length(datanames));
