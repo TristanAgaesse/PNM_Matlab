@@ -16,20 +16,19 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 %       - inputContainerMap('PorePropertyCenter') : tableau (nPore,3) contenant le barycentre de chaque pore
 %
 %       Proprietes des internal links (internal link = interface entre deux pores : watershed lines)
-%       %%%- inputContainerMap('InternalLinkImage') : image des internal links labelises puis dilates d'un pixel
-%       - inputContainerMap('InterfaceToPore') : table 
-%       - inputContainerMap('InternalLinkPropertyDiameter') : tableau contenant le diametre de chaque internal links
+%   	- inputContainerMap('InternalLinkImage') : image des internal links labelises puis dilates d'un pixel
+%       - inputContainerMap('InterfaceToPore') 
+%       - inputContainerMap('InternalLinkCapillaryRadius') : tableau contenant le rayon déduit de la distance map de chaque internal links
 %       - inputContainerMap('InternalLinkPropertyCenter') : tableau (nInternalLink,3) contenant le barycentre de chaque internal links
 %
 %       Proprietes des liens frontieres (liens frontieres = slices des pores sur les bords de l'image)
 %       - inputContainerMap('BoundaryLinkPropertyCenter') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
-%       - inputContainerMap('BoundaryLinkPropertyDiameter') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les diametres des liens frontieres (tableaux (1,nPore) avec NaN si le pore i n'intersecte pas la slice)
+%       - inputContainerMap('BoundaryLinkPropertyCapillaryRadius') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les diametres des liens frontieres (tableaux (1,nPore) avec NaN si le pore i n'intersecte pas la slice)
 %
 %       (Optionnel) Pour mettre d'autre infos geometriques scalaires dans le reseau :
 %       - inputContainerMap('OtherPoreProperties') : struct contenant des tableaux (1,nPore)
 %       - inputContainerMap('OtherInternalLinkProperties') : struct contenant des tableaux (1,nInternalLink)
 %       - inputContainerMap('OtherBoundaryLinkProperties') : struct contenant des cells (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) qui contiennent des tableaux (1,nPore)
-%
 %
 % Output : - poreNetwork : reseau de pores PoreNetworkImageBased
     
@@ -59,8 +58,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     interfaceToPore=inputContainerMap('InterfaceToPore');
        
 
-    internalLinkDiameter=inputContainerMap('InternalLinkPropertyDiameter');
-    nInterfaceLink=length(internalLinkDiameter);
+    internalLinkCapillaryRadius=inputContainerMap('InternalLinkCapillaryRadius');
+    nInterfaceLink=length(internalLinkCapillaryRadius);
     
     internalLinkCenter=inputContainerMap('InternalLinkPropertyCenter');
     assert(isequal(size(internalLinkCenter),[nInterfaceLink,3]),'size(InternalLinkPropertyCenter) must equal [nInterfaceLink,3]')
@@ -70,9 +69,9 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     assert( iscell(boundaryLinkCenter) && length(boundaryLinkCenter)==6 , 'wrong size of BoundaryLinkPropertyCenter')
     assert( isequal(size(boundaryLinkCenter{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyCenter')
     
-    boundaryLinkPropertyDiameter=inputContainerMap('BoundaryLinkPropertyDiameter');
-    assert( iscell(boundaryLinkPropertyDiameter) && length(boundaryLinkPropertyDiameter)==6 , 'wrong size of BoundaryLinkPropertyDiameter')
-    assert( length(boundaryLinkPropertyDiameter{1})==nPore , 'wrong size of BoundaryLinkPropertyDiameter')
+    boundaryLinkPropertyCapillaryRadius=inputContainerMap('BoundaryLinkPropertyCapillaryRadius');
+    assert( iscell(boundaryLinkPropertyCapillaryRadius) && length(boundaryLinkPropertyCapillaryRadius)==6 , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
+    assert( length(boundaryLinkPropertyCapillaryRadius{1})==nPore , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
     
     
     otherPoreProperties=struct;
@@ -112,16 +111,16 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     poreVolume=voxelEdgeLength^3*double(porePropertyVolume);
     
     poreCenter=voxelEdgeLength*double(porePropertyCenter);
-    internalLinkDiameter=voxelEdgeLength*double(internalLinkDiameter);
+    internalLinkCapillaryRadius=voxelEdgeLength*double(internalLinkCapillaryRadius);
     internalLinkCenter=voxelEdgeLength*double(internalLinkCenter);
     
     for iBoundary=1:6
         boundaryLinkCenter{iBoundary}=voxelEdgeLength*double(boundaryLinkCenter{iBoundary});
-        boundaryLinkPropertyDiameter{iBoundary}=voxelEdgeLength*double(boundaryLinkPropertyDiameter{iBoundary});
+        boundaryLinkPropertyCapillaryRadius{iBoundary}=voxelEdgeLength*double(boundaryLinkCapillaryRadius{iBoundary});
     end
     
     %Construction de la liste des liens internes
-    [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,internalLinkCenter,internalLinkDiameter,otherInternalLinkProperties);
+    [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,internalLinkCenter,internalLinkCapillaryRadius,otherInternalLinkProperties);
     
 
     %Construction de la liste des liens frontiere
@@ -172,7 +171,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     %% Fin de la creation du reseau !
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-    disp(sprintf('Reseau de pores construit. Time spent : %d minutes %f s.',minutes,secondes));
+    fprintf('Reseau de pores construit. Time spent : %d minutes %f s.',minutes,secondes);
     
     
     
@@ -184,40 +183,6 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
                 
         linksOwners=transpose(interfaceToPore(:,1));
         linksNeighbours=transpose(interfaceToPore(:,2));
-
-        %nInternalLink=length(interfaceToPore);
-        %  badLink=zeros(1,nInternalLink);
-
-%         for iLink=1:nInternalLink
-% 
-%             %gestion des cas ou il n'y a pas exactement deux pores dans interfaceToPore{iLink}
-%             poreVoisin=interfaceToPore{iLink};
-%             nVoisin=length(poreVoisin);
-% 
-%             assert(nVoisin==2)
-%             linksOwners(iLink)=poreVoisin(1);
-%             linksNeighbours(iLink)=poreVoisin(2);
-
-%             elseif nVoisin<2
-%                 if nVoisin==0
-%                     disp('interface avec 0 pores voisins !!!');
-%                 end
-%                 badLink(iLink)=1; %suppression de ce lien
-% 
-%             elseif nVoisin>2
-%                 %ne compter que les 2 voisins principaux (les autres sont des erreurs)
-%                 intersectionSize=interfaceToPore{iLink,2};
-%                 [~,ordreDecroissant]=sort(intersectionSize,'descend');
-%                 linksOwners(iLink)=poreVoisin(ordreDecroissant(1));
-%                 linksNeighbours(iLink)=poreVoisin(ordreDecroissant(2));
-%                 fprintf('interface avec plus de deux pores voisins :  voisin 1 (%d), 2 (%d),  3 (%d)... \n',intersectionSize(ordreDecroissant(1)),intersectionSize(ordreDecroissant(2)),intersectionSize(ordreDecroissant(3)));
-%             end    
-
-        %end
-%         linksOwners=linksOwners(not(badLink));
-%         linksNeighbours=linksNeighbours(not(badLink));
-%         linkDiameter=linkDiameter(not(badLink));
-%         linkCenter=linkCenter(not(badLink),:);
 
         datanames=fieldnames(otherLinkData);
         raw_data_link=cell(1,length(datanames));
