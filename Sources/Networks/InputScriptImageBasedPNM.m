@@ -10,7 +10,7 @@ inputContainerMap('VoxelEdgeLength') = 1e-6;                 %taille d'un voxel 
 
 
 %Proprietes des pores (pores = espaces vides séparés par des watershed lines)
-inputContainerMap('PoresImage') =  imagePores;             %image des pores labelises
+inputContainerMap('PoreImage') =  imagePores;             %image des pores labelises
 inputContainerMap('PorePropertyVolume') = poreVolumes;              %tableau nPore contenant le volume de chaque pore (en nombre de voxels)
 inputContainerMap('PorePropertyCenter') = poreCenters;             %tableau (nPore,3) contenant le barycentre de chaque pore
 inputContainerMap('PorePhase') = porePhase;         %tableau nPore contenant la phase à laquelle appartient chaque pore

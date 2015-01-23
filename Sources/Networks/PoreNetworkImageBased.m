@@ -4,7 +4,7 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
     % image 3D (voxels) associé au réseau de pores. Le réseau de pores est 
     % construit à partir de cette image par watershed segmentation des pores.
     
-    properties 
+    properties
         VoxelEdgeLength
         MaterialImage
         PoreVoxelEnds
@@ -58,7 +58,9 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             
             labelImage = reshape(labelImage,[1,numel(labelImage)]);
         	[sortedLabels,orderLabels] = sort(labelImage);
-            labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ;   
+            labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ; 
+            assert(labelEnds(end)<numel(labelImage))
+            labelEnds=[labelEnds,numel(labelImage)];
         end
         
     end

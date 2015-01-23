@@ -11,9 +11,10 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 %       - inputContainerMap('VoxelEdgeLength') : taille d'un voxel en mètres
 %
 %       Proprietes des pores (pores = espaces vides séparés par des watershed lines)
-%       - inputContainerMap('PoresImage') : image des pores labelises
+%       - inputContainerMap('PoreImage') : image des pores labelises
 %       - inputContainerMap('PorePropertyVolume') : tableau nPore contenant le volume de chaque pore
 %       - inputContainerMap('PorePropertyCenter') : tableau (nPore,3) contenant le barycentre de chaque pore
+%       - inputContainerMap('PorePhase')          : tableau nPore contenant la phase à laquelle appartient chaque pore
 %
 %       Proprietes des internal links (internal link = interface entre deux pores : watershed lines)
 %   	- inputContainerMap('InternalLinkImage') : image des internal links labelises puis dilates d'un pixel
@@ -44,7 +45,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     imageSize=size(materialImage);
     
         
-    poresImage=inputContainerMap('PoresImage');
+    poresImage=inputContainerMap('PoreImage');
     assert(isequal(imageSize,size(poresImage)),'wrong size of PoresImages')
     nPore=max(max(max(poresImage)));
         
@@ -54,7 +55,10 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePropertyCenter=inputContainerMap('PorePropertyCenter');
     assert(isequal(size(porePropertyCenter),[nPore,3]),'size(PorePropertyCenter) must equal [nPore,3]')
         
-
+    porePhase = inputContainerMap('PorePhase');
+    assert(length(porePhase)==nPore,'length(porePhase) must equal nPore')
+    
+    
     interfaceToPore=inputContainerMap('InterfaceToPore');
        
 
@@ -69,9 +73,9 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     assert( iscell(boundaryLinkCenter) && length(boundaryLinkCenter)==6 , 'wrong size of BoundaryLinkPropertyCenter')
     assert( isequal(size(boundaryLinkCenter{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyCenter')
     
-    boundaryLinkPropertyCapillaryRadius=inputContainerMap('BoundaryLinkPropertyCapillaryRadius');
-    assert( iscell(boundaryLinkPropertyCapillaryRadius) && length(boundaryLinkPropertyCapillaryRadius)==6 , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
-    assert( length(boundaryLinkPropertyCapillaryRadius{1})==nPore , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
+    boundaryLinkCapillaryRadius=inputContainerMap('BoundaryLinkPropertyCapillaryRadius');
+    assert( iscell(boundaryLinkCapillaryRadius) && length(boundaryLinkCapillaryRadius)==6 , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
+    assert( length(boundaryLinkCapillaryRadius{1})==nPore , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
     
     
     otherPoreProperties=struct;
@@ -100,14 +104,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     disp('Construction du reseau de pores');
     tic;
-    
-    %%Construction des tables de voisinage :
-    %%algorithme : recherche d'intersections entre les voxels des pores et les voxels des interfaces entre pores
-    %interfaceToPore=BuildConnectivityTables(poresImage,internalLinkImage);
-    
-    
-    
-    %Rescaling des infos geometriques
+
+    %Rescaling des infos geometriques avec voxelEdgeLength
     poreVolume=voxelEdgeLength^3*double(porePropertyVolume);
     
     poreCenter=voxelEdgeLength*double(porePropertyCenter);
@@ -116,26 +114,37 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     for iBoundary=1:6
         boundaryLinkCenter{iBoundary}=voxelEdgeLength*double(boundaryLinkCenter{iBoundary});
-        boundaryLinkPropertyCapillaryRadius{iBoundary}=voxelEdgeLength*double(boundaryLinkCapillaryRadius{iBoundary});
+        boundaryLinkCapillaryRadius{iBoundary}=voxelEdgeLength*double(boundaryLinkCapillaryRadius{iBoundary});
     end
     
     %Construction de la liste des liens internes
-    [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,internalLinkCenter,internalLinkCapillaryRadius,otherInternalLinkProperties);
-    
+    linksOwners=transpose(interfaceToPore(:,1));
+    linksNeighbours=transpose(interfaceToPore(:,2));
 
+    datanames=fieldnames(otherInternalLinkProperties);
+    raw_data_link=cell(1,length(datanames));
+    boundary_raw_data_link=cell(1,length(datanames));
+    for iDatas=1:length(datanames)
+        raw_data_link{iDatas}=otherInternalLinkProperties.(datanames{iDatas});
+        
+        for iBoundary=1:6
+            boundary_raw_data_link{iDatas}{iBoundary}=otherBoundaryLinkProperties.(datanames{iDatas}){iBoundary};
+        end
+    end
+    
+    
+    
     %Construction de la liste des liens frontiere
-    [linksOwners,linksNeighbours,linkDiameter,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,linkDiameter,linkCenter,boundaryLinkPropertyDiameter,boundaryLinkCenter,raw_data_link);
+    [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,internalLinkCapillaryRadius,internalLinkCenter,boundaryLinkCapillaryRadius,boundaryLinkCenter,raw_data_link,boundary_raw_data_link);
 
     
     %Renumerotation des liens (necessaire pour coder les liens frontieres dans PNM_Matlab)
 
     [boundaries,owners,neighbours,newOrder]=NetworkBuilder.RenumerotationLiensFrontieres(infos_liens_frontieres,linksOwners,linksNeighbours);
-
     pores=NetworkBuilder.BuildPoresToLinks(owners,neighbours,nPore);
 
     linkCenter=linkCenter(newOrder,:);
-    linkDiameter=linkDiameter(newOrder);
-    
+    linkCapillaryRadius=linkCapillaryRadius(newOrder);
     datanames=fieldnames(otherInternalLinkProperties);
     for iData=1:length(datanames)
         raw_data_link{iData}=raw_data_link{iData}(newOrder);
@@ -148,13 +157,13 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     
     % Ajout au reseau des informations geometrique sur les pores et liens
-    
+    poreNetwork.AddNewPoreData(porePhase,'Phase')
     poreNetwork.AddNewPoreData(poreVolume,'Volume')
     
     poreDiameter=(6*poreVolume/pi).^(1/3);
     poreNetwork.AddNewPoreData(poreDiameter,'Diameter')
     
-    poreNetwork.AddNewLinkData(linkDiameter,'Diameter');
+    poreNetwork.AddNewLinkData(linkCapillaryRadius,'CapillaryRadius');
 
     names=fieldnames(otherPoreProperties);
     for iData=1:length(names)
@@ -178,24 +187,11 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
     
     %% Utilities : fonctions utilisees  
-     
-    function [linksOwners,linksNeighbours,linkCenter,linkDiameter,raw_data_link]=ConstructInternalLinkList(interfaceToPore,linkCenter,linkDiameter,otherLinkData)
-                
-        linksOwners=transpose(interfaceToPore(:,1));
-        linksNeighbours=transpose(interfaceToPore(:,2));
-
-        datanames=fieldnames(otherLinkData);
-        raw_data_link=cell(1,length(datanames));
-        for iDatas=1:length(datanames)
-            foofoo=otherLinkData.(datanames{iDatas});
-            raw_data_link{iDatas}=transpose(foofoo(not(badLink)));
-        end
-    end
-    
-    
-    
-    function [linksOwners,linksNeighbours,linkDiameter,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,linkDiameter,linkCenter,boundaryLinkPropertyDiameter,boundaryLinkCenter,raw_data_link)
-        
+       
+    function [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,internalLinkCapillaryRadius,internalLinkCenter,boundaryLinkCapillaryRadius,boundaryLinkCenter,raw_data_link,boundary_raw_data_link)
+                                                                                                                        
+        linkCapillaryRadius=internalLinkCapillaryRadius;
+        linkCenter=internalLinkCenter;
         
         iCurrentLink=length(linksOwners)+1;
         infos_liens_frontieres=cell(1,6);
@@ -229,7 +225,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
             linksOwners=[linksOwners,zeros(1,nLinkFrontiere)];
             linksNeighbours=[linksNeighbours,zeros(1,nLinkFrontiere)];
-            linkDiameter=[linkDiameter,zeros(1,nLinkFrontiere)];
+            linkCapillaryRadius=[linkCapillaryRadius,zeros(1,nLinkFrontiere)];
             linkCenter=vertcat(linkCenter,zeros(nLinkFrontiere,3));
 
             for i=1:length(raw_data_link)
@@ -237,19 +233,24 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
             end
 
             for iLinkFrontiere=1:nLinkFrontiere
-
+                
                 numPoreOwner=poreList(iLinkFrontiere);
 
                 linksOwners(iCurrentLink)=numPoreOwner;
                 linksNeighbours(iCurrentLink)=-1;
 
-                linkDiameter(iCurrentLink)=boundaryLinkPropertyDiameter{iFrontiere}(numPoreOwner);
-
+                linkCapillaryRadius(iCurrentLink)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
                 linkCenter(iCurrentLink,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
 
-
+                for i=1:length(raw_data_link)
+                    raw_data_link{i}(iCurrentLink)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
+                end
+                
                 iCurrentLink=iCurrentLink+1;
+                
             end
+            
+            
         end
     end
 
