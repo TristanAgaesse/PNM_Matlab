@@ -193,7 +193,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
         linkCapillaryRadius=internalLinkCapillaryRadius;
         linkCenter=internalLinkCenter;
         
-        iCurrentLink=length(linksOwners)+1;
+        iLinkShift=length(linksOwners)+1;
         infos_liens_frontieres=cell(1,6);
 
         for iFrontiere=1:6
@@ -221,7 +221,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
             poreList=unique(frontiere);
             poreList=setdiff(poreList,0);
             nLinkFrontiere=length(poreList);
-            infos_liens_frontieres{iFrontiere}=iCurrentLink:(iCurrentLink+nLinkFrontiere-1);
+            infos_liens_frontieres{iFrontiere}=iLinkShift:(iLinkShift+nLinkFrontiere-1);
 
             linksOwners=[linksOwners,zeros(1,nLinkFrontiere)];
             linksNeighbours=[linksNeighbours,zeros(1,nLinkFrontiere)];
@@ -232,23 +232,36 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
                 raw_data_link{i}=[raw_data_link{i},zeros(1,nLinkFrontiere)];
             end
 
-            for iLinkFrontiere=1:nLinkFrontiere
-                
-                numPoreOwner=poreList(iLinkFrontiere);
-
-                linksOwners(iCurrentLink)=numPoreOwner;
-                linksNeighbours(iCurrentLink)=-1;
-
-                linkCapillaryRadius(iCurrentLink)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
-                linkCenter(iCurrentLink,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
-
-                for i=1:length(raw_data_link)
-                    raw_data_link{i}(iCurrentLink)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
-                end
-                
-                iCurrentLink=iCurrentLink+1;
-                
+            linkFrontiere=1:nLinkFrontiere;
+            numPoreOwner=poreList(linkFrontiere);
+            linksOwners(linkFrontiere+iLinkShift-1)=numPoreOwner;
+            linksNeighbours(linkFrontiere+iLinkShift-1)=-1;
+            
+            linkCapillaryRadius(linkFrontiere+iLinkShift-1)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
+            linkCenter(linkFrontiere+iLinkShift-1,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
+            for i=1:length(raw_data_link)
+                raw_data_link{i}(linkFrontiere+iLinkShift-1)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
             end
+            
+            iLinkShift=iLinkShift+nLinkFrontiere;
+            
+%             for iLinkFrontiere=1:nLinkFrontiere
+%                 
+%                 numPoreOwner=poreList(iLinkFrontiere);
+% 
+%                 linksOwners(iCurrentLink)=numPoreOwner;
+%                 linksNeighbours(iCurrentLink)=-1;
+% 
+%                 linkCapillaryRadius(iCurrentLink)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
+%                 linkCenter(iCurrentLink,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
+% 
+%                 for i=1:length(raw_data_link)
+%                     raw_data_link{i}(iCurrentLink)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
+%                 end
+%                 
+%                 iCurrentLink=iCurrentLink+1;
+%                 
+%             end
             
             
         end

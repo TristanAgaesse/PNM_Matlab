@@ -5,8 +5,13 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
         Pc=[];
         return
     end
-
-    sigmaWater = 60e-3;
+    
+    if isfield(clusterOptions,'SurfaceTension')
+        sigma=clusterOptions.('SurfaceTension');
+    else
+        sigma = 60e-3;   %Surface tension water/air at 80°C
+    end
+    
     theta = network.GetLinkDataList.ContactAngle(liens);
     linkDiameter = network.GetLinkDataList.Diameter(liens);
     
@@ -14,7 +19,7 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
         
         case 'LaplaceCylinder'
             %Laplace law in cylinders
-            Pc = -(4*sigmaWater*cos(theta)./linkDiameter);
+            Pc = -(4*sigma*cos(theta)./linkDiameter);
 
         case 'PurcellToroid'
 
@@ -25,12 +30,14 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
                 if isa(network,'PoreNetworkMeshFibrous')
                     numEdges = network.FacesToEdges{liens(i)};
                     fibreDiameter(i) = mean(network.GetEdgeDataList.FiberDiameter(numEdges));
+                elseif isfield(clusterOptions,'FiberDiameterForPurcell')
+                    fibreDiameter(i)=clusterOptions.FiberDiameterForPurcell;
                 else
-                    fibreDiameter(i)=linkDiameter(i)/100;
+                    fibreDiameter(i)=linkDiameter(i)/20;
                 end
             end
 
             alpha = theta-pi+asin(sin(theta)./(1+linkDiameter./fibreDiameter));
-            Pc = -(4*sigmaWater./linkDiameter).*cos(theta-alpha)./(1+fibreDiameter.*(1-cos(alpha))./(linkDiameter));
+            Pc = -(4*sigma./linkDiameter).*cos(theta-alpha)./(1+fibreDiameter.*(1-cos(alpha))./(linkDiameter));
     end
 end
