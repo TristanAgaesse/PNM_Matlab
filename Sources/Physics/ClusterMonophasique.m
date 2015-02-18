@@ -49,7 +49,6 @@ classdef ClusterMonophasique < handle
             %         - minPressure : valeur de la pression capillaire min
             criticalPressures  =  cluster.GetCriticalPressures;
             [minPressure,indexMinPressureLink]  =  min(criticalPressures(cluster.GetInterfaceLinks));
-            
         end
         
         function interfaceChangeInformation = InvadeNewPore(cluster,indexInvadedLink)
@@ -161,15 +160,12 @@ classdef ClusterMonophasique < handle
                     
                     cluster.CriticalPressures(liens(isLinkOutlet)) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet),options);
                     
-                    
                     cluster.CriticalPressures(liens(not(or(isLinkInlet,isLinkOutlet)))) = Inf ;%wall
                     
                     
                 else %liens internes
                     
-                    
                     Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens,options);
-                    
                     
                     if strcmp(options.Coalescence,'none')
                         cluster.CriticalPressures(liens) = Pc;
