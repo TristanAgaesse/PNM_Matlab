@@ -169,7 +169,7 @@ classdef ClusterMonophasique < handle
                     
                     
                     Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens,options);
-                   
+                    
                     
                     if strcmp(options.Coalescence,'none')
                         cluster.CriticalPressures(liens) = Pc;
