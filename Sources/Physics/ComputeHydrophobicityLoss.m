@@ -1,14 +1,22 @@
 function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,outletLink,options,varargin)
-%COMPUTEHYDROPHOBICITYLOSS High level function which compute how a
-%cluster is changed when there is a hydrophobicity loss which rate is 
-%correlated to the presence of water
+%COMPUTEHYDROPHOBICITYLOSS Compute how a cluster evolves when there is a 
+%hydrophobicity loss
+%
+%Algorithm : - compute the initial water cluster
+%            - then contact angle change according to a degradation
+%            mechanism (non uniform degradation is possible)
+%           - from time to time a pore next to the cluster is invaded if it's 
+%           capillary pressure becomes smaller than the pressure of the water
+%           cluster. This pore invasion can induce also several neighbour 
+%           pore invasion (this is called haines jump or burst)
 %
 %Input : network,inletLink,ouletLink,options,varargin (optionnel)
 %       options.nIterations= nombre d'itérations
 %       options.MechanismeDegradation='uniforme','uniformeDansEau','sommeVitesses'
 %       options.RechercheNextInvadedLink='localLinearisationOfCapillaryPressure','linearDecreaseOfCapillaryPressure'
 %       varargin (optionnel) :clusterOptions (voir ClusterMonophasique)
-%Output : floodingStepInformation
+%
+%Output : floodingStepInformation : information to analyse the process in post-processing
     
     
     nIterations=options.nIterations;
@@ -45,11 +53,13 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
     
     vitesseDegradation=ComputeVitesseDegradation(network,cluster,inletLink,outletLink,options);
     
-    disp('Envahissement secondaire sous l''effet de la perte d''hydrophobie')
+    disp('Envahissement sous l''effet de la perte d''hydrophobie')
 
     for iIteration=1:nIterations
         disp(iIteration);
         floodingStepInformation.nIteration=iIteration;
+        
+        %recherche du prochain pore envahi sous l'effet de la degration
         try
             [indexInvadedLink,timeStep,temps_invasion_potentielle]=FindNextInvadedLink(cluster,pression_reference,pourcentageDegradation,vitesseDegradation,inletLink,outletLink,options);
             floodingStepInformation.distributionInvasionTime{iIteration}=temps_invasion_potentielle+temps;
@@ -66,18 +76,17 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
         end
         temps=temps+timeStep;
         
-        %en cas d'envahissement :
+        
         if indexInvadedLink>0
-            %mise a jour localisation de l'eau :
+            %envahissement de ce pore
             interfaceChangeInformation=cluster.InvadeNewPore(indexInvadedLink);
             cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
             
             floodingStepInformation.invasionPressures{iIteration+1}=pression_reference;
-            %envahissement eventuel des pores voisins
             
             [indexMinPressureLink,minPressure]=cluster.GetMinimalPressureLink;
             while minPressure<pression_reference
-                
+                %gestion du burst ou haines jumps subsequent
                 minPressureLink=cluster.InterfaceLinks(indexMinPressureLink);
                 if network.GetFrontiereOfLink(minPressureLink)~=0
                     fprintf('New breakthrough point on boundary %d',network.GetFrontiereOfLink(minPressureLink));
@@ -96,11 +105,9 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
             floodingStepInformation.clusters{iIteration+1}=cluster.CopyCluster;
             floodingStepInformation.pourcentageDegradation{iIteration+1}=pourcentageDegradation;
             
-            %mise a jour contactAngle et parametres degradation
+            %evolution des parametres dependant de la degradation
             pourcentageDegradation=pourcentageDegradation+timeStep*vitesseDegradation;
-            
-            
-            
+                        
             vitesseDegradation=ComputeVitesseDegradation(network,cluster,inletLink,outletLink,options);
         end
         
