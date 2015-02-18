@@ -1,14 +1,14 @@
-function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,outletLink,options,varargin)
+function outputInformation=ComputeHydrophobicityLoss(network,inletLink,outletLink,options,varargin)
 %COMPUTEHYDROPHOBICITYLOSS Compute how a cluster evolves when there is a 
 %hydrophobicity loss
 %
 %Algorithm : - compute the initial water cluster
-%            - then contact angle change according to a degradation
+%            - then contact angle changes according to a degradation
 %            mechanism (non uniform degradation is possible)
-%           - from time to time a pore next to the cluster is invaded if it's 
+%           - from time to time a pore next to the cluster is invaded if its 
 %           capillary pressure becomes smaller than the pressure of the water
-%           cluster. This pore invasion can induce also several neighbour 
-%           pore invasion (this is called haines jump or burst)
+%           cluster. This pore invasion can induce several neighbours 
+%           pores invasions as a consequence (this is called haines jump or burst)
 %
 %Input : network,inletLink,ouletLink,options,varargin (optionnel)
 %       options.nIterations= nombre d'itérations
@@ -17,52 +17,35 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
 %       options.RechercheNextInvadedLink='exactTimeForLaplaceLaw','localLinearisationOfCapillaryPressure','linearDecreaseOfCapillaryPressure'
 %       varargin (optionnel) :clusterOptions (voir ClusterMonophasique)
 %
-%Output : floodingStepInformation : information to analyse the process in post-processing
+%Output : outputInformation : information to analyse the degradation process 
+
+%---------------------------------------------------------------------------------------------    
+
     
+    [nIterations,outputInformation,clusterOptions,pourcentageDegradation,temps] = InitializeAlgorithm(options,network,inletLink,outletLink,varargin);
     
-    nIterations=options.nIterations;
-    
-    floodingStepInformation=struct;
-    floodingStepInformation.times=zeros(1,nIterations+1);
-    floodingStepInformation.clusters=cell(1,nIterations+1);
-    floodingStepInformation.invasionPressures=cell(1,nIterations+1);
-    floodingStepInformation.pourcentageDegradation=cell(1,nIterations+1);
-    floodingStepInformation.fixedPressure=0;
-    
-    floodingStepInformation.inletLink=inletLink;
-    floodingStepInformation.outletLink=outletLink;
-    floodingStepInformation.options=options;
     
     %Invasion initiale du reseau
-    temps=0;
-    clusterOptions=struct;
-    if not(isempty(varargin))
-        clusterOptions=varargin{1};        
-    end
-    clusterOptions.SurfaceTension = 60e-3; %Water/air surface tension at 80°C
-    
     [cluster,breakthroughPressure,invasionPressureList] = ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
     
-    floodingStepInformation.times(1)=0;
-    floodingStepInformation.clusters{1}=cluster.CopyCluster;
-    floodingStepInformation.invasionPressures{1}=invasionPressureList;
+    outputInformation.times(1)=0;
+    outputInformation.clusters{1}=cluster.CopyCluster;
+    outputInformation.invasionPressures{1}=invasionPressureList;
     
     pression_reference=0.9*invasionPressureList(end);
-    floodingStepInformation.fixedPressure=pression_reference;
+    outputInformation.fixedPressure=pression_reference;
+    outputInformation.breakthroughPressure=breakthroughPressure;
     
-    %Initialisation des parametres de degradation
-    pourcentageDegradation=zeros(1,network.GetNumberOfLinks);
-    floodingStepInformation.pourcentageDegradation{1}=pourcentageDegradation;
+    %Debut de la degradation de l'hydrophobie du reseau
+    disp('Envahissement sous l''effet de la perte d''hydrophobie')
     
     vitesseDegradation=ComputeVitesseDegradation(network,cluster,inletLink,outletLink,options);
-    
-    disp('Envahissement sous l''effet de la perte d''hydrophobie')
 
     for iIteration=1:nIterations
         disp(iIteration);
         
         if not(options.ClusterGrowth)
-            floodingStepInformation.distributionInvasionTime{iIteration}=[];
+            outputInformation.distributionInvasionTime{iIteration}=[];
             timeStep=10/max(vitesseDegradation);
             temps=temps+timeStep;
             
@@ -79,7 +62,7 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
                 end
             end
 
-            floodingStepInformation.distributionInvasionTime{iIteration}=temps_invasion_potentielle+temps;
+            outputInformation.distributionInvasionTime{iIteration}=temps_invasion_potentielle+temps;
             temps=temps+timeStep;
 
             if indexInvadedLink>0
@@ -88,7 +71,7 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
                 interfaceChangeInformation=cluster.InvadeNewPore(indexInvadedLink);
                 cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
 
-                floodingStepInformation.invasionPressures{iIteration+1}=pression_reference;
+                outputInformation.invasionPressures{iIteration+1}=pression_reference;
 
                 [indexMinPressureLink,minPressure]=cluster.GetMinimalPressureLink;
                 while minPressure<pression_reference
@@ -102,21 +85,21 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
                         cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
                     end
 
-                    floodingStepInformation.invasionPressures{iIteration+1}=[floodingStepInformation.invasionPressures{iIteration+1},minPressure];
+                    outputInformation.invasionPressures{iIteration+1}=[outputInformation.invasionPressures{iIteration+1},minPressure];
 
                     [indexMinPressureLink,minPressure]=cluster.GetMinimalPressureLink;
                 end
             end
         end
-        floodingStepInformation.nIteration=iIteration;
-        floodingStepInformation.times(iIteration+1)=temps;
-        floodingStepInformation.pourcentageDegradation{iIteration+1}=pourcentageDegradation;
+        
+        outputInformation.nIteration=iIteration;
+        outputInformation.times(iIteration+1)=temps;
+        outputInformation.pourcentageDegradation{iIteration+1}=pourcentageDegradation;
         savedCluster=cluster.CopyCluster;
         savedCluster.Network=[];
-        floodingStepInformation.clusters{iIteration+1}=savedCluster;
+        outputInformation.clusters{iIteration+1}=savedCluster;
 
-
-        %evolution des parametres dependant de la degradation
+        %evolution de l'etat de degradation
         pourcentageDegradation=pourcentageDegradation+timeStep*vitesseDegradation;
 
         vitesseDegradation=ComputeVitesseDegradation(network,cluster,inletLink,outletLink,options);
@@ -124,6 +107,40 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
     
     
     
+    
+%---------------------------------------------------------------------------------------------    
+    function [nIterations,outputInformation,clusterOptions,pourcentageDegradation,temps] = InitializeAlgorithm(options,network,inletLink,outletLink,varargin)
+        
+        nIterations=options.nIterations;
+
+        outputInformation=struct;
+        outputInformation.times=zeros(1,nIterations+1);
+        outputInformation.clusters=cell(1,nIterations+1);
+        outputInformation.invasionPressures=cell(1,nIterations+1);
+        outputInformation.pourcentageDegradation=cell(1,nIterations+1);
+        outputInformation.fixedPressure=0;
+
+        outputInformation.inletLink=inletLink;
+        outputInformation.outletLink=outletLink;
+        outputInformation.options=options;
+
+
+        temps=0;
+        clusterOptions=struct;
+        if not(isempty(varargin))
+            clusterOptions=varargin{1};        
+        end
+        clusterOptions.SurfaceTension = 60e-3; %Water/air surface tension at 80°C
+        
+        pourcentageDegradation=zeros(1,network.GetNumberOfLinks);
+        outputInformation.pourcentageDegradation{1}=pourcentageDegradation;
+    
+    end
+    
+
+
+
+%---------------------------------------------------------------------------------------------        
     function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink(cluster,pression_reference,pourcentageDegradation,vitesseDegradation,linkInlet,linkOutlet,options)
         
         %option='localLinearisationOfCapillaryPressure';
@@ -182,7 +199,6 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
                 
             end
             
-            
             temps_potentiels_valables=temps_invasion_potentielle(and(temps_invasion_potentielle>0,pourcentageDegradation<100));
             if isempty(temps_potentiels_valables)
                 exception = MException('FindNextInvadedLink:EmptyTempsPotentielValable','Pas de nouvel envahissement possible');
@@ -214,13 +230,12 @@ function floodingStepInformation=ComputeHydrophobicityLoss(network,inletLink,out
             ind=find(temps_invasion_potentielle==temps);
             indexInvadedLink=find(cluster.GetInterfaceLinks==ind);
             
-            
-            
         end
     end
 
 
 
+%---------------------------------------------------------------------------------------------
     function vitesseDegradation=ComputeVitesseDegradation(network,clusterLiquide,inletLink,ouletLink,options)
         
         vitesseDegradation=zeros(1,network.GetNumberOfLinks);
