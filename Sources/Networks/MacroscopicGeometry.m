@@ -373,7 +373,9 @@ classdef MacroscopicGeometry < handle
             end
             
             nAnisotropyBand=myGeometry.GetNumberOfAnisotropyBand;
-            geometry.AnisotropyBand(nAnisotropyBand,1)=struct;
+            if nAnisotropyBand>0
+                geometry.AnisotropyBand(nAnisotropyBand,1)=struct;
+            end
             for iBand=1:nAnisotropyBand
                 geometry.AnisotropyBand(iBand).ATTRIBUTE.Direction=myGeometry.GetAnisotropyBandDirection(iBand);
                 geometry.AnisotropyBand(iBand).ATTRIBUTE.Intensity=myGeometry.GetAnisotropyBandIntensity(iBand);           

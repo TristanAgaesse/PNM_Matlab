@@ -15,7 +15,7 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
     theta = network.GetLinkDataList.ContactAngle(liens);
     linkDiameter = network.GetLinkDataList.Diameter(liens);
     
-    switch clusterOptions.ThroatPressure
+    switch clusterOptions.CapillaryPressureLaw
         
         case 'LaplaceCylinder'
             %Laplace law in cylinders

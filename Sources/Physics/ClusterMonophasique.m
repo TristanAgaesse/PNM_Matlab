@@ -9,8 +9,9 @@ classdef ClusterMonophasique < handle
         InterfacePoresOutward %si ext�rieur : 0 pour outlet, -1 pour wall
         CriticalPressures    %tableau 1*network.GetNumberOfLink contenant les pressions critiques d'invasion
         Network
-        ClusterOptions  %(optionnel) options.Coalescence = 'none' or 'numberOfInvadedNeighbours'
-                           %     options.ThroatPressure = 'LaplaceCylinder','PurcellToroid'
+        ClusterOptions  %(optionnel) clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
+                           %     clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder','PurcellToroid'
+                           %    clusterOptions.SurfaceTension
     end
     
     methods
@@ -23,10 +24,10 @@ classdef ClusterMonophasique < handle
             cluster.Network  =  network;
             cluster.CriticalPressures  =  criticalPressures;
             
-            if isfield(clusterOptions,'ThroatPressure')
-                clusterOptions.ThroatPressure  =  'LaplaceCylinder';
+            if isfield(clusterOptions,'CapillaryPressureLaw')
+                clusterOptions.CapillaryPressureLaw  =  'LaplaceCylinder';
             else
-                clusterOptions.ThroatPressure  =  'PurcellToroid';
+                clusterOptions.CapillaryPressureLaw  =  'PurcellToroid';
             end
             
             if isfield(clusterOptions,'Coalescence')

@@ -1751,14 +1751,14 @@ classdef NetworkBuilder
                     vect_perp = [base_vect(2),-base_vect(1)];
                     
                 case 3
-                    assert(length(planePoints(:,1)) > 3,'au moins 4 points requis');
+                    assert(size(planePoints,1) > 2,'au moins 3 points requis');
 
                     base_vect_1 = (planePoints(2,:)-planePoints(1,:));
                     base_vect_1 = base_vect_1/norm(base_vect_1);
                     base_vect_2 = (planePoints(3,:)-planePoints(1,:));
                     base_vect_2 = base_vect_2/norm(base_vect_2);
                     
-                    if dot(base_vect_1,base_vect_2)<1e-8
+                    if dot(base_vect_1,base_vect_2)<1e-8 && size(planePoints,1) > 3
                         base_vect_2 = (planePoints(4,:)-planePoints(1,:));
                         base_vect_2 = base_vect_2/norm(base_vect_2);
                     end
