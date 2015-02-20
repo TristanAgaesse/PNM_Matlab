@@ -7,8 +7,8 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
 %       - boundaryConditions.outletLink = list of outletLinks
 %       - boundaryConditions.inletType = 'Neumann' or 'Dirichlet'
 %       - boundaryConditions.outletType = 'Neumann' or 'Dirichlet'
-%       - boundaryConditions.inletValue
-%       - boundaryConditions.outletValue
+%       - boundaryConditions.inletValue = value of boundary condition
+%       - boundaryConditions.outletValue = value of boundary condition
 %Output : [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]
 
 
@@ -24,7 +24,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
     fluxSurfaciques = zeros(1,nLink);    %flux oriente de owner a neighbour
     debits = zeros(1,nLink); %flux oriente de owner a neighbour   
     
-        
+    
     composantesConnexesPercolation = cluster.FindPercolationPath(inletLink,outletLink);
     
     %Resolution composante connexe par composante connexe

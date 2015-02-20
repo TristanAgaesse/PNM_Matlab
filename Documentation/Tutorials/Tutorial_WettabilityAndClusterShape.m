@@ -79,7 +79,14 @@ network.GetLinkDataList
 %Paraview ultérieurement, il faut rajouter les concentrations aux data du
 %réseau. 
     
-concentrations=ComputeDiffusion(network, cluster, inletLink, outletLink);
+boundaryConditions.inletLink = inletLink;
+boundaryConditions.outletLink = outletLink;
+boundaryConditions.inletType = 'Dirichlet';
+boundaryConditions.outletType = 'Dirichlet';
+boundaryConditions.inletValue = 1;
+boundaryConditions.outletValue = 0;
+
+concentrations=ComputeDiffusion(network, cluster, boundaryConditions);
 network.AddNewPoreData(concentrations,'DiffusionConcentrations');
 
 

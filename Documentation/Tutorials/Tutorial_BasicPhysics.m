@@ -77,8 +77,8 @@ viewer.View('PoreField',concentrations)
 voidCluster=network.CreateVoidCluster;
 fullCluster=voidCluster.GetComplementaryCluster;
 
-[ pressions, debits, vitessesMoyennes, permeabilityCoefficient ]=ComputePermeability(network, fullCluster, newOutletLink, newInletLink);
-disp(permeabilityCoefficient)
+[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+disp(diffusionCoefficient)
 
 figure;
 viewer.View('PoreField',pressions)
