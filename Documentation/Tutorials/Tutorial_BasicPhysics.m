@@ -71,11 +71,10 @@ viewer.View('PoreField',concentrations)
 %Calculons maintenant la permeabilite du reseau de pores. Nous allons 
 %utiliser la  fonction ComputePermeabilite dans une region correspondant au
 %reseau tout entier. Pour cela il nous faut un cluster qui recouvre tout le
-%reseau. Le moyen le plus simple de l'obtenir utilise les fonctions 
-%CreateVoidCluster du reseau et GetComplementaryCluster du cluster.
+%reseau. Le moyen le plus simple de l'obtenir utilise la fonction 
+%CreateFullCluster du reseau.
 
-voidCluster=network.CreateVoidCluster;
-fullCluster=voidCluster.GetComplementaryCluster;
+fullCluster=network.CreateFullCluster;
 
 [ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
 disp(diffusionCoefficient)

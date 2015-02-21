@@ -11,21 +11,20 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
 %Output : [cluster,breakthroughPressure,invasionPressureList]
 
 
-    CheckLinkDiameter(network) %V�rification si les diametres des liens sont d�j� calcul�s
-    AssignContactAngle(network,wettability) %Assignation du Contact Angle
-    
-    
     %Initialisation de l'algortithme.
     disp('Running Invasion Percolation');
     tic;
-    
+    CheckLinkDiameter(network) %V�rification si les diametres des liens sont d�j� calcul�s
+    AssignContactAngle(network,wettability) %Assignation du Contact Angle
+
+
     clusterOptions = struct;
     if not(isempty(varargin))
         clusterOptions = varargin{1};        
     end
     cluster = ClusterMonophasique.InitialiseInvasionCluster(inletLink,outletLink,network,clusterOptions);
     
-    time = 0;
+    iteration = 0;
     currentPressure = 0;
     outlet_reached = false;
     outletPores = network.GetPoresFrontiere(outletLink);
@@ -36,8 +35,8 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
     
     %Boucle d'invasion pore par pore
-    while not(outlet_reached) && time<nPoreAccessible
-        time = time+1;
+    while not(outlet_reached) && iteration<nPoreAccessible
+        iteration = iteration+1;
         %trouver la face de plus petite pression critique
         
         [indexInvadedLink,invasionPressure] = cluster.GetMinimalPressureLink;
@@ -46,7 +45,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
             currentPressure = invasionPressure;
         end
         
-        invasionPressureList(time) = invasionPressure;    
+        invasionPressureList(iteration) = invasionPressure;    
         
         invadedPore = cluster.GetOutwardPore(indexInvadedLink);
         
@@ -66,10 +65,10 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     %Mise en forme des output
     breakthroughPressure = currentPressure;
     
-    invasionPressureList = invasionPressureList(1:time);
+    invasionPressureList = invasionPressureList(1:iteration);
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-    fprintf('Calcul d''invasion percolation termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+    fprintf('Calcul d''invasion percolation termine. Duree : %d minutes %f s.',minutes,secondes);
     
 end
 

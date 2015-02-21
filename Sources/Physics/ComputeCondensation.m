@@ -27,8 +27,12 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
 %       outputInformation : information to analyse the degradation process 
 
 %---------------------------------------------------------------------------------------------    
-
-
+    
+    
+    disp('Running condensation');
+    tic;
+    CheckInputs(network, options)
+    
     %Compute temperature field
     
     [temperature,heatTransferCoefficient] = ComputeTemperatureField(network,options.TemperatureInlet,options.TemperatureOutlet,options.TemperatureInletLinks,options.TemperatureOutletLinks) ;
@@ -39,19 +43,21 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
     
     
     %Compute equilibrum vapor pressure field
-    
-    equilibriumVaporPressure = ComputeEquilibriumVaporPressure(network,temperature);
+    %---------------------------------------------------------------------------------------------    
+
+    equilibriumVaporPressure = ComputeEquilibriumVaporPressure(temperature);
     
     outputInformation.EquilibriumVaporPressure = equilibriumVaporPressure;
     
     
     
     %Compute partial pressure field
-    voidCluster=network.CreateVoidCluster;
-    fullCluster=voidCluster.GetComplementaryCluster;
+    fullCluster=network.CreateFullCluster;
     inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
     outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
-    partialVaporPressure = ComputePartialVaporPressure(network,fullCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure);
+    partialVaporPressure = ComputePartialVaporPressure(network,fullCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+    
+    outputInformation.PartialVaporPressure{1} = partialVaporPressure;
     
     
     
@@ -67,46 +73,79 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
         return
     end
     
-    %Initialise cluster
-    
-    clusterOptions
     cluster = ClusterMonophasique.InitialiseCondensationCluster(network,clusterOptions,firstInvadedPore,options.LiquidWaterOutletLinks);
     
+    outputInformation.InvadedPore{1}=firstInvadedPore;
     
+    
+    
+    %Begin invasion loop
+    nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
     outlet_reached = false;
     outletPores = network.GetPoresFrontiere(outletLink);
+    iteration = 0;
     
-    %Find accessible pores
-    nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
-    
-    
-    while not(outlet_reached) && time<nPoreAccessible
+    while not(outlet_reached) && iteration<nPoreAccessible
+        iteration = iteration+1;
         
         %Update partial pressure field
         
-        partialVaporPressure = ComputePartialVaporPressure(network,cluster.GetComplementaryCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure);
+        partialVaporPressure = ComputePartialVaporPressure(network,cluster.GetComplementaryCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+        
+        outputInformation.PartialVaporPressure{end+1}= partialVaporPressure;
+        
         
         %new invasion : des pores condensables proches d'une zone envahie, 
         %choisir celui qui peut être envahi par IP (Pc la plus faible)  
-        [minPressure,indexMinPressureLink] = FindNextInvadedLink(cluster,partialVaporPressure,equilibriumPressure);
+        [~,indexMinPressureLink] = FindNextInvadedLink(cluster,partialVaporPressure,equilibriumPressure);
         
-        
-        interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);
-        cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
-        
-        %verifier si outlet_reached
-        if ismember(invadedPore,outletPores)
-            outlet_reached = true;
-            breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
-            cluster.InvadeOutletLink(breakthroughLinks);
+        if indexMinPressureLink>0
+            invadedPore = cluster.GetOutwardPore(indexMinPressureLink);
+            outputInformation.InvadedPore{end+1} = invadedPore;
+
+            interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);
+            cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
+
+
+            %verifier si outlet_reached
+            if ismember(invadedPore,outletPores)
+                outlet_reached = true;
+                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
+                cluster.InvadeOutletLink(breakthroughLinks);
+            end
+        else
+            %no new pore condensable near cluster
+            return
         end
-        
-        
     end
         
-        
+    duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+    fprintf('Calcul de condensation termine. Duree : %d minutes %f s.',minutes,secondes);   
 end
 
+
+
+
+
+
+%---------------------------------------------------------------------------------------------    
+function CheckInputs(network, options)
+
+    assert(isa(network,'PoreNetwork'))
+    
+    assert(isfield(options,'TemperatureInletLinks'));
+    assert(isfield(options,'TemperatureOutletLinks'));
+    assert(isfield(options,'TemperatureInlet'));
+    assert(isfield(options,'TemperatureOutlet'));
+    assert(isfield(options,'LiquidWaterOutletLinks'));
+    assert(isfield(options,'AirPressure'));
+    assert(isfield(options,'VaporInletLinks'));
+    assert(isfield(options,'VaporOutletLinks'));
+    assert(isfield(options,'RelativeHumidityInlet'));
+    assert(isfield(options,'RelativeHumidityOutlet'));
+    assert(isfield(options,'ClusterOptions'));
+
+end
 
 
 
@@ -139,18 +178,18 @@ function equilibriumVaporPressure = ComputeEquilibriumVaporPressure(temperature)
     %http://fr.wikipedia.org/wiki/Pression_de_vapeur_saturante
 
     %Rankine formula
-    equilibriumVaporPressure = 1e5*exp(13.7-5120/temperature) ;
+    equilibriumVaporPressure = 1e5*exp(13.7-5120./temperature) ;
 
 end
 
 
 
 %---------------------------------------------------------------------------------------------        
-function partialVaporPressure = ComputePartialVaporPressure(network,cluster,inletVaporPressure,outletVaporPressure,vaporInletLinks,vaporOutletLinks,airPressure)
+function partialVaporPressure = ComputePartialVaporPressure(network,cluster,inletVaporPressure,outletVaporPressure,vaporInletLinks,vaporOutletLinks,airPressure,temperature)
     
     %Convert inletVaporPressure,outletVaporPressure to concentration
     R = 8.314 ;
-    airConcentration = airPressure/(R*temperature);
+    airConcentration = airPressure./(R*temperature);
     
     inletConcentration = inletVaporPressure*airConcentration ;%airConcentration(vaporInletLinks);
     outletConcentration = outletVaporPressure*airConcentration;%airConcentration(vaporOutletLinks);
@@ -190,13 +229,17 @@ function [minPressure,indexMinPressureLink] = FindNextInvadedLink(cluster,partia
     clusterLinkCondensable = clusterLink(voisinCondensable);
 
     %Chose condensable pore accessible with min capillary pressure
-    criticalPressures  =  cluster.GetCriticalPressures;
-    boundaryCriticalPressures = criticalPressures(cluster.GetInterfaceLinks);
-    [minPressure,indexMinPressureLink]  =  min(boundaryCriticalPressures(clusterLinkCondensable));
+    if not(isempty(clusterLinkCondensable))
+        criticalPressures  =  cluster.GetCriticalPressures;
+        boundaryCriticalPressures = criticalPressures(cluster.GetInterfaceLinks);
+        [minPressure,indexMinPressureLink]  =  min(boundaryCriticalPressures(clusterLinkCondensable));
 
-    indicesPoresCondensables = find(poresCondensables);
-    indexMinPressureLink=indicesPoresCondensables(indexMinPressureLink);
-
+        indicesPoresCondensables = find(poresCondensables);
+        indexMinPressureLink=indicesPoresCondensables(indexMinPressureLink);
+    else
+        indexMinPressureLink=-1;
+        minPressure=-1;
+    end
 end
 
 

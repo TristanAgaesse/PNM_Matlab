@@ -251,6 +251,11 @@ classdef  PoreNetwork
             cluster=ClusterMonophasique.CreateVoidCluster(network);
         end
         
+        function cluster=CreateFullCluster(network)
+            voidCluster=ClusterMonophasique.CreateVoidCluster(network);
+            cluster=voidCluster.GetComplementaryCluster;
+        end
+        
         function adjacencyMatrix = CreateAdjacencyMatrix(network,invadedPoreList)
             %Returns the adjacency matrix of the sub-network given by a
             %list of invaded pores.
