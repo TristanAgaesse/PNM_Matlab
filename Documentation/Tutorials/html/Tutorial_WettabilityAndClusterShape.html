@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Tutoriel Wettability and ClusterShape</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2014-07-11"><meta name="DC.source" content="Tutorial_WettabilityAndClusterShape.m"><style type="text/css">
+      --><title>Tutoriel Wettability and ClusterShape</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-02-21"><meta name="DC.source" content="Tutorial_WettabilityAndClusterShape.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -74,9 +74,9 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 [ network,viewer ]=CreateNetwork(<span class="string">'1block3D'</span>);
 
 inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
-</pre><pre class="codeoutput">G&#65533;n&#65533;ration du r&#65533;seau...
-R&#65533;seau g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 43.703342 s.
-</pre><pre class="codeinput"><span class="comment">%L'objet network contient des data associ&eacute;es aux pores et liens. Ce peut</span>
+</pre><pre class="codeoutput">Generation du reseau...
+Reseau genere. Duree : 0 minutes 16.614728 s.
+</pre><img vspace="5" hspace="5" src="Tutorial_WettabilityAndClusterShape_01.png" alt=""> <pre class="codeinput"><span class="comment">%L'objet network contient des data associ&eacute;es aux pores et liens. Ce peut</span>
 <span class="comment">%etre les propri&eacute;t&eacute;es g&eacute;om&eacute;triques des pores et liens, des r&eacute;sultats de</span>
 <span class="comment">%simulations...</span>
 <span class="comment">%On peut acc&eacute;der aux poresData et linkData directement dans l'interface</span>
@@ -101,7 +101,7 @@ network.GetLinkDataList.ContactAngle;
 </pre><pre class="codeoutput">
 ans = 
 
-    ContactAngle: [1x9975 double]
+    ContactAngle: [1x9944 double]
 
 </pre><pre class="codeinput"><span class="comment">%Calculons donc une invasion percolation avec l'angle de contact de 80&deg;</span>
 <span class="comment">%defini a l'etape precedente. Pour visualiser les pores envahis dans</span>
@@ -117,20 +117,18 @@ network.AddNewPoreData(cluster.GetInvadedPoresBooleans,<span class="string">'Inv
 network.GetPoreDataList
 
 network.GetLinkDataList
-</pre><pre class="codeoutput">Calcul du diam&#65533;tre des liens...
-Calcul du diam&#65533;tre des liens termin&#65533;. Dur&#65533;e : 1 minutes 55.974487 s.
-Calcul d'invasion percolation...
-Calcul d'invasion percolation termin&#65533;. Dur&#65533;e : 0 minutes 18.020365 s.
+</pre><pre class="codeoutput">Running Invasion Percolation
+Calcul du diam&#65533;tre des liens...
+Calcul du diam&#65533;tre des liens termin&#65533;. Dur&#65533;e : 0 minutes 46.511362 s.Calcul d'invasion percolation termine. Duree : 0 minutes 49.672785 s.
+ans = 
+
+    InvadedPores_80: [1x1100 double]
+
 
 ans = 
 
-    InvadedPores_80: [1x1096 double]
-
-
-ans = 
-
-    ContactAngle: [1x9975 double]
-        Diameter: [1x9975 double]
+    ContactAngle: [1x9944 double]
+        Diameter: [1x9944 double]
 
 </pre><pre class="codeinput"><span class="comment">%Faisons maintenant une invasion percolation avec un angle de contact</span>
 <span class="comment">%uniforme de 110&deg;. On retire d'abord l'ancien linkData 'ContactAngle', on</span>
@@ -149,30 +147,36 @@ network.AddNewPoreData(cluster.GetInvadedPoresBooleans,<span class="string">'Inv
 network.GetPoreDataList
 
 network.GetLinkDataList
-</pre><pre class="codeoutput">Calcul d'invasion percolation...
-Calcul d'invasion percolation termin&#65533;. Dur&#65533;e : 0 minutes 8.248737 s.
+</pre><pre class="codeoutput">Running Invasion Percolation
+Calcul d'invasion percolation termine. Duree : 0 minutes 1.302271 s.
+ans = 
+
+     InvadedPores_80: [1x1100 double]
+    InvadedPores_110: [1x1100 double]
+
 
 ans = 
 
-     InvadedPores_80: [1x1096 double]
-    InvadedPores_110: [1x1096 double]
-
-
-ans = 
-
-        Diameter: [1x9975 double]
-    ContactAngle: [1x9975 double]
+        Diameter: [1x9944 double]
+    ContactAngle: [1x9944 double]
 
 </pre><pre class="codeinput"><span class="comment">%Calculons maintenant la diffusion. Pour visualiser les concentrations dans</span>
 <span class="comment">%Paraview ult&eacute;rieurement, il faut rajouter les concentrations aux data du</span>
 <span class="comment">%r&eacute;seau.</span>
 
-concentrations=ComputeDiffusion(network, cluster, inletLink, outletLink);
+boundaryConditions.inletLink = inletLink;
+boundaryConditions.outletLink = outletLink;
+boundaryConditions.inletType = <span class="string">'Dirichlet'</span>;
+boundaryConditions.outletType = <span class="string">'Dirichlet'</span>;
+boundaryConditions.inletValue = 1;
+boundaryConditions.outletValue = 0;
+
+concentrations=ComputeDiffusion(network, cluster, boundaryConditions);
 network.AddNewPoreData(concentrations,<span class="string">'DiffusionConcentrations'</span>);
 </pre><pre class="codeoutput">Calcul des conductances de Diffusion...
-Calcul des conductances de diffusion termin&#65533;. Dur&#65533;e : 0 minutes 1.714278 s.
-Elapsed time is 0.023504 seconds.
-</pre><pre class="codeinput"><span class="comment">%La fonction ComputeDiffusion utilise les conductances de diffusion des</span>
+Calcul des conductances de diffusion termine. Duree : 0 minutes 0.001411 s.Solving linear system
+minres converged at iteration 15 to a solution with relative residual 5.9e-05.
+Solving linear system finished. Time spent : 0 minutes 0.091574 s.</pre><pre class="codeinput"><span class="comment">%La fonction ComputeDiffusion utilise les conductances de diffusion des</span>
 <span class="comment">%liens. Si 'ConductancesDiffusion' n'est pas encore defini dans les</span>
 <span class="comment">%linkData du reseau, la fonction la calcule et l'ajoute au reseau pour une</span>
 <span class="comment">%future utilisation.</span>
@@ -181,16 +185,16 @@ network.GetLinkDataList
 </pre><pre class="codeoutput">
 ans = 
 
-                 Diameter: [1x9975 double]
-             ContactAngle: [1x9975 double]
-    ConductancesDiffusion: [1x9975 double]
+                 Diameter: [1x9944 double]
+             ContactAngle: [1x9944 double]
+    ConductancesDiffusion: [1x9944 double]
 
 </pre><pre class="codeinput"><span class="comment">%On peut visualiser le reseau dans Matlab avec le viewer. Neanmoins les</span>
 <span class="comment">%fonctionnalites du viewer sont moins etendues en 3D qu'en 2D et le rendu est moins bon.</span>
 <span class="comment">%Cela est du aux limitations des outils de visualisation de Matlab.</span>
 
 viewer.View(<span class="string">'Network'</span>)
-</pre><img vspace="5" hspace="5" src="Tutorial_WettabilityAndClusterShape_01.png" alt=""> <pre class="codeinput"><span class="comment">%Il est possible d'exporter le reseau dans Paraview pour une meilleure visualisation. Pour cela on ecrit un</span>
+</pre><img vspace="5" hspace="5" src="Tutorial_WettabilityAndClusterShape_02.png" alt=""> <pre class="codeinput"><span class="comment">%Il est possible d'exporter le reseau dans Paraview pour une meilleure visualisation. Pour cela on ecrit un</span>
 <span class="comment">%fichier .vtk. Dans ce fichier il y aura des informations sur la geometrie</span>
 <span class="comment">%du reseau et les data associes aux pores, liens etc... Il y a deux types</span>
 <span class="comment">%de rendu d'un reseau, Ball and Stick et maillage. Le rendu maillage est</span>
@@ -199,7 +203,7 @@ viewer.View(<span class="string">'Network'</span>)
 
 network.ExportToParaview(<span class="string">'NetworkTutorial_Wettability'</span>)
 </pre><pre class="codeoutput">G&#65533;n&#65533;ration du fichier VTK...
-Fichier VTK g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 43.368388 s.
+Fichier VTK g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 16.009815 s.
 </pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% Tutoriel Wettability and ClusterShape
@@ -283,7 +287,14 @@ network.GetLinkDataList
 %Paraview ultérieurement, il faut rajouter les concentrations aux data du
 %réseau. 
     
-concentrations=ComputeDiffusion(network, cluster, inletLink, outletLink);
+boundaryConditions.inletLink = inletLink;
+boundaryConditions.outletLink = outletLink;
+boundaryConditions.inletType = 'Dirichlet';
+boundaryConditions.outletType = 'Dirichlet';
+boundaryConditions.inletValue = 1;
+boundaryConditions.outletValue = 0;
+
+concentrations=ComputeDiffusion(network, cluster, boundaryConditions);
 network.AddNewPoreData(concentrations,'DiffusionConcentrations');
 
 

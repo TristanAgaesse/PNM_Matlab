@@ -82,7 +82,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
     totalOutletDebit = sum(debits(outletLink));
     
     if(abs(totalOutletDebit)>0)
-        %assert(abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit)<1e-1,'Non conservation de la matière !');
+        assert(abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit)<1e-1,'Non conservation de la matière !');
     end
        
     
@@ -121,26 +121,28 @@ function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_env
 
     
     
-    %Contribution des liens internes
+%     %Contribution des liens internes
     numOwner = poreNetwork.LinkOwners(liens_internes_envahis);
     numNeighbour = poreNetwork.LinkNeighbours(liens_internes_envahis);
     indiceOwner = poresPercolantsIndices(numOwner);
     indiceNeighbour = poresPercolantsIndices(numNeighbour);
     %termes diagonaux
-    value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(liens_internes_envahis);
-    value_diag(indiceNeighbour)=value_diag(indiceNeighbour)+conductances(liens_internes_envahis);
+    for i=1:length(liens_internes_envahis)
+         value_diag(indiceOwner(i))=value_diag(indiceOwner(i))+conductances(liens_internes_envahis(i));
+         value_diag(indiceNeighbour(i))=value_diag(indiceNeighbour(i))+conductances(liens_internes_envahis(i));
+    end
     %termes non diagonaux
-    position=1:2:2*length(liens_internes_envahis);
-    indiceI_nonDiag(position)=indiceOwner;
-    indiceJ_nonDiag(position)=indiceNeighbour;
-    value_nonDiag(position)=-conductances(liens_internes_envahis);
+    matrixIndex=1:2:2*length(liens_internes_envahis);
+    indiceI_nonDiag(matrixIndex)=indiceOwner;
+    indiceJ_nonDiag(matrixIndex)=indiceNeighbour;
+    value_nonDiag(matrixIndex)=-conductances(liens_internes_envahis);
 
-    position=2:2:2*length(liens_internes_envahis);
-    indiceI_nonDiag(position)=indiceNeighbour;
-    indiceJ_nonDiag(position)=indiceOwner;
-    value_nonDiag(position)=-conductances(liens_internes_envahis);
+    matrixIndex=2:2:2*length(liens_internes_envahis);
+    indiceI_nonDiag(matrixIndex)=indiceNeighbour;
+    indiceJ_nonDiag(matrixIndex)=indiceOwner;
+    value_nonDiag(matrixIndex)=-conductances(liens_internes_envahis);
         
-    %position=0;    
+%     position=0;    
 %     for numLien = liens_internes_envahis
 %         numOwner = poreNetwork.LinkOwners(numLien);
 %         numNeighbour = poreNetwork.LinkNeighbours(numLien);
@@ -207,28 +209,34 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
     
     if strcmp(boundaryConditions.inletType,'Dirichlet')
         
-      indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
-      terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*conductances(liens_inlet_envahis);
-
+    	indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
+    	for i =1:length(liens_inlet_envahis)
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.inletValue*conductances(liens_inlet_envahis(i));
+        end
+        
     elseif  strcmp(boundaryConditions.inletType,'Neumann')
         
         surface_face = pi/4*(linkDiameters(liens_inlet_envahis)).^2;
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
-        terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*surface_face;
-        
+        for i =1:length(liens_inlet_envahis)
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.inletValue*surface_face(i);
+        end
     end
 
     if strcmp(boundaryConditions.outletType,'Dirichlet')
         
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
-        terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.outletValue*conductances(liens_outlet_envahis);
+        for i =1:length(liens_outlet_envahis)
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.outletValue*conductances(liens_outlet_envahis(i));
+        end
         
     elseif  strcmp(boundaryConditions.outletType,'Neumann')
         
         surface_face = pi/4*(linkDiameters(liens_outlet_envahis)).^2;
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
-        terme_droite(indiceOwner) = terme_droite(indiceOwner)-boundaryConditions.outletValue*surface_face;        
-    
+        for i =1:length(liens_outlet_envahis)
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))-boundaryConditions.outletValue*surface_face(i);        
+        end
     end
     
     terme_droite=transpose(terme_droite);

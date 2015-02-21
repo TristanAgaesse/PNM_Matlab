@@ -1,7 +1,9 @@
 %%
-%Les physiques... Compute+autocomplétion.
-%On va calculer une invasion percolation. 
+%Dans ce tutorial nous allons apprendre a utiliser les physiques de base.
+%Les physiques sont codees dans des fonctions dont le nom commence par 
+%Compute. Pour voir la liste des physiques disponibles, taper Compute+autocomplétion.
 
+%Commencons par contruire un reseau de pores.
 [ network,viewer ]=CreateNetwork('3block2D');
 viewer.View('Network')
 
@@ -10,6 +12,7 @@ figure;colorbar;
 viewer.View('Boundaries')
 
 %%
+%Calculons maintenant une invasion percolation.
 %La fonction ComputeInvasionPercolation prend en arguement le reseau, une
 %liste de liens d'entree pour l'eau (inletLink), une liste de liens de 
 %sortie (outletLink) et une option concernant les angles de contact. 
@@ -80,4 +83,4 @@ fullCluster=network.CreateFullCluster;
 disp(diffusionCoefficient)
 
 figure;
-viewer.View('PoreField',pressions)
+viewer.View('PoreField',concentrations)
