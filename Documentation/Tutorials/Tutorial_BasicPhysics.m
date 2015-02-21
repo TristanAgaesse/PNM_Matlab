@@ -77,7 +77,7 @@ viewer.View('PoreField',concentrations)
 voidCluster=network.CreateVoidCluster;
 fullCluster=voidCluster.GetComplementaryCluster;
 
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
 disp(diffusionCoefficient)
 
 figure;

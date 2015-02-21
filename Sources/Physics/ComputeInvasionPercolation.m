@@ -13,7 +13,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
 
     CheckLinkDiameter(network) %V�rification si les diametres des liens sont d�j� calcul�s
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
-   
+    
     
     %Initialisation de l'algortithme.
     disp('Running Invasion Percolation');
@@ -33,13 +33,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     invasionPressureList = zeros(1,nPore);
     
     %Find accessible pores
-    fooCluster=network.CreateVoidCluster;
-    totalFloodCluster=fooCluster.GetComplementaryCluster;
-    percoPath=totalFloodCluster.FindPercolationPath(inletLink,1:network.GetNumberOfLinks);
-    nPoreAccessible=0;
-    for i=1:length(percoPath)
-        nPoreAccessible=nPoreAccessible+length(percoPath{i}.GetInvadedPores);
-    end
+    nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
     
     %Boucle d'invasion pore par pore
     while not(outlet_reached) && time<nPoreAccessible
@@ -56,12 +50,12 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
         
         invadedPore = cluster.GetOutwardPore(indexInvadedLink);
         
-        %envahir le pore associ� et mettre � jour les pressions critiques
+        %envahir le pore associe et update les pressions critiques
         
         interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
         cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink); 
         
-        %v�rifier si outlet_reached
+        %verifier si outlet_reached
         if ismember(invadedPore,outletPores)
             outlet_reached = true;
             breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
@@ -80,6 +74,23 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
 end
 
 
+
+%---------------------------------------------------------------------------------------------        
+function nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink)
+
+    fooCluster=network.CreateVoidCluster;
+    totalFloodCluster=fooCluster.GetComplementaryCluster;
+    percoPath=totalFloodCluster.FindPercolationPath(inletLink,1:network.GetNumberOfLinks);
+    nPoreAccessible=0;
+    for i=1:length(percoPath)
+        nPoreAccessible=nPoreAccessible+length(percoPath{i}.GetInvadedPores);
+    end
+
+end
+
+
+
+%---------------------------------------------------------------------------------------------        
 function CheckLinkDiameter(network)
     if not(isfield(network.GetLinkDataList,'Diameter'))
         disp('Calcul du diam�tre des liens...');
@@ -96,6 +107,8 @@ function CheckLinkDiameter(network)
 
 end
 
+
+%---------------------------------------------------------------------------------------------        
 function AssignContactAngle(network,wettability)
     
     if not(strcmp(wettability,'currentWettability'))

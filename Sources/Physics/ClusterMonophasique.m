@@ -327,7 +327,7 @@ classdef ClusterMonophasique < handle
             nLink = poreNetwork.GetNumberOfLinks;
             booleanInvadedLinks = zeros(1,nLink);
             
-            %listes qui rep�rent la position de la fronti�re
+            %listes qui reperent la position de la frontiere
             interfaceLinks = linkInlet;
             inletPoreOutward = poreNetwork.GetPoresFrontiere(linkInlet);   
             
@@ -356,13 +356,59 @@ classdef ClusterMonophasique < handle
             end
             
             
-            
-            
             cluster.UpdateCriticalPressure(linksToInitialise,linkInlet,linkOutlet);
             
         end
         
 
+        
+        function cluster = InitialiseCondensationCluster(network,clusterOptions,firstInvadedPore,outletLink)
+            %input: network,clusterOptions,firstInvadedPore,inletLink,outletLink
+            %output : cluster paramétré de façon à commencer
+            %       une condensation depuis firstInvadedPore
+            
+            %listes qui reperent les pores et les liens envahis
+            nPore = network.GetNumberOfPores;
+            invadedPores = zeros(1,nPore);
+            invadedPores(firstInvadedPore)=1;
+            
+            nLink = network.GetNumberOfLinks;
+            booleanInvadedLinks = zeros(1,nLink);
+            
+            %listes qui rep�rent la position de la frontiere
+            interfaceLinks = network.GetLinksOfPore(firstInvadedPore);
+            interfacePoreOutward = network.GetPoresVoisinsOfPore(firstInvadedPore);   
+            
+            criticalPressures = zeros(1,poreNetwork.GetNumberOfLinks);
+            
+           
+            cluster = ClusterMonophasique(invadedPores,interfaceLinks,interfacePoreOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
+            
+            %initialisation des pressions critiques
+            [poreOutwardUnique,~,m] = unique(interfacePoreOutward);
+            nporeOutwardUnique = length(poreOutwardUnique);
+            
+            linksToInitialise = cell(1,nporeOutwardUnique);
+            
+            for iporeOutwardUnique = 1:nporeOutwardUnique
+                linksToInitialise{iporeOutwardUnique}{1} = poreOutwardUnique(iporeOutwardUnique);%numero du pore
+                linksToInitialise{iporeOutwardUnique}{2} = [];
+            end
+            for iInterfaceLink = 1:length(interfaceLinks)
+                iporeOutwardUnique = m(iInterfaceLink);
+                linksToInitialise{iporeOutwardUnique}{2} = [linksToInitialise{iporeOutwardUnique}{2},interfaceLinks(iInterfaceLink)]; %numeros des liens associe a ce pore
+            end
+            
+            
+            
+            cluster.UpdateCriticalPressure(linksToInitialise,[],outletLink);
+            
+        end
+        
+        
+        
+        
+        
     end
     
 end
