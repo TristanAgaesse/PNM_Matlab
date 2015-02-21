@@ -43,7 +43,6 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
     
     
     %Compute equilibrum vapor pressure field
-    %---------------------------------------------------------------------------------------------    
 
     equilibriumVaporPressure = ComputeEquilibriumVaporPressure(temperature);
     
