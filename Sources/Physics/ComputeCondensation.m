@@ -73,19 +73,19 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
         return
     end
     
-    cluster = ClusterMonophasique.InitialiseCondensationCluster(network,clusterOptions,firstInvadedPore,options.LiquidWaterOutletLinks);
+    cluster = ClusterMonophasique.InitialiseCondensationCluster(network,options.ClusterOptions,firstInvadedPore,options.LiquidWaterOutletLinks);
     
     outputInformation.InvadedPore{1}=firstInvadedPore;
     
     
     
     %Begin invasion loop
-    nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
+    %nPoreAccessible=FindNumberOfAccessiblePores(network,1:network.);
     outlet_reached = false;
-    outletPores = network.GetPoresFrontiere(outletLink);
+    outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     iteration = 0;
     
-    while not(outlet_reached) && iteration<nPoreAccessible
+    while not(outlet_reached) %&& iteration<nPoreAccessible
         iteration = iteration+1;
         
         %Update partial pressure field
@@ -97,20 +97,20 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
         
         %new invasion : des pores condensables proches d'une zone envahie, 
         %choisir celui qui peut être envahi par IP (Pc la plus faible)  
-        [~,indexMinPressureLink] = FindNextInvadedLink(cluster,partialVaporPressure,equilibriumPressure);
+        [~,indexMinPressureLink] = FindNextInvadedLink(cluster,partialVaporPressure,equilibriumVaporPressure);
         
         if indexMinPressureLink>0
             invadedPore = cluster.GetOutwardPore(indexMinPressureLink);
             outputInformation.InvadedPore{end+1} = invadedPore;
 
             interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);
-            cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
+            cluster.UpdateCriticalPressure(interfaceChangeInformation,[],options.LiquidWaterOutletLinks);
 
 
             %verifier si outlet_reached
             if ismember(invadedPore,outletPores)
                 outlet_reached = true;
-                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
+                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),options.LiquidWaterOutletLinks);
                 cluster.InvadeOutletLink(breakthroughLinks);
             end
         else
@@ -191,8 +191,8 @@ function partialVaporPressure = ComputePartialVaporPressure(network,cluster,inle
     R = 8.314 ;
     airConcentration = airPressure./(R*temperature);
     
-    inletConcentration = inletVaporPressure*airConcentration ;%airConcentration(vaporInletLinks);
-    outletConcentration = outletVaporPressure*airConcentration;%airConcentration(vaporOutletLinks);
+    inletConcentration = inletVaporPressure*mean(airConcentration(vaporInletLinks)) ;%TODO : remove mean, non uniform boundary conditions
+    outletConcentration = outletVaporPressure*mean(airConcentration(vaporOutletLinks));
     
     %Compute diffusion of vapor
     boundaryConditions=struct;
@@ -223,10 +223,9 @@ function [minPressure,indexMinPressureLink] = FindNextInvadedLink(cluster,partia
     %List of condensable pores next to cluster
     poresCondensables = partialVaporPressure>equilibriumVaporPressure ;
     
-    clusterLink = cluster.GetInterfaceLinks;
-    outwardPores = cluster.GetOutwardPore(1:length(clusterLink));
-    voisinCondensable = poresCondensables(outwardPores);
-    clusterLinkCondensable = clusterLink(voisinCondensable);
+    outwardPores = cluster.GetOutwardPore(1:length(cluster.GetInterfaceLinks));
+    hasVoisinCondensable = poresCondensables(outwardPores(outwardPores>0));
+    clusterLinkCondensable = find(hasVoisinCondensable);
 
     %Chose condensable pore accessible with min capillary pressure
     if not(isempty(clusterLinkCondensable))

@@ -379,7 +379,7 @@ classdef ClusterMonophasique < handle
             interfaceLinks = network.GetLinksOfPore(firstInvadedPore);
             interfacePoreOutward = network.GetPoresVoisinsOfPore(firstInvadedPore);   
             
-            criticalPressures = zeros(1,poreNetwork.GetNumberOfLinks);
+            criticalPressures = zeros(1,network.GetNumberOfLinks);
             
            
             cluster = ClusterMonophasique(invadedPores,interfaceLinks,interfacePoreOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
