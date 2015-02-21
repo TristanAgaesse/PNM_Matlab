@@ -45,11 +45,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
     
         poresPercolantsIndices=zeros(1,nPore);
         poresPercolantsIndices(poresPercolants)=1:nPorePercolant;
-        
-%         for i = 1:nPorePercolant
-%             poresPercolantsIndices( poresPercolants(i) ) = i;
-%         end
-        
+                
         
         %Remplissage matrice
         stiffnessMatrix = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant);
@@ -88,23 +84,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
     if(abs(totalOutletDebit)>0)
         %assert(abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit)<1e-1,'Non conservation de la matière !');
     end
-    
-%     liens_envahis = cluster.GetInvadedLinks;
-%     liens_inlet_envahis = intersect(liens_envahis,inletLink);
-%     liens_outlet_envahis = intersect(liens_envahis,outletLink);
-    
-%     totalOutletDebit =  0;
-%     for iLink = liens_outlet_envahis
-%         totalOutletDebit = totalOutletDebit+debits(iLink);
-%     end
-    
-%     totalInletDebit =  0;
-%     for iLink = liens_inlet_envahis
-%         totalInletDebit = totalInletDebit+debits(iLink);
-%     end
-
-
-    
+       
     
     diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink);
     
@@ -139,32 +119,53 @@ function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_env
     indiceJ_nonDiag=zeros(2*length(liens_internes_envahis),1);
     value_nonDiag=zeros(2*length(liens_internes_envahis),1);
 
-    position=0;
-    for numLien = liens_internes_envahis
-        numOwner = poreNetwork.LinkOwners(numLien);
-        numNeighbour = poreNetwork.LinkNeighbours(numLien);
-        indiceOwner = poresPercolantsIndices(numOwner);
-        assert(numNeighbour ~= -1);
-        indiceNeighbour = poresPercolantsIndices(numNeighbour);
+    
+    
+    %Contribution des liens internes
+    numOwner = poreNetwork.LinkOwners(liens_internes_envahis);
+    numNeighbour = poreNetwork.LinkNeighbours(liens_internes_envahis);
+    indiceOwner = poresPercolantsIndices(numOwner);
+    indiceNeighbour = poresPercolantsIndices(numNeighbour);
+    %termes diagonaux
+    value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(liens_internes_envahis);
+    value_diag(indiceNeighbour)=value_diag(indiceNeighbour)+conductances(liens_internes_envahis);
+    %termes non diagonaux
+    position=1:2:2*length(liens_internes_envahis);
+    indiceI_nonDiag(position)=indiceOwner;
+    indiceJ_nonDiag(position)=indiceNeighbour;
+    value_nonDiag(position)=-conductances(liens_internes_envahis);
 
-        %termes diagonaux
-        value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
-        value_diag(indiceNeighbour)=value_diag(indiceNeighbour)+conductances(numLien);
+    position=2:2:2*length(liens_internes_envahis);
+    indiceI_nonDiag(position)=indiceNeighbour;
+    indiceJ_nonDiag(position)=indiceOwner;
+    value_nonDiag(position)=-conductances(liens_internes_envahis);
+        
+    %position=0;    
+%     for numLien = liens_internes_envahis
+%         numOwner = poreNetwork.LinkOwners(numLien);
+%         numNeighbour = poreNetwork.LinkNeighbours(numLien);
+%         indiceOwner = poresPercolantsIndices(numOwner);
+%         assert(numNeighbour ~= -1);
+%         indiceNeighbour = poresPercolantsIndices(numNeighbour);
+% 
+%         %termes diagonaux
+%         value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
+%         value_diag(indiceNeighbour)=value_diag(indiceNeighbour)+conductances(numLien);
+% 
+%         %termes non diagonaux
+% 
+%         indiceI_nonDiag(position+1)=indiceOwner;
+%         indiceJ_nonDiag(position+1)=indiceNeighbour;
+%         value_nonDiag(position+1)=-conductances(numLien);
+% 
+%         indiceI_nonDiag(position+2)=indiceNeighbour;
+%         indiceJ_nonDiag(position+2)=indiceOwner;
+%         value_nonDiag(position+2)=-conductances(numLien);
+% 
+%         position=position+2;
+%     end
 
-        %termes non diagonaux
-
-        indiceI_nonDiag(position+1)=indiceOwner;
-        indiceJ_nonDiag(position+1)=indiceNeighbour;
-        value_nonDiag(position+1)=-conductances(numLien);
-
-        indiceI_nonDiag(position+2)=indiceNeighbour;
-        indiceJ_nonDiag(position+2)=indiceOwner;
-        value_nonDiag(position+2)=-conductances(numLien);
-
-        position=position+2;
-    end
-
-
+    %Contribution des liens inlet et outlet
     if strcmp(boundaryConditions.inletType,'Dirichlet')
 
       for numLien = liens_inlet_envahis
@@ -208,14 +209,6 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
         
       indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
       terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*conductances(liens_inlet_envahis);
-%       for numLien = liens_inlet_envahis
-% 
-%         numOwner = poreNetwork.LinkOwners(numLien);
-%         indiceOwner = poresPercolantsIndices(numOwner);
-%         assert(poreNetwork.LinkNeighbours(numLien) == -1);
-% 
-%         terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*conductances(numLien);
-%       end
 
     elseif  strcmp(boundaryConditions.inletType,'Neumann')
         
@@ -223,15 +216,6 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
         terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*surface_face;
         
-%       for numLien = liens_inlet_envahis
-% 
-%           surface_face = pi/4*(linkDiameters(numLien))^2;
-%           numOwner = poreNetwork.LinkOwners(numLien);
-%           indiceOwner = poresPercolantsIndices(numOwner);
-%           assert(poreNetwork.LinkNeighbours(numLien) == -1);
-% 
-%           terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.inletValue*surface_face;
-%       end
     end
 
     if strcmp(boundaryConditions.outletType,'Dirichlet')
@@ -239,30 +223,12 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
         terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.outletValue*conductances(liens_outlet_envahis);
         
-%       for numLien = liens_outlet_envahis
-% 
-%         numOwner = poreNetwork.LinkOwners(numLien);
-%         indiceOwner = poresPercolantsIndices(numOwner);
-%         assert(poreNetwork.LinkNeighbours(numLien) == -1);
-% 
-%         terme_droite(indiceOwner) = terme_droite(indiceOwner)+boundaryConditions.outletValue*conductances(numLien);
-%       end
-
     elseif  strcmp(boundaryConditions.outletType,'Neumann')
         
         surface_face = pi/4*(linkDiameters(liens_outlet_envahis)).^2;
         indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
         terme_droite(indiceOwner) = terme_droite(indiceOwner)-boundaryConditions.outletValue*surface_face;        
-        
-%       for numLien = liens_outlet_envahis
-% 
-%           surface_face = pi/4*(linkDiameters(numLien))^2;
-%           numOwner = poreNetwork.LinkOwners(numLien);
-%           indiceOwner = poresPercolantsIndices(numOwner);
-%           assert(poreNetwork.LinkNeighbours(numLien) == -1);
-% 
-%           terme_droite(indiceOwner) = terme_droite(indiceOwner)-boundaryConditions.outletValue*surface_face;
-%       end
+    
     end
     
     terme_droite=transpose(terme_droite);
@@ -280,16 +246,13 @@ function [concentrations,debits,fluxSurfaciques]=ReassembleComputedField(concent
     linkDiameters = poreNetwork.GetLinkDataList.Diameter;
     conductances = poreNetwork.GetLinkDataList.('ConductancesDiffusion');
     
-    for numLien = liens_internes_envahis
-        %Calcul des vitesses internes en fonction des concentrations
-        numOwner = poreNetwork.LinkOwners(numLien);
-        numNeighbour = poreNetwork.LinkNeighbours(numLien);
-        debit = conductances(numLien)*(concentrations(numOwner)-concentrations(numNeighbour));
-        surface_lien_equivalente = pi/4*(linkDiameters(numLien))^2;  
-        debits(numLien) = debit;
-        fluxSurfaciques(numLien) = debit/surface_lien_equivalente;   
-    end
-
+    %Calcul des vitesses internes en fonction des concentrations
+    numOwner = poreNetwork.LinkOwners(liens_internes_envahis);
+    numNeighbour = poreNetwork.LinkNeighbours(liens_internes_envahis);
+    debit(liens_internes_envahis) = conductances(liens_internes_envahis).*(concentrations(numOwner)-concentrations(numNeighbour));
+    surface_lien_equivalente = pi/4*(linkDiameters(liens_internes_envahis)).^2;
+    fluxSurfaciques(liens_internes_envahis) = debit(liens_internes_envahis)./surface_lien_equivalente;
+    
     %ajout des debits inlet
     if strcmp(boundaryConditions.inletType,'Dirichlet')
         for numLien = liens_inlet_envahis
@@ -336,6 +299,17 @@ end
 
 
 %---------------------------------------------------------------------------------------------
+function diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink)
+
+    totalOutletDebit = sum(debits(outletLink));
+    deltaConcentration = mean(concentrations(inletLink))-mean(concentrations(outletLink));
+    
+    diffusionCoefficient = totalOutletDebit/deltaConcentration;   
+end
+
+
+
+%---------------------------------------------------------------------------------------------
 function [inletLink,outletLink]=ReadCheckInputs(poreNetwork,cluster,boundaryConditions)
 
 
@@ -361,12 +335,4 @@ function [inletLink,outletLink]=ReadCheckInputs(poreNetwork,cluster,boundaryCond
 end
 
 
-%---------------------------------------------------------------------------------------------
-function diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink)
-
-    totalOutletDebit = sum(debits(outletLink));
-    deltaConcentration = mean(concentrations(inletLink))-mean(concentrations(outletLink));
-    
-    diffusionCoefficient = totalOutletDebit/deltaConcentration;   
-end
 
