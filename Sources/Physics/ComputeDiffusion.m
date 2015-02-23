@@ -11,6 +11,8 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
 %       - boundaryConditions.outletValue = value of boundary condition
 %Output : [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]
 
+    disp('Computing diffusion ')
+    tic;
 
     %Checking inputs and initial state
     [inletLink,outletLink]=ReadCheckInputs(poreNetwork,cluster,boundaryConditions);
@@ -55,9 +57,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
         
 
         %Resolution du systeme lineaire
-        disp('Solving linear system')
-        tic;
-        
+
         if poreNetwork.GetDimension==2
             concentr=mldivide(stiffnessMatrix,rigthHandSide);
         else
@@ -66,8 +66,7 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
         end
         
         
-        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Solving linear system finished. Time spent : %d minutes %f s.',minutes,secondes);
+        
         clear matrice;
         
         %Reassemblage de l'output concentration
@@ -87,6 +86,9 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
        
     
     diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink);
+    
+    duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+    fprintf('Computing diffusion finished. Time spent : %d minutes %f s. ',minutes,secondes);
     
 end
 
@@ -213,6 +215,7 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
     	for i =1:length(liens_inlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.inletValue*conductances(liens_inlet_envahis(i));
         end
+        
         
     elseif  strcmp(boundaryConditions.inletType,'Neumann')
         
