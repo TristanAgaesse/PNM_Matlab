@@ -12,7 +12,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
 %
 % Output : [ totalSaturation, saturationProfile ]
 
-
+    
     %Checking initial state
     [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options );
     CheckPoreVolume(poreNetwork);
@@ -43,6 +43,7 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
         [~, saturationProfile]=ComputeSaturationOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid);
     end
 
+       
 end
 
 
@@ -183,15 +184,18 @@ function [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( clus
                 end
             end
 
-            if isfield(options,'nPointProfile')
-                nPointCurve=options.nPointProfile;
-            else
-                nPointCurve=20;
-            end
-
+        elseif strcmp(options.type,'totalSaturation')
+            mode='totalSaturation';
+            axe=[1];
         end
     else
         mode='totalSaturation';
+    end
+    
+    if isfield(options,'nPointProfile')
+        nPointCurve=options.nPointProfile;
+    else
+        nPointCurve=20;
     end
     
     if isa(poreNetwork,'PoreNetworkImageBased')
@@ -214,6 +218,6 @@ function CheckPoreVolume(poreNetwork)
         volumePore=poreNetwork.ComputeAllPoreVolume;
         poreNetwork.AddNewPoreData(volumePore,'Volume');
         duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s. \n',minutes,secondes);
     end
 end

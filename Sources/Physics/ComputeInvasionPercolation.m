@@ -68,7 +68,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     invasionPressureList = invasionPressureList(1:iteration);
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-    fprintf('Calcul d''invasion percolation termine. Duree : %d minutes %f s.',minutes,secondes);
+    fprintf('Invasion percolation finished. Time spent : %d minutes %f s. \n',minutes,secondes);
     
 end
 
@@ -101,7 +101,7 @@ function CheckLinkDiameter(network)
         end
         network.AddNewLinkData(diameter,'Diameter');
         duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+        fprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s. \n',minutes,secondes);
     end
 
 end

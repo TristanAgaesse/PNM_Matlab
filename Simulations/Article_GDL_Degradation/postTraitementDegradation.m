@@ -28,7 +28,8 @@ function infos=postTraitementDegradation(network,floodingStepInformation)
     disp('Post-Traitement : Saturation')
     saturation=zeros(1,nStep);
     for iStep=1:nStep
-        saturation(iStep)=ComputeSaturation(floodingStepInformation.clusters{iStep},network,'totalSaturation');
+        options.type ='totalSaturation';
+        saturation(iStep)=ComputeSaturation(floodingStepInformation.clusters{iStep},network,options);
     end
     infos.Saturation=saturation;
     
@@ -47,7 +48,7 @@ function infos=postTraitementDegradation(network,floodingStepInformation)
     for iStep=1:nStep
         pourcentageDegradation{iStep}=zeros(1,network.GetNumberOfPores);
         for iPore=1:network.GetNumberOfPores
-            pourcentageDegradation{iStep}(iPore)=mean(floodingStepInformation.pourcentageDegradation{iStep}(network.GetLinksOfPore(iPore)) );
+            pourcentageDegradation{iStep}(iPore)=mean(floodingStepInformation.degradationPercentage{iStep}(network.GetLinksOfPore(iPore)) );
         end
     end
     infos.PourcentageDegradationMoyennePore=pourcentageDegradation;
