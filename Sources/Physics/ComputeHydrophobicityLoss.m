@@ -266,14 +266,28 @@ function degradationSpeed=ComputeDegradationSpeed(network,clusterLiquide,inletLi
     elseif strcmp(degradationMechanism,'waterSpeed')
         %coeff degradation(face)=moyenne des vitesse sur les faces des
         %pores_voisins
-        [ ~ , ~, fluidVelocity, ~ ] = ComputePermeability(network,clusterLiquide,inletLink,ouletLink);
-        assert(isempty(find(isnan(fluidVelocity),1)),'NaN found !!!')
+        
+        dynamicViscosity = 1e-3; %viscosity water at ambiant conditions
+        conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
+
+        boundaryConditions.inletLink = inletLink;
+        boundaryConditions.outletLink = ouletLink;
+        boundaryConditions.inletType = 'Dirichlet' ;
+        boundaryConditions.outletType = 'Dirichlet' ;
+        boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
+        boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
+
+        transportPores = clusterLiquide.GetInvadedPores;
+        
+        [ ~, waterFlux, ~ ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
+        
+        assert(isempty(find(isnan(waterFlux),1)),'NaN found !!!')
         
         nPore=network.GetNumberOfPores;
         vitesseMoyennePore=zeros(1,nPore);
         for iPore=1:nPore
             links=network.GetLinksOfPore(iPore);
-            vitesseMoyennePore(iPore)=sum(arrayfun(@(x) abs(x),fluidVelocity(links)))/length(links);
+            vitesseMoyennePore(iPore)=sum(arrayfun(@(x) abs(x),waterFlux(links)))/length(links);
         end
 
         pores = network.GetPoresOfLink(1:network.GetNumberOfLinks);
@@ -282,21 +296,6 @@ function degradationSpeed=ComputeDegradationSpeed(network,clusterLiquide,inletLi
         degradationSpeed(internalLinks) = 0.5*(vitesseMoyennePore(pores(internalLinks,1))+vitesseMoyennePore(pores(internalLinks,2)));
         degradationSpeed(boundaryLinks) = vitesseMoyennePore(pores(boundaryLinks,2));
 
-
-
-    elseif strcmp(degradationMechanism,'sommeDebits')
-%             for num_face=cluster.GetInterfaceLinks
-%                faces_of_owner=network.GetLinksOfPore(network.LinkOwners(num_face));
-%                 moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_owner)))/length(faces_of_owner);
-% 
-%                 if network.LinkNeighbours(num_face)~=-1
-%                     faces_of_neighbour=network.GetLinksOfPore(network.LinkNeighbours(num_face));
-%                     moyenne_vitesses_owner=sum(arrayfun(@(x) abs(x),fluidVelocity(faces_of_neighbour)))/length(faces_of_neighbour);
-%                 else
-%                     moyenne_vitesse_neighbour=0;
-%                 end
-%                 degradationSpeed(num_face)=0.5*(moyenne_vitesses_owner+moyenne_vitesse_neighbour);
-%             end
     end
     
     

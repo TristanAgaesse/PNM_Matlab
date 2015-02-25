@@ -18,8 +18,6 @@ capillaryPressureInitiale2 = ComputeCapillaryPressureCurve(network,network.GetLi
 inletLink = network.GetLinksFrontiere([1 2 3]) ; % GDL/MPL interface
 outletLink = network.GetLinksFrontiere([4 6]);   % Channel
 
-clusterOptions.SurfaceTension = 72e-3; %Water/air surface tension at 80°C
-
 [initialCluster,breakthroughPressure,invasionPressureList] = ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
 
 
