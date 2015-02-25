@@ -12,13 +12,13 @@ classdef Viewer
         end
         
         function View(viewer,options,varargin)
-        %Input : (option, varargin)
+        %Input : viewer,options, (+ varargin : facultative input)
         % 'Network': affichage du maillage
         % 'PoreList': affiche une liste de pores : liste_cellules=varargin{1}
         % 'PoreField' : affichage d'un champ scalaire sur les cellules, champ=varargin{1}
         % 'LinkField' : affichage d'un champ scalaire sur les liens, champ=varargin{1}
         % 'Boundaries': affichage des faces du maillage, avec code couleur pour les fronti�res
-        % 'Edges' : affichage des ar�tes du maillage, avec code couleur pour les fronti�res
+        % 'Edges' : affichage des aretes du maillage, avec code couleur pour les frontieres
         % 'Sommets' : affichage des fibres avec des disques
             
             dimension=viewer.NetworkGeometry.ATTRIBUTE.Dimension;

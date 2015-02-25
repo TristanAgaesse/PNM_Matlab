@@ -8,7 +8,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
     
     
     properties %(SetAccess = protected, GetAccess = protected)
-        Edges %Tableau 2*NombreEdges contenant les num�ros des vertices d�finissant les edges.
+        Edges %Tableau 2*NombreEdges contenant les numeros des vertices definissant les edges.
         NombreEdges
         VerticesToEdges
         FacesToEdges
@@ -21,8 +21,8 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
     methods                       
         
         function network=PoreNetworkMeshFibrous(dimension,faces,pores,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry)
-            %constructeur � partir de l'input geometrie_macroscopique
-            %doit renseigner toutes les properties de la geometrie consid�r�e
+            %constructeur a partir de l'input geometrie_macroscopique
+            %doit renseigner toutes les properties de la geometrie consideree
             %input : dimension,faces,pores,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces
             %output : network
             
@@ -360,8 +360,8 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         
         
         function outputStruct = PrivateInternalOutputStruct(network)
-            %cr�ation en m�moire de la structure output qui pourra �tre 
-            %visualis�e par le visualisateur interne
+            %creation en memoire de la structure output qui pourra etre 
+            %visualisee par le visualisateur interne
             %input : network
             %output : outputStruct
             outputStruct = network.PrivateInternalOutputStruct@PoreNetworkMesh;
@@ -374,8 +374,8 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         
         
         function vtk_struct = PrivateVTKOutputStructPolydataMesh(network)
-            %cr�ation en m�moire de la structure d'un fichier VTK POLYDATA 
-            %pour afficher le r�seau de pores dans paraview.
+            %creation en memoire de la structure d'un fichier VTK POLYDATA 
+            %pour afficher le reseau de pores dans paraview.
             %input : network
             %output :vtk_struct
             vertices = network.Vertices;
@@ -572,7 +572,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             
             writer = FileWriterVTK(filename);
             tic;
-            disp('G�n�ration du fichier VTK...');
+            disp('Writing VTK file...');
             if strcmp(varargin,'BallAndStick')
                 donnees_output = network.PrivateVTKOutputStructBallAndStick;
             else
@@ -580,7 +580,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             end
             writer.Write(donnees_output);
             duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-            disp(sprintf('Fichier VTK g�n�r�. Dur�e : %d minutes %f s.',minutes,secondes));
+            fprintf('VTK file writen. Time spent : %d minutes %f s.',minutes,secondes);
             writer.delete;clear('writer','file_name','file_content','donnees_output','duree','minutes','secondes');
         end
         
@@ -591,7 +591,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             donnees_output = network.PrivateVTKOutputStructPolydataMesh;
             writer.Write(donnees_output);
             duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-            disp(sprintf('Fichiers freecad generes. Dur�e : %d minutes %f s.',minutes,secondes));
+            fprintf('Fichiers freecad generes. Dur�e : %d minutes %f s. \n',minutes,secondes);
             writer.delete;clear('writer','file_name','file_content','donnees_output','duree','minutes','secondes');
         end
         
