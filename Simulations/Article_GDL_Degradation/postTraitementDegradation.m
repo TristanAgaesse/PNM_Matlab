@@ -48,6 +48,7 @@ function infos=postTraitementDegradation(network,floodingStepInformation)
     for iStep=1:nStep
         pourcentageDegradation{iStep}=zeros(1,network.GetNumberOfPores);
         for iPore=1:network.GetNumberOfPores
+            
             pourcentageDegradation{iStep}(iPore)=mean(floodingStepInformation.degradationPercentage{iStep}(network.GetLinksOfPore(iPore)) );
         end
     end

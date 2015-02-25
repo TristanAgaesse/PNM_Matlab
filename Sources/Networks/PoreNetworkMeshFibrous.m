@@ -288,12 +288,19 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         function diameter = ComputeAllLinkDiameter(network)
             %input : network
             %output : diameter
+            
+            disp('Calcul du diametre des liens...');
+            tic;
+            
             nLink = network.GetNumberOfLinks;
             diameter = zeros(1,nLink);
             
             for iLink=1:nLink
                 diameter(iLink) = network.ComputeLinkDiameter(iLink);                
             end
+            
+            duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+            fprintf('Calcul du diametre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
         end  
 
         function linkDiameter = ComputeLinkDiameter(network, numLink)
@@ -321,7 +328,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
                 case 3
                     verticesExtrudes = PoreNetworkMeshFibrous.ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres);
                     surface = abs(polygonArea(verticesExtrudes));%librairie mathgeom
-                    linkDiameter = sqrt(4*surface/pi); %diam�tre �quivalent
+                    linkDiameter = sqrt(4*surface/pi); %diametre �quivalent
             end
         end
         

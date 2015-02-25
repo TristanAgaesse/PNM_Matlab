@@ -31,24 +31,18 @@ function conductances = LocalScaleComputeConductancesStokes(network)
     %Compute conductances
     conductances = zeros(1,nLink);
     conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*viscosite_dyn_water*transpose(distance1(internalLinks)+distance2));
-    conductances(boundaryLinks)=diff_O2_dans_N2*linkSurface(boundaryLinks)./(8*pi*viscosite_dyn_water*transpose(2*distance1(boundaryLinks)));
+    conductances(boundaryLinks)=linkSurface(boundaryLinks)./(8*pi*viscosite_dyn_water*transpose(2*distance1(boundaryLinks)));
     
 end       
 
 
 function CheckLinkDiameter(network)
+
     if not(isfield(network.GetLinkDataList,'Diameter'))
-        disp('Calcul du diametre des liens...');
-        tic;
-        nLink = network.GetNumberOfLinks;
-        diameter = zeros(1,nLink);
-        for iLink = 1:nLink
-            diameter(iLink) = network.ComputeLinkDiameter(iLink);
-        end
+        diameter = network.ComputeAllLinkDiameter;
         network.AddNewLinkData(diameter,'Diameter');
-        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Calcul du diametre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
     end
+    
 end
 
 

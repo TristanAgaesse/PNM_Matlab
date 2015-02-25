@@ -44,7 +44,12 @@ classdef NetworkBuilder
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry);    
                     
                     network = PoreNetworkMeshFibrous(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
-                
+                    
+                    diameter = network.ComputeAllLinkDiameter;
+                    network.AddNewLinkData(diameter,'Diameter');
+                    surface = pi/4*diameter.^2;
+                    network.AddNewLinkData(surface,'Surface');
+                    
                 case 'DelaunayNetwork'
                     [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = NetworkBuilder.GenerateMesh(myGeometry);
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry); 
@@ -60,7 +65,7 @@ classdef NetworkBuilder
             end
             
             duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-            disp(sprintf('Reseau genere. Duree : %d minutes %f s.',minutes,secondes));
+            fprintf('Reseau genere. Duree : %d minutes %f s. \n',minutes,secondes);
         end %BuildNetwork 
         
     end   

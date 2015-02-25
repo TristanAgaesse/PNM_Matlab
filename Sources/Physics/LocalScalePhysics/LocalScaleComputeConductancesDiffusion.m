@@ -39,18 +39,12 @@
 
  
 function CheckLinkDiameter(network)
+
     if not(isfield(network.GetLinkDataList,'Diameter'))
-        disp('Calcul du diametre des liens...');
-        tic;
-        nLink = network.GetNumberOfLinks;
-        diameter = zeros(1,nLink);
-        for iLink = 1:nLink
-            diameter(iLink) = network.ComputeLinkDiameter(iLink);
-        end
+        diameter = network.ComputeAllLinkDiameter;
         network.AddNewLinkData(diameter,'Diameter');
-        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Calcul du diametre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
     end
+    
 end
 
 

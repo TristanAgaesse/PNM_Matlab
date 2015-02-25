@@ -1,6 +1,7 @@
 
 [network,viewer]=CreateNetwork('GDL_2D');
 
+%Assign contact angle
 contactAngle=pi*(100+20*rand(1,network.GetNumberOfLinks))/180.*ones(1,network.GetNumberOfLinks);
 network.AddNewLinkData(contactAngle,'ContactAngle')
 

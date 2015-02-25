@@ -107,6 +107,10 @@ classdef  PoreNetwork
         
         %Data lists handling
         
+        function data = GetPoreData(network,dataName)
+            data = network.GetPoreDataList.(dataName);
+        end
+        
         function data_struct = GetPoreDataList(poreNetwork)
             %input : poreNetwork
             %output : data_struct
@@ -123,6 +127,10 @@ classdef  PoreNetwork
             poreNetwork.PoreDataList.RemoveData(name);
         end        
 
+        function data = GetLinkData(network,dataName)
+            data = network.GetLinkDataList.(dataName);
+        end
+        
         function data_struct = GetLinkDataList(poreNetwork)
             %input : poreNetwork
             %output : data_struct

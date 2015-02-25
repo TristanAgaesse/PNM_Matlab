@@ -59,10 +59,10 @@ boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 boundaryConditions.inletType = 'Dirichlet' ;
 boundaryConditions.outletType = 'Dirichlet' ;
-boundaryConditions.inletValue = 1;
-boundaryConditions.outletValue = 0.1;
+boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
+boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
 
-[ pressure, ~, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
+[ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
 
 disp(permeabilityCoefficient)
 
@@ -85,12 +85,16 @@ conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network);
 boundaryConditions=struct;
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
-boundaryConditions.inletType = 'Dirichlet' ;
-boundaryConditions.outletType = 'Dirichlet' ;
-boundaryConditions.inletValue = 1;
-boundaryConditions.outletValue = 0.1;
 
-[ concentrations, ~, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
+boundaryConditions.inletType = 'Neumann' ;
+linkSurfaces = network.GetLinkData('Surface');
+inletSurfacicFlux = 1e10;
+boundaryConditions.inletValue = inletSurfacicFlux*linkSurfaces(boundaryConditions.inletLink);
+
+boundaryConditions.outletType = 'Dirichlet' ;
+boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink));
+
+[ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
 
 disp(diffusionCoefficient)
 
