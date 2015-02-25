@@ -270,6 +270,7 @@ classdef ClusterMonophasique < handle
             for num_composante = 1:length(composantes_connexes_du_fluide)
                 if ~isempty(intersect(composantes_connexes_du_fluide{num_composante},pore_envahis_outlet)) && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
                     
+                    %find invaded links
                     invadedPores = composantes_connexes_du_fluide{num_composante};
                     linkCount = zeros(1,cluster.Network.GetNumberOfLinks);
                     for iPore = invadedPores

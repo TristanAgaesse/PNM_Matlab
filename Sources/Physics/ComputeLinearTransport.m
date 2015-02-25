@@ -1,32 +1,42 @@
-function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  ComputeDiffusion(poreNetwork,cluster,boundaryConditions)
-%COMPUTEDIFFUSION Resout un probleme de diffusion en statique dans un
-%cluster
-%Input : - network, cluster, boundaryConditions
-%       - boundaryConditions=struct with the following (facultative) fields
-%       - boundaryConditions.inletLink = list of inletLinks
-%       - boundaryConditions.outletLink = list of outletLinks
-%       - boundaryConditions.inletType = 'Neumann' or 'Dirichlet'
-%       - boundaryConditions.outletType = 'Neumann' or 'Dirichlet'
-%       - boundaryConditions.inletValue = value of boundary condition
-%       - boundaryConditions.outletValue = value of boundary condition
-%Output : [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]
+function [ fieldValue, flux, fluxSurfaciques, effectiveTransportProperty ]  =  ComputeLinearTransport(network,transportPores,conductances,boundaryConditions)
+%ComputeLinearTransport Resout un probleme de transport lineaire dans un
+%ensemble de pores. La physique est specifiee par des conductances et des
+%conditions limites.
+%
+%Input : network, transportPores, conductances,boundaryConditions
+%       - network : pore network object
+%       - transportPores : list of pores where there is transport
+%       - conductances : conductances adaptees au transport lineaire
+%       considere et a la geometrie ; length(conductances)=network.GetNumberOfLinks
+%       - boundaryConditions=struct with the following fields
+%       	boundaryConditions.inletLink = list of inletLinks
+%       	boundaryConditions.outletLink = list of outletLinks
+%       	boundaryConditions.inletType = 'Neumann' or 'Dirichlet'
+%       	boundaryConditions.outletType = 'Neumann' or 'Dirichlet'
+%       	boundaryConditions.inletValue = value of boundary condition 
+%       	boundaryConditions.outletValue = value of boundary condition 
+%
+%Output : [ fieldValue, flux, fluxSurfaciques, effectiveTransportProperty ]
 
-    disp('Computing diffusion ')
+    disp('Computing linear transport ')
     tic;
 
     %Checking inputs and initial state
-    [inletLink,outletLink]=ReadCheckInputs(poreNetwork,cluster,boundaryConditions);
-    CheckDiffusionConductances(poreNetwork) ;
+    [inletLink,outletLink]=ReadCheckInputs(network,transportPores,conductances,boundaryConditions);
+    %CheckDiffusionConductances(network) ;
 
     
     
-    nLink = poreNetwork.GetNumberOfLinks;
-    nPore = poreNetwork.GetNumberOfPores;
-    concentrations = zeros(1,nPore);
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    fieldValue = zeros(1,nPore);
     fluxSurfaciques = zeros(1,nLink);    %flux oriente de owner a neighbour
-    debits = zeros(1,nLink); %flux oriente de owner a neighbour   
+    flux = zeros(1,nLink); %flux oriente de owner a neighbour   
     
-    
+    %Decompose transportPores into percolation paths
+    cluster = network.CreateVoidCluster;
+    cluster.InvadedPores = transportPores;
+    cluster.SetClusterOptions = struct;
     composantesConnexesPercolation = cluster.FindPercolationPath(inletLink,outletLink);
     
     %Resolution composante connexe par composante connexe
@@ -50,15 +60,15 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
                 
         
         %Remplissage matrice
-        stiffnessMatrix = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant);
+        stiffnessMatrix = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant);
         
         %Remplissage du terme de droite 
-        rigthHandSide = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant);
+        rigthHandSide = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant);
         
 
         %Resolution du systeme lineaire
 
-        if poreNetwork.GetDimension==2
+        if network.GetDimension==2
             concentr=mldivide(stiffnessMatrix,rigthHandSide);
         else
             L = ichol(stiffnessMatrix); %preconditionnement
@@ -70,50 +80,49 @@ function [ concentrations, debits, fluxSurfaciques, diffusionCoefficient ]  =  C
         clear matrice;
         
         %Reassemblage de l'output concentration
-        [concentrations,debits,fluxSurfaciques]=ReassembleComputedField(concentrations,debits,fluxSurfaciques,poreNetwork,poresPercolants,concentr,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions);
+        [fieldValue,flux,fluxSurfaciques]=ReassembleComputedField(fieldValue,flux,fluxSurfaciques,network,poresPercolants,concentr,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions);
         
     end
     
 
     %Check computation with a mass balance
     
-    totalInletDebit = sum(debits(inletLink));
-    totalOutletDebit = sum(debits(outletLink));
+    totalInletDebit = sum(flux(inletLink));
+    totalOutletDebit = sum(flux(outletLink));
     
     if(abs(totalOutletDebit)>0)
         assert(abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit)<1e-1,'Non conservation de la matière !');
     end
        
     
-    diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink);
+    effectiveTransportProperty = ComputeDiffusionCoefficient(fieldValue,flux,inletLink,outletLink);
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-    fprintf('Computing diffusion finished. Time spent : %d minutes %f s. ',minutes,secondes);
+    fprintf('Computing linear transport finished. Time spent : %d minutes %f s. ',minutes,secondes);
     
 end
 
 
 
 %---------------------------------------------------------------------------------------------
-function CheckDiffusionConductances(poreNetwork)
-    
-    if not(isfield(poreNetwork.GetLinkDataList,'ConductancesDiffusion'))
-        disp('Calcul des conductances de Diffusion...');
-        tic;
-        conductances = LocalScaleComputeConductancesDiffusion(poreNetwork);
-        poreNetwork.AddNewLinkData(conductances,'ConductancesDiffusion');
-        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Calcul des conductances de diffusion termine. Duree : %d minutes %f s.',minutes,secondes);
-   
-    end
-end
+% function CheckDiffusionConductances(network)
+%     
+%     if not(isfield(network.GetLinkDataList,'ConductancesDiffusion'))
+%         disp('Calcul des conductances de Diffusion...');
+%         tic;
+%         conductances = LocalScaleComputeConductancesDiffusion(network);
+%         network.AddNewLinkData(conductances,'ConductancesDiffusion');
+%         duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+%         fprintf('Calcul des conductances de diffusion termine. Duree : %d minutes %f s.',minutes,secondes);
+%    
+%     end
+% end
 
 
 
 %---------------------------------------------------------------------------------------------
-function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant)
+function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant)
 
-    conductances = poreNetwork.GetLinkDataList.('ConductancesDiffusion');
     
     value_diag=zeros(1,nPorePercolant);
 
@@ -124,8 +133,8 @@ function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_env
     
     
 %     %Contribution des liens internes
-    numOwner = poreNetwork.LinkOwners(liens_internes_envahis);
-    numNeighbour = poreNetwork.LinkNeighbours(liens_internes_envahis);
+    numOwner = network.LinkOwners(liens_internes_envahis);
+    numNeighbour = network.LinkNeighbours(liens_internes_envahis);
     indiceOwner = poresPercolantsIndices(numOwner);
     indiceNeighbour = poresPercolantsIndices(numNeighbour);
     %termes diagonaux
@@ -144,36 +153,12 @@ function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_env
     indiceJ_nonDiag(matrixIndex)=indiceOwner;
     value_nonDiag(matrixIndex)=-conductances(liens_internes_envahis);
         
-%     position=0;    
-%     for numLien = liens_internes_envahis
-%         numOwner = poreNetwork.LinkOwners(numLien);
-%         numNeighbour = poreNetwork.LinkNeighbours(numLien);
-%         indiceOwner = poresPercolantsIndices(numOwner);
-%         assert(numNeighbour ~= -1);
-%         indiceNeighbour = poresPercolantsIndices(numNeighbour);
-% 
-%         %termes diagonaux
-%         value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
-%         value_diag(indiceNeighbour)=value_diag(indiceNeighbour)+conductances(numLien);
-% 
-%         %termes non diagonaux
-% 
-%         indiceI_nonDiag(position+1)=indiceOwner;
-%         indiceJ_nonDiag(position+1)=indiceNeighbour;
-%         value_nonDiag(position+1)=-conductances(numLien);
-% 
-%         indiceI_nonDiag(position+2)=indiceNeighbour;
-%         indiceJ_nonDiag(position+2)=indiceOwner;
-%         value_nonDiag(position+2)=-conductances(numLien);
-% 
-%         position=position+2;
-%     end
 
     %Contribution des liens inlet et outlet
     if strcmp(boundaryConditions.inletType,'Dirichlet')
 
       for numLien = liens_inlet_envahis
-         numOwner = poreNetwork.LinkOwners(numLien);
+         numOwner = network.LinkOwners(numLien);
          indiceOwner = poresPercolantsIndices(numOwner);
          %compl�ments aux termes diagonaux 
         value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
@@ -183,7 +168,7 @@ function matrice = FillMatrix(poreNetwork,liens_internes_envahis,liens_inlet_env
     if strcmp(boundaryConditions.outletType,'Dirichlet')
 
       for numLien = liens_outlet_envahis
-         numOwner = poreNetwork.LinkOwners(numLien);
+         numOwner = network.LinkOwners(numLien);
          indiceOwner = poresPercolantsIndices(numOwner);
          %compl�ments aux termes diagonaux 
         value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
@@ -203,16 +188,16 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant)
+function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions,poresPercolantsIndices,nPorePercolant)
     terme_droite = zeros(1,nPorePercolant);
     
-    linkDiameters = poreNetwork.GetLinkDataList.Diameter;
-    conductances = poreNetwork.GetLinkDataList.('ConductancesDiffusion');
+    linkDiameters = network.GetLinkDataList.Diameter;
+    conductances = network.GetLinkDataList.('ConductancesDiffusion');
     
     if strcmp(boundaryConditions.inletType,'Dirichlet')
         
-    	indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
-    	for i =1:length(liens_inlet_envahis)
+    	indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
+        for i=1:length(liens_inlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.inletValue*conductances(liens_inlet_envahis(i));
         end
         
@@ -220,7 +205,7 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
     elseif  strcmp(boundaryConditions.inletType,'Neumann')
         
         surface_face = pi/4*(linkDiameters(liens_inlet_envahis)).^2;
-        indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_inlet_envahis));
+        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
         for i =1:length(liens_inlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.inletValue*surface_face(i);
         end
@@ -228,7 +213,7 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
 
     if strcmp(boundaryConditions.outletType,'Dirichlet')
         
-        indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
+        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
         for i =1:length(liens_outlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+boundaryConditions.outletValue*conductances(liens_outlet_envahis(i));
         end
@@ -236,7 +221,7 @@ function terme_droite = FillRigthHandSide(poreNetwork,liens_inlet_envahis,liens_
     elseif  strcmp(boundaryConditions.outletType,'Neumann')
         
         surface_face = pi/4*(linkDiameters(liens_outlet_envahis)).^2;
-        indiceOwner = poresPercolantsIndices(poreNetwork.LinkOwners(liens_outlet_envahis));
+        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
         for i =1:length(liens_outlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))-boundaryConditions.outletValue*surface_face(i);        
         end
@@ -248,29 +233,29 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [concentrations,debits,fluxSurfaciques]=ReassembleComputedField(concentrations,debits,fluxSurfaciques,poreNetwork,poresPercolants,concentr,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions)
+function [fieldValue,flux,fluxSurfaciques]=ReassembleComputedField(fieldValue,flux,fluxSurfaciques,network,poresPercolants,concentr,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,boundaryConditions)
 
     for i = 1:length(poresPercolants)
-        concentrations(poresPercolants(i)) = concentr(i);
+        fieldValue(poresPercolants(i)) = concentr(i);
     end
 
-    linkDiameters = poreNetwork.GetLinkDataList.Diameter;
-    conductances = poreNetwork.GetLinkDataList.('ConductancesDiffusion');
+    linkDiameters = network.GetLinkDataList.Diameter;
+    conductances = network.GetLinkDataList.('ConductancesDiffusion');
     
-    %Calcul des vitesses internes en fonction des concentrations
-    numOwner = poreNetwork.LinkOwners(liens_internes_envahis);
-    numNeighbour = poreNetwork.LinkNeighbours(liens_internes_envahis);
-    debit(liens_internes_envahis) = conductances(liens_internes_envahis).*(concentrations(numOwner)-concentrations(numNeighbour));
+    %Calcul des vitesses internes en fonction des fieldValue
+    numOwner = network.LinkOwners(liens_internes_envahis);
+    numNeighbour = network.LinkNeighbours(liens_internes_envahis);
+    debit(liens_internes_envahis) = conductances(liens_internes_envahis).*(fieldValue(numOwner)-fieldValue(numNeighbour));
     surface_lien_equivalente = pi/4*(linkDiameters(liens_internes_envahis)).^2;
     fluxSurfaciques(liens_internes_envahis) = debit(liens_internes_envahis)./surface_lien_equivalente;
     
-    %ajout des debits inlet
+    %ajout des flux inlet
     if strcmp(boundaryConditions.inletType,'Dirichlet')
         for numLien = liens_inlet_envahis
-            numOwner = poreNetwork.LinkOwners(numLien);
-            debit = conductances(numLien)*(boundaryConditions.inletValue-concentrations(numOwner));
+            numOwner = network.LinkOwners(numLien);
+            debit = conductances(numLien)*(boundaryConditions.inletValue-fieldValue(numOwner));
             surface_lien_equivalente = pi/4*(linkDiameters(numLien))^2; 
-            debits(numLien) = debit;
+            flux(numLien) = debit;
             fluxSurfaciques(numLien) = debit/surface_lien_equivalente;    
         end
 
@@ -279,19 +264,19 @@ function [concentrations,debits,fluxSurfaciques]=ReassembleComputedField(concent
 
         surface_lien_equivalente = pi/4*(linkDiameters(numLien))^2;
         debit = boundaryConditions.inletValue*surface_lien_equivalente;
-        debits(numLien) = debit;
+        flux(numLien) = debit;
         fluxSurfaciques(numLien) = debit/surface_lien_equivalente;   
       end
     end
 
-    %ajout des debits outlet
+    %ajout des flux outlet
     if strcmp(boundaryConditions.outletType,'Dirichlet')
         for numLien = liens_outlet_envahis
 
-            numOwner = poreNetwork.LinkOwners(numLien);
-            debit = conductances(numLien)*(concentrations(numOwner)-boundaryConditions.outletValue);
+            numOwner = network.LinkOwners(numLien);
+            debit = conductances(numLien)*(fieldValue(numOwner)-boundaryConditions.outletValue);
             surface_lien_equivalente = pi/4*(linkDiameters(numLien))^2; 
-            debits(numLien) = debit;
+            flux(numLien) = debit;
             fluxSurfaciques(numLien) = debit/surface_lien_equivalente;    
         end
 
@@ -300,7 +285,7 @@ function [concentrations,debits,fluxSurfaciques]=ReassembleComputedField(concent
 
         surface_lien_equivalente = pi/4*(linkDiameters(numLien))^2;
         debit = boundaryConditions.outletValue*surface_lien_equivalente;
-        debits(numLien) = debit;
+        flux(numLien) = debit;
         fluxSurfaciques(numLien) = debit/surface_lien_equivalente;   
       end
     end
@@ -310,38 +295,36 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function diffusionCoefficient = ComputeDiffusionCoefficient(concentrations,debits,inletLink,outletLink)
+function effectiveTransportProperty = ComputeDiffusionCoefficient(fieldValue,flux,inletLink,outletLink)
 
-    totalOutletDebit = sum(debits(outletLink));
-    deltaConcentration = mean(concentrations(inletLink))-mean(concentrations(outletLink));
+    totalOutletDebit = sum(flux(outletLink));
+    deltaConcentration = mean(fieldValue(inletLink))-mean(fieldValue(outletLink));
     
-    diffusionCoefficient = totalOutletDebit/deltaConcentration;   
+    effectiveTransportProperty = totalOutletDebit/deltaConcentration;   
 end
 
 
 
 %---------------------------------------------------------------------------------------------
-function [inletLink,outletLink]=ReadCheckInputs(poreNetwork,cluster,boundaryConditions)
+function [inletLink,outletLink]=ReadCheckInputs(network,transportPores,conductances,boundaryConditions)
 
+    assert( isa(network,'PoreNetwork'),'LinearTransport : first input must be a PoreNetwork object')
+    assert( length(transportPores)<=network.GetNumberOfPore,'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
+    assert( length(conductances)==network.GetNumberOfLinks,'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
+    %bcCheck1 = isa(boundaryConditions,'struct') ;
+    %inletLink 
+    
+    
+%       	boundaryConditions.outletLink = list of outletLinks
+%       	boundaryConditions.inletType = 'Neumann' or 'Dirichlet'
+%       	boundaryConditions.outletType = 'Neumann' or 'Dirichlet'
+%       	boundaryConditions.inletValue = value of boundary condition
+%       	boundaryConditions.outletValue 
+     
+         
      inletLink = boundaryConditions.inletLink;
      outletLink = boundaryConditions.outletLink;
-%     
-%     boundaryConditions.inletType
-%     boundaryConditions.outletType
-%     
-%     boundaryConditions.inletValue
-%     boundaryConditions.outletValue
-%     
-%     
-%     % Boundary Condition : 'Neumann' or 'Dirichlet'
-%     outletBoundaryCondition = 'Dirichlet';
-%     inletBoundaryCondition = 'Dirichlet';
-% 
-%     %Value of Boundary Condition
-%     concentrationInlet = 1;
-%     concentrationOutlet = 0.1;
-%     %debitSurfaciqueInlet = 0.11;
 
 end
 
