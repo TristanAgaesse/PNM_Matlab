@@ -90,7 +90,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
     
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-    fprintf('Computing linear transport finished. Time spent : %d minutes %f s. ',minutes,secondes);
+    fprintf('Computing linear transport finished. Time spent : %d minutes %f s. \n',minutes,secondes);
     
 end
 

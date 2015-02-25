@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Tutorial_BasicPhysics</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-02-21"><meta name="DC.source" content="Tutorial_BasicPhysics.m"><style type="text/css">
+      --><title>Tutorial_BasicPhysics</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-02-25"><meta name="DC.source" content="Tutorial_BasicPhysics.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -77,11 +77,14 @@ viewer.View(<span class="string">'Network'</span>)
 figure;colorbar;
 viewer.View(<span class="string">'Boundaries'</span>)
 </pre><pre class="codeoutput">Generation du reseau...
-Reseau genere. Duree : 0 minutes 3.731118 s.
+Calcul du diametre des liens...
+Calcul du diametre des liens termine. Duree : 0 minutes 0.904437 s. 
+Reseau genere. Duree : 0 minutes 0.904978 s. 
 </pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_01.png" alt=""> <img vspace="5" hspace="5" src="Tutorial_BasicPhysics_02.png" alt=""> <pre class="codeinput"><span class="comment">%Calculons maintenant une invasion percolation.</span>
 <span class="comment">%La fonction ComputeInvasionPercolation prend en arguement le reseau, une</span>
 <span class="comment">%liste de liens d'entree pour l'eau (inletLink), une liste de liens de</span>
-<span class="comment">%sortie (outletLink) et une option concernant les angles de contact.</span>
+<span class="comment">%sortie (outletLink), une option concernant les angles de contact et</span>
+<span class="comment">%facultativement une option detaillant les regles d'invasion.</span>
 <span class="comment">%Ici nous choisissons de faire rentrer l'eau par la frontiere du bas et la</span>
 <span class="comment">%faire sortir par la frontiere du haut. Les numeros de ces frontieres sont</span>
 <span class="comment">%accessibles soit dans le fichier de geometrie macroscopique, soit avec la</span>
@@ -102,13 +105,16 @@ class(cluster)
         - inletLink : liste des liens d'injection   
         - outletLink : liste des liens de perc&eacute;e possible
         - wettability : 'currentWettability', 'hydrophobic', 'hydrophilic' or 'random'.
-        - varargin (optionnel) : clusterOptions (voir ClusterMonophasique)
+        - varargin (optionnel) : clusterOptions 
+                clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
+                clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder','PurcellToroid'
+                clusterOptions.SurfaceTension = value of surface tension
  
  Output : [cluster,breakthroughPressure,invasionPressureList]
 
 Running Invasion Percolation
-Calcul du diam&#65533;tre des liens...
-Calcul du diam&#65533;tre des liens termin&#65533;. Dur&#65533;e : 0 minutes 0.397209 s.Calcul d'invasion percolation termine. Duree : 0 minutes 1.045704 s.
+Invasion percolation finished. Time spent : 0 minutes 1.555303 s. 
+
 ans =
 
 ClusterMonophasique
@@ -120,54 +126,74 @@ ClusterMonophasique
 <span class="comment">%GetInvadedPores du cluster.</span>
 
 viewer.View(<span class="string">'PoreList'</span>,cluster.GetInvadedPores)
-</pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_03.png" alt=""> <pre class="codeinput"><span class="comment">%Nous allons maintenant faire un calcul de diffusion. En utilisant</span>
-<span class="comment">%l'autocompletion a partir du mot Compute, on trouve la fonction</span>
-<span class="comment">%ComputeDiffusion. help ou doc ComputeDiffusion nous donne la liste des parametres</span>
-<span class="comment">%d'entree et de sortie de cette fonction.</span>
+</pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_03.png" alt=""> <pre class="codeinput"><span class="comment">%Calculons maintenant la permeabilite du reseau de pores.</span>
 <span class="comment">%</span>
-<span class="comment">%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis</span>
-<span class="comment">%lors de l'invasion percolation. Il est possible d'indiquer la region dans</span>
-<span class="comment">%laquelle a lieu la diffusion avec un objet cluster, qui contient une</span>
-<span class="comment">%liste de pores envahis. Ici le cluster a donner a ComputeDiffusion est le</span>
-<span class="comment">%complementaire du cluster obtenu par invasion percolation.</span>
+<span class="comment">%En utilisant l'autocompletion a partir du mot Compute, on trouve la fonction</span>
+<span class="comment">%ComputeLinearTransport. help ou doc ComputeLinearTransport nous donne la liste</span>
+<span class="comment">%des parametres d'entree et de sortie de cette fonction. Nous allons</span>
+<span class="comment">%utiliser la  fonction ComputeLinearTransport avec des conductances de</span>
+<span class="comment">%permeabilite, dans une region correspondant au reseau tout entier.</span>
 
+transportPores = 1:network.GetNumberOfPores ;
 
-complementaryCluster=cluster.GetComplementaryCluster;
+dynamicViscosity = 1e-3; <span class="comment">%viscosity water at ambiant conditions</span>
+conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
 
-boundaryConditions=struct;
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 boundaryConditions.inletType = <span class="string">'Dirichlet'</span> ;
 boundaryConditions.outletType = <span class="string">'Dirichlet'</span> ;
-boundaryConditions.inletValue = 1;
-boundaryConditions.outletValue = 0.1;
+boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
+boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
+
+[ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
+
+disp(<span class="string">'Permeability coefficient :'</span>)
+disp(permeabilityCoefficient)
+
+figure;
+viewer.View(<span class="string">'PoreField'</span>,pressure)
+</pre><pre class="codeoutput">Computing linear transport 
+Computing linear transport finished. Time spent : 0 minutes 0.104874 s. 
+Permeability coefficient :
+   1.2969e+03
+
+</pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_04.png" alt=""> <pre class="codeinput"><span class="comment">%Calculons maintenant la diffusion relative.</span>
+<span class="comment">%</span>
+<span class="comment">%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis</span>
+<span class="comment">%lors de l'invasion percolation. Il est possible d'indiquer la region dans</span>
+<span class="comment">%laquelle a lieu la diffusion avec une liste de pores envahis. Ici ce sera</span>
+<span class="comment">%le complementaire des pores envahis par le cluster liquide.</span>
+
+transportPores = cluster.GetInvadedPoresComplementary ;
+
+diffusivity = 2e-5; <span class="comment">% 02 in N2 at ambiant conditions</span>
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
 
 
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
+boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
+
+boundaryConditions.inletType = <span class="string">'Neumann'</span> ;
+linkSurfaces = network.GetLinkData(<span class="string">'Surface'</span>);
+inletSurfacicFlux = 1;
+boundaryConditions.inletValue = inletSurfacicFlux*linkSurfaces(boundaryConditions.inletLink);
+
+boundaryConditions.outletType = <span class="string">'Dirichlet'</span> ;
+boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink));
+
+
+[ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
+
+disp(<span class="string">'Diffusion coefficient :'</span>)
 disp(diffusionCoefficient)
 
 figure
 viewer.View(<span class="string">'PoreField'</span>,concentrations)
-</pre><pre class="codeoutput">Calcul des conductances de Diffusion...
-Calcul des conductances de diffusion termine. Duree : 0 minutes 0.001075 s.Solving linear system
-Solving linear system finished. Time spent : 0 minutes 0.000580 s.Solving linear system
-Solving linear system finished. Time spent : 0 minutes 0.000646 s.   1.3101e-08
-
-</pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_04.png" alt=""> <pre class="codeinput"><span class="comment">%Calculons maintenant la permeabilite du reseau de pores. Nous allons</span>
-<span class="comment">%utiliser la  fonction ComputePermeabilite dans une region correspondant au</span>
-<span class="comment">%reseau tout entier. Pour cela il nous faut un cluster qui recouvre tout le</span>
-<span class="comment">%reseau. Le moyen le plus simple de l'obtenir utilise la fonction</span>
-<span class="comment">%CreateFullCluster du reseau.</span>
-
-fullCluster=network.CreateFullCluster;
-
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
-disp(diffusionCoefficient)
-
-figure;
-viewer.View(<span class="string">'PoreField'</span>,concentrations)
-</pre><pre class="codeoutput">Solving linear system
-Solving linear system finished. Time spent : 0 minutes 0.001741 s.   1.6587e-08
+</pre><pre class="codeoutput">Computing linear transport 
+Computing linear transport finished. Time spent : 0 minutes 0.090083 s. 
+Diffusion coefficient :
+   7.9365e-04
 
 </pre><img vspace="5" hspace="5" src="Tutorial_BasicPhysics_05.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
@@ -188,7 +214,8 @@ viewer.View('Boundaries')
 %Calculons maintenant une invasion percolation.
 %La fonction ComputeInvasionPercolation prend en arguement le reseau, une
 %liste de liens d'entree pour l'eau (inletLink), une liste de liens de 
-%sortie (outletLink) et une option concernant les angles de contact. 
+%sortie (outletLink), une option concernant les angles de contact et 
+%facultativement une option detaillant les regles d'invasion. 
 %Ici nous choisissons de faire rentrer l'eau par la frontiere du bas et la 
 %faire sortir par la frontiere du haut. Les numeros de ces frontieres sont
 %accessibles soit dans le fichier de geometrie macroscopique, soit avec la
@@ -214,48 +241,69 @@ viewer.View('PoreList',cluster.GetInvadedPores)
 
 
 %%
-%Nous allons maintenant faire un calcul de diffusion. En utilisant 
-%l'autocompletion a partir du mot Compute, on trouve la fonction
-%ComputeDiffusion. help ou doc ComputeDiffusion nous donne la liste des parametres
-%d'entree et de sortie de cette fonction.
+%Calculons maintenant la permeabilite du reseau de pores. 
 %
-%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis
-%lors de l'invasion percolation. Il est possible d'indiquer la region dans
-%laquelle a lieu la diffusion avec un objet cluster, qui contient une
-%liste de pores envahis. Ici le cluster a donner a ComputeDiffusion est le
-%complementaire du cluster obtenu par invasion percolation.
+%En utilisant l'autocompletion a partir du mot Compute, on trouve la fonction
+%ComputeLinearTransport. help ou doc ComputeLinearTransport nous donne la liste 
+%des parametres d'entree et de sortie de cette fonction. Nous allons 
+%utiliser la  fonction ComputeLinearTransport avec des conductances de 
+%permeabilite, dans une region correspondant au reseau tout entier. 
 
+transportPores = 1:network.GetNumberOfPores ;
 
-complementaryCluster=cluster.GetComplementaryCluster;
+dynamicViscosity = 1e-3; %viscosity water at ambiant conditions
+conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
 
-boundaryConditions=struct;
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 boundaryConditions.inletType = 'Dirichlet' ;
 boundaryConditions.outletType = 'Dirichlet' ;
-boundaryConditions.inletValue = 1;
-boundaryConditions.outletValue = 0.1;
+boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
+boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
+
+[ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
+
+disp('Permeability coefficient :')
+disp(permeabilityCoefficient)
+
+figure;
+viewer.View('PoreField',pressure)
 
 
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+%%
+%Calculons maintenant la diffusion relative. 
+%
+%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis
+%lors de l'invasion percolation. Il est possible d'indiquer la region dans
+%laquelle a lieu la diffusion avec une liste de pores envahis. Ici ce sera
+%le complementaire des pores envahis par le cluster liquide.
+
+transportPores = cluster.GetInvadedPoresComplementary ;
+
+diffusivity = 2e-5; % 02 in N2 at ambiant conditions
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
+
+
+boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
+boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
+
+boundaryConditions.inletType = 'Neumann' ;
+linkSurfaces = network.GetLinkData('Surface');   
+inletSurfacicFlux = 1;
+boundaryConditions.inletValue = inletSurfacicFlux*linkSurfaces(boundaryConditions.inletLink);
+
+boundaryConditions.outletType = 'Dirichlet' ;
+boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink));
+
+
+[ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
+
+disp('Diffusion coefficient :')
 disp(diffusionCoefficient)
 
 figure
 viewer.View('PoreField',concentrations)
 
-%%
-%Calculons maintenant la permeabilite du reseau de pores. Nous allons 
-%utiliser la  fonction ComputePermeabilite dans une region correspondant au
-%reseau tout entier. Pour cela il nous faut un cluster qui recouvre tout le
-%reseau. Le moyen le plus simple de l'obtenir utilise la fonction 
-%CreateFullCluster du reseau.
 
-fullCluster=network.CreateFullCluster;
-
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
-disp(diffusionCoefficient)
-
-figure;
-viewer.View('PoreField',concentrations)
 ##### SOURCE END #####
 --></body></html>

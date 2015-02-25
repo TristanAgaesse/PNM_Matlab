@@ -198,8 +198,8 @@ function partialVaporPressure = ComputePartialVaporPressure(network,gasTransport
     R = 8.314 ;
     airConcentration = airPressure./(R*temperature);
     
-    inletConcentration = inletVaporPressure*mean(airConcentration(vaporInletLinks)) ;%TODO : remove mean, non uniform boundary conditions
-    outletConcentration = outletVaporPressure*mean(airConcentration(vaporOutletLinks));
+    inletConcentration = inletVaporPressure*airConcentration(vaporInletLinks) ;
+    outletConcentration = outletVaporPressure*airConcentration(vaporOutletLinks);
     
     %Compute diffusion of vapor
     boundaryConditions=struct;

@@ -78,7 +78,8 @@ network.GetPoreDataList
     
 transportPores = cluster.GetInvadedPores ;
 
-conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network);
+diffusivity = 2e-3;
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
 
 boundaryConditions.inletLink = inletLink;
 boundaryConditions.outletLink = outletLink;

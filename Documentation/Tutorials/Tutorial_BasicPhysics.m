@@ -64,6 +64,7 @@ boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink
 
 [ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
 
+disp('Permeability coefficient :')
 disp(permeabilityCoefficient)
 
 figure;
@@ -98,6 +99,7 @@ boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink
 
 [ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
 
+disp('Diffusion coefficient :')
 disp(diffusionCoefficient)
 
 figure
