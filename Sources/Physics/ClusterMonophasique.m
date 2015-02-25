@@ -41,6 +41,7 @@ classdef ClusterMonophasique < handle
             cluster.ClusterOptions  =  clusterOptions;
         end
         
+        
         function [indexMinPressureLink,minPressure]  =  GetMinimalPressureLink(cluster)
             %Donne le lien de plus petite pression capillaire parmi les
             %liens a l'interface du cluster
@@ -201,6 +202,11 @@ classdef ClusterMonophasique < handle
             pores = cluster.InvadedPores(cluster.InvadedPores>0);
         end        
                 
+        function pores=GetInvadedPoresComplementary(cluster)
+            allPores=1:cluster.Network.GetNumberOfPores;
+            pores=setdiff(allPores,cluster.GetInvadedPores);
+        end
+        
         function pore = GetOutwardPore(cluster,indexLink)
             pore = cluster.InterfacePoresOutward(indexLink);
         end

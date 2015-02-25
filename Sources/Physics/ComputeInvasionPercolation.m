@@ -6,15 +6,18 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
 %       - inletLink : liste des liens d'injection   
 %       - outletLink : liste des liens de percée possible
 %       - wettability : 'currentWettability', 'hydrophobic', 'hydrophilic' or 'random'.
-%       - varargin (optionnel) : clusterOptions (voir ClusterMonophasique)
+%       - varargin (optionnel) : clusterOptions 
+%               clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
+%               clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder','PurcellToroid'
+%               clusterOptions.SurfaceTension = value of surface tension
 %
 %Output : [cluster,breakthroughPressure,invasionPressureList]
 
 
-    %Initialisation de l'algortithme.
+    %Initialisation de l'algorithme.
     disp('Running Invasion Percolation');
     tic;
-    CheckLinkDiameter(network) %V�rification si les diametres des liens sont d�j� calcul�s
+    CheckLinkDiameter(network) %Verification si les diametres des liens sont deja calcules
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
 
 

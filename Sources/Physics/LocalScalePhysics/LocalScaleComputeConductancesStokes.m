@@ -1,63 +1,62 @@
-function conductances = LocalScaleComputeConductancesStokes(poreNetwork,linkInlet,linkOutlet)
-    %input : poreNetwork,linkInlet,linkOutlet
+function conductances = LocalScaleComputeConductancesStokes(network)
+    %input : network
     %output : conductances
+    
+    
     viscosite_dyn_water = 1e-3;
 
-    %V�rification si les diametres des liens sont d�j� calcul�s
-    if not(isfield(poreNetwork.GetLinkDataList,'Diameter'))
-        disp('Calcul du diam�tre des liens...');
-        tic;
-        nLink = poreNetwork.GetNumberOfLinks;
-        diameter = zeros(1,nLink);
-       for iLink = 1:nLink
-            diameter(iLink) = poreNetwork.ComputeLinkDiameter(iLink);
-       end
-       poreNetwork.AddNewLinkData(diameter,'Diameter');
-       duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-       disp(sprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes));
-    end
+    
+    %Get geometric data from the network
+    CheckLinkDiameter(network) %Check if link diameters are already computed
 
-    nLink = poreNetwork.GetNumberOfLinks;
-    nPore = poreNetwork.GetNumberOfPores;
-    linkDiameter = poreNetwork.GetLinkDataList.Diameter;
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    linkDiameter = network.GetLinkDataList.Diameter;
     linkSurface = (linkDiameter.^2).*(pi/4);
-    dimension = poreNetwork.Dimension;
+    dimension = network.Dimension;
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
 
-    poreCenter=poreNetwork.GetPoreCenter(1:nPore);
-
-    linkCenter=poreNetwork.GetLinkCenter(1:nLink);
+    allLinks=1:nLink;
+    internalLinks = network.GetLinksFrontiere(0);
+    boundaryLinks = GetLinksFrontiere(network,1:network.GetNumberOfBoundaries);
     
-
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
+    
+    %Compute conductances
     conductances = zeros(1,nLink);
-
-    internalLinks = setdiff(poreNetwork.GetLinksFrontiere(0),union(linkInlet,linkOutlet));
-
+    conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*viscosite_dyn_water*transpose(distance1(internalLinks)+distance2));
+    conductances(boundaryLinks)=diff_O2_dans_N2*linkSurface(boundaryLinks)./(8*pi*viscosite_dyn_water*transpose(2*distance1(boundaryLinks)));
     
-    a=poreCenter(poreNetwork.LinkOwners(internalLinks),:)-linkCenter(internalLinks,:);
-    b=poreCenter(poreNetwork.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
-    surface=linkSurface(internalLinks);
-    if dimension==2
-        distance1=sqrt(a(:,1).^2+a(:,2).^2) ;
-        distance2=sqrt(b(:,1).^2+b(:,2).^2) ;
-    elseif dimension==3
-        distance1=sqrt(a(:,1).^2+a(:,2).^2+a(:,3).^2) ;
-        distance2=sqrt(b(:,1).^2+b(:,2).^2+b(:,3).^2) ;
-    end
-    conductances(internalLinks)=surface./(8*pi*viscosite_dyn_water*transpose(distance1+distance2));
-
-
-    for iLink = linkOutlet
-        surface = linkSurface(iLink);
-        distance = 2*norm(poreCenter(poreNetwork.LinkOwners(iLink),:)-linkCenter(iLink,:));
-        conductances(iLink) = surface^2/(8*pi*viscosite_dyn_water*(distance));
-    end
-
-    for iLink = linkInlet
-        surface = linkSurface(iLink);
-        distance = 2*norm(poreCenter(poreNetwork.LinkOwners(iLink),:)-linkCenter(iLink,:));
-        conductances(iLink) = surface^2/(8*pi*viscosite_dyn_water*(distance));
-    end
-
 end       
 
-        
+
+function CheckLinkDiameter(network)
+    if not(isfield(network.GetLinkDataList,'Diameter'))
+        disp('Calcul du diametre des liens...');
+        tic;
+        nLink = network.GetNumberOfLinks;
+        diameter = zeros(1,nLink);
+        for iLink = 1:nLink
+            diameter(iLink) = network.ComputeLinkDiameter(iLink);
+        end
+        network.AddNewLinkData(diameter,'Diameter');
+        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+        fprintf('Calcul du diametre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+    end
+end
+
+
+function myNorm=FastNorm(myVect,dimension)
+    %Vectorial version of the norm function
+    if dimension==2
+        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2) ;
+    elseif dimension==3
+        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2+myVect(:,3).^2) ;
+    end
+end        

@@ -282,14 +282,7 @@ function degradationSpeed=ComputeDegradationSpeed(network,clusterLiquide,inletLi
         degradationSpeed(internalLinks) = 0.5*(vitesseMoyennePore(pores(internalLinks,1))+vitesseMoyennePore(pores(internalLinks,2)));
         degradationSpeed(boundaryLinks) = vitesseMoyennePore(pores(boundaryLinks,2));
 
-%             for iLink=1:network.GetNumberOfLinks
-%                 pores=network.GetPoresOfLink(iLink);
-%                 if pores(1)==-1
-%                     degradationSpeed(iLink)=vitesseMoyennePore(pores(2));
-%                 else
-%                     degradationSpeed(iLink)=0.5*(vitesseMoyennePore(pores(1))+vitesseMoyennePore(pores(2)));
-%                 end
-%             end
+
 
     elseif strcmp(degradationMechanism,'sommeDebits')
 %             for num_face=cluster.GetInterfaceLinks

@@ -15,7 +15,8 @@ viewer.View('Boundaries')
 %Calculons maintenant une invasion percolation.
 %La fonction ComputeInvasionPercolation prend en arguement le reseau, une
 %liste de liens d'entree pour l'eau (inletLink), une liste de liens de 
-%sortie (outletLink) et une option concernant les angles de contact. 
+%sortie (outletLink), une option concernant les angles de contact et 
+%facultativement une option detaillant les regles d'invasion. 
 %Ici nous choisissons de faire rentrer l'eau par la frontiere du bas et la 
 %faire sortir par la frontiere du haut. Les numeros de ces frontieres sont
 %accessibles soit dans le fichier de geometrie macroscopique, soit avec la
@@ -41,19 +42,17 @@ viewer.View('PoreList',cluster.GetInvadedPores)
 
 
 %%
-%Nous allons maintenant faire un calcul de diffusion. En utilisant 
-%l'autocompletion a partir du mot Compute, on trouve la fonction
-%ComputeDiffusion. help ou doc ComputeDiffusion nous donne la liste des parametres
-%d'entree et de sortie de cette fonction.
+%Calculons maintenant la permeabilite du reseau de pores. 
 %
-%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis
-%lors de l'invasion percolation. Il est possible d'indiquer la region dans
-%laquelle a lieu la diffusion avec un objet cluster, qui contient une
-%liste de pores envahis. Ici le cluster a donner a ComputeDiffusion est le
-%complementaire du cluster obtenu par invasion percolation.
+%En utilisant l'autocompletion a partir du mot Compute, on trouve la fonction
+%ComputeLinearTransport. help ou doc ComputeLinearTransport nous donne la liste 
+%des parametres d'entree et de sortie de cette fonction. Nous allons 
+%utiliser la  fonction ComputeLinearTransport avec des conductances de 
+%permeabilite, dans une region correspondant au reseau tout entier. 
 
+transportPores = 1:network.GetNumberOfPores ;
 
-complementaryCluster=cluster.GetComplementaryCluster;
+conductancesPermeability = LocalScaleComputeConductancesStokes(network);
 
 boundaryConditions=struct;
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
@@ -63,24 +62,38 @@ boundaryConditions.outletType = 'Dirichlet' ;
 boundaryConditions.inletValue = 1;
 boundaryConditions.outletValue = 0.1;
 
+[ pressure, ~, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
 
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,complementaryCluster, boundaryConditions);
+disp(permeabilityCoefficient)
+
+figure;
+viewer.View('PoreField',pressure)
+
+
+%%
+%Calculons maintenant la diffusion relative. 
+%
+%Nous allons calculer la diffusion dans les pores qui n'ont pas ete envahis
+%lors de l'invasion percolation. Il est possible d'indiquer la region dans
+%laquelle a lieu la diffusion avec une liste de pores envahis. Ici ce sera
+%le complementaire des pores envahis par le cluster liquide.
+
+transportPores = cluster.GetInvadedPoresComplementary ;
+
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network);
+
+boundaryConditions=struct;
+boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
+boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
+boundaryConditions.inletType = 'Dirichlet' ;
+boundaryConditions.outletType = 'Dirichlet' ;
+boundaryConditions.inletValue = 1;
+boundaryConditions.outletValue = 0.1;
+
+[ concentrations, ~, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
+
 disp(diffusionCoefficient)
 
 figure
 viewer.View('PoreField',concentrations)
 
-%%
-%Calculons maintenant la permeabilite du reseau de pores. Nous allons 
-%utiliser la  fonction ComputePermeabilite dans une region correspondant au
-%reseau tout entier. Pour cela il nous faut un cluster qui recouvre tout le
-%reseau. Le moyen le plus simple de l'obtenir utilise la fonction 
-%CreateFullCluster du reseau.
-
-fullCluster=network.CreateFullCluster;
-
-[ concentrations, ~, ~, diffusionCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
-disp(diffusionCoefficient)
-
-figure;
-viewer.View('PoreField',concentrations)
