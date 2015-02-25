@@ -51,10 +51,15 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
     
     
     %Compute partial pressure field
-    fullCluster=network.CreateFullCluster;
+    gasTransportPores = 1:network.GetNumberOfPores;
+    
     inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
     outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
-    partialVaporPressure = ComputePartialVaporPressure(network,fullCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+    
+    diffusivity = 2e-5; % 02 in N2 at ambiant conditions TODO : check value for water vapor
+    diffusionConductances = LocalScaleComputeConductancesDiffusion(network,diffusivity);  %TODO : change this to multicomponents diffusion conductance
+    
+    partialVaporPressure = ComputePartialVaporPressure(network,gasTransportPores,diffusionConductances,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
     
     outputInformation.PartialVaporPressure{1} = partialVaporPressure;
     
@@ -89,7 +94,7 @@ function [cluster,outputInformation] = ComputeCondensation( network, options )
         
         %Update partial pressure field
         
-        partialVaporPressure = ComputePartialVaporPressure(network,cluster.GetComplementaryCluster,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+        partialVaporPressure = ComputePartialVaporPressure(network,cluster.GetInvadedPoresComplementary,diffusionConductances,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
         
         outputInformation.PartialVaporPressure{end+1}= partialVaporPressure;
         
@@ -153,18 +158,20 @@ function  [temperature,heatTransferCoefficient] = ComputeTemperatureField(networ
     %Temperature field resulting from a temperature difference between 
     %temperature inlet and temperature outlet
 
+    heatDiffusivity = 1; % TODO : check value
+    conductancesHeat = LocalScaleComputeConductancesDiffusion(network,heatDiffusivity);
+    
     boundaryConditions=struct;
     boundaryConditions.inletLink = temperatureInletLinks;
     boundaryConditions.outletLink = temperatureOutletLinks;
     boundaryConditions.inletType = 'Dirichlet' ;
     boundaryConditions.outletType = 'Dirichlet' ;
-    boundaryConditions.inletValue = temperatureInlet;
-    boundaryConditions.outletValue = temperatureOutlet;
+    boundaryConditions.inletValue = temperatureInlet*ones(1,length(boundaryConditions.inletLink));
+    boundaryConditions.outletValue = temperatureOutlet*ones(1,length(boundaryConditions.outletLink));
 
-    voidCluster=network.CreateVoidCluster;
-    fullCluster=voidCluster.GetComplementaryCluster;
+    transportPores = 1:network.GetNumberOfPores ;
 
-    [ temperature, ~, ~, heatTransferCoefficient ]=ComputeDiffusion(network,fullCluster, boundaryConditions);
+    [ temperature, ~,heatTransferCoefficient ]=ComputeLinearTransport(network,transportPores,conductancesHeat,boundaryConditions);
 
 
 end
@@ -184,7 +191,8 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function partialVaporPressure = ComputePartialVaporPressure(network,cluster,inletVaporPressure,outletVaporPressure,vaporInletLinks,vaporOutletLinks,airPressure,temperature)
+function partialVaporPressure = ComputePartialVaporPressure(network,gasTransportPores,diffusionConductances,inletVaporPressure,outletVaporPressure,vaporInletLinks,vaporOutletLinks,airPressure,temperature)
+    
     
     %Convert inletVaporPressure,outletVaporPressure to concentration
     R = 8.314 ;
@@ -202,7 +210,8 @@ function partialVaporPressure = ComputePartialVaporPressure(network,cluster,inle
     boundaryConditions.inletValue = inletConcentration;
     boundaryConditions.outletValue = outletConcentration;
     
-    waterConcentration = ComputeDiffusion(network,cluster, boundaryConditions);    %TODO : change conductance to ln for multicomponent diffusion
+    waterConcentration = ComputeLinearTransport(network,gasTransportPores,diffusionConductances,boundaryConditions);
+    
     
     %Convert back concentrations to vapor pressure
     

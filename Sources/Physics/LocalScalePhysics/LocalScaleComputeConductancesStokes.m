@@ -1,9 +1,9 @@
-function conductances = LocalScaleComputeConductancesStokes(network)
-    %input : network
+function conductances = LocalScaleComputeConductancesStokes(network,dynamicViscosity)
+    %input : network, dynamicViscosity
     %output : conductances
     
     
-    viscosite_dyn_water = 1e-3;
+    %viscosite_dyn_water = 1e-3;
 
     
     %Get geometric data from the network
@@ -11,8 +11,7 @@ function conductances = LocalScaleComputeConductancesStokes(network)
 
     nLink = network.GetNumberOfLinks;
     nPore = network.GetNumberOfPores;
-    linkDiameter = network.GetLinkDataList.Diameter;
-    linkSurface = (linkDiameter.^2).*(pi/4);
+    linkSurface = network.GetLinkData('Surface');
     dimension = network.Dimension;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
@@ -30,8 +29,8 @@ function conductances = LocalScaleComputeConductancesStokes(network)
     
     %Compute conductances
     conductances = zeros(1,nLink);
-    conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*viscosite_dyn_water*transpose(distance1(internalLinks)+distance2));
-    conductances(boundaryLinks)=linkSurface(boundaryLinks)./(8*pi*viscosite_dyn_water*transpose(2*distance1(boundaryLinks)));
+    conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*dynamicViscosity*transpose(distance1(internalLinks)+distance2));
+    conductances(boundaryLinks)=linkSurface(boundaryLinks)./(8*pi*dynamicViscosity*transpose(2*distance1(boundaryLinks)));
     
 end       
 

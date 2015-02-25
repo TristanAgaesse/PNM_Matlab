@@ -21,7 +21,7 @@ inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
 %possible de les manipuler en ligne de commande. 
 %
 %Ces données peuvent servir dans les algorithmes physiques 
-%(conductances, tailles...). C'est le cas pour l'invasion percolation qui
+%(tailles...). C'est le cas pour l'invasion percolation qui
 %utilise les diametres des liens et les angles de contact dans les liens.
 %Pour faire une invasion percolation avec des angles de contact
 %personnalises, il faut ajouter a la liste des link data un tableau
@@ -32,9 +32,9 @@ contactAngle=80;
 theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
 network.AddNewLinkData(theta,'ContactAngle');
 
-network.GetLinkDataList
+network.GetLinkDataList 
 
-network.GetLinkDataList.ContactAngle;
+network.GetLinkData('ContactAngle');
 
 
 %%
@@ -50,8 +50,6 @@ network.GetLinkDataList.ContactAngle;
 network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_80');
 
 network.GetPoreDataList
-
-network.GetLinkDataList
 
 
 
@@ -72,21 +70,24 @@ network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_110');
 
 network.GetPoreDataList
 
-network.GetLinkDataList
 
 %%
-%Calculons maintenant la diffusion. Pour visualiser les concentrations dans
+%Calculons maintenant la diffusion dans le cluster. Pour visualiser les concentrations dans
 %Paraview ultérieurement, il faut rajouter les concentrations aux data du
 %réseau. 
     
+transportPores = cluster.GetInvadedPores ;
+
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network);
+
 boundaryConditions.inletLink = inletLink;
 boundaryConditions.outletLink = outletLink;
 boundaryConditions.inletType = 'Dirichlet';
 boundaryConditions.outletType = 'Dirichlet';
-boundaryConditions.inletValue = 1;
-boundaryConditions.outletValue = 0;
+boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
+boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
 
-concentrations=ComputeDiffusion(network, cluster, boundaryConditions);
+concentrations = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
 network.AddNewPoreData(concentrations,'DiffusionConcentrations');
 
 

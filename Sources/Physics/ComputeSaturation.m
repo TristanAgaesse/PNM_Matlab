@@ -211,13 +211,9 @@ function [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( clus
 end
     
 function CheckPoreVolume(poreNetwork)
-    %V�rification que les volumes des pores sont d�j� calcul�s
+    %Verification que les volumes des pores sont deja calcules
     if not(isfield(poreNetwork.GetPoreDataList,'Volume'))
-        disp('Calcul des volumes des pores...');
-        tic;
         volumePore=poreNetwork.ComputeAllPoreVolume;
         poreNetwork.AddNewPoreData(volumePore,'Volume');
-        duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
-        fprintf('Calcul des volumes des pores termin�. Dur�e : %d minutes %f s. \n',minutes,secondes);
     end
 end

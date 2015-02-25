@@ -262,7 +262,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
                             end
                             
                             if volume<0
-                               disp(sprintf('Probleme en calculant volume du pore %d',numPore)); 
+                               fprintf('Negative volume found for pore %d : puting it to 0 \n',numPore); 
                                volume = 0; 
                             end
                             
@@ -272,18 +272,41 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         end
         
         
-        
         function volume = ComputeAllPoreVolume(network)
             %input : network
             %output : volume
+            
+            disp('Computing pores volumes...');
+            tic;
+            
             nPore = network.GetNumberOfPores;
             volume = zeros(1,nPore);
             for iPore=1:nPore
                 volume(iPore) = network.ComputePoreVolume(iPore);                
             end
+            
+            duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
+            fprintf('Computing pores volumes finished. Time spent : %d minutes %f s. \n',minutes,secondes);
         end        
         
         
+        function surface = ComputeAllLinkSurface(network)
+            
+            if not(isfield(network.GetLinkDataList,'Diameter'))
+                diameter = network.ComputeAllLinkDiameter;
+                network.AddNewLinkData(diameter,'Diameter');
+            end
+            
+            diameter = network.GetLinkData('Diameter');
+            
+            if network.GetDimension==3
+                surface = pi/4*diameter.^2;
+                
+            elseif network.GetDimension==2
+                surface = diameter;
+            end
+            
+        end
         
         function diameter = ComputeAllLinkDiameter(network)
             %input : network
@@ -300,7 +323,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
             end
             
             duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-            fprintf('Calcul du diametre des liens termin�. Dur�e : %d minutes %f s.',minutes,secondes);
+            fprintf('Calcul du diametre des liens termine. Duree : %d minutes %f s. \n',minutes,secondes);
         end  
 
         function linkDiameter = ComputeLinkDiameter(network, numLink)

@@ -52,9 +52,9 @@ viewer.View('PoreList',cluster.GetInvadedPores)
 
 transportPores = 1:network.GetNumberOfPores ;
 
-conductancesPermeability = LocalScaleComputeConductancesStokes(network);
+dynamicViscosity = 1e-3; %viscosity water at ambiant conditions
+conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
 
-boundaryConditions=struct;
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 boundaryConditions.inletType = 'Dirichlet' ;
@@ -80,19 +80,21 @@ viewer.View('PoreField',pressure)
 
 transportPores = cluster.GetInvadedPoresComplementary ;
 
-conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network);
+diffusivity = 2e-5; % 02 in N2 at ambiant conditions
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
 
-boundaryConditions=struct;
+
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 
 boundaryConditions.inletType = 'Neumann' ;
-linkSurfaces = network.GetLinkData('Surface');
-inletSurfacicFlux = 1e10;
+linkSurfaces = network.GetLinkData('Surface');   
+inletSurfacicFlux = 1;
 boundaryConditions.inletValue = inletSurfacicFlux*linkSurfaces(boundaryConditions.inletLink);
 
 boundaryConditions.outletType = 'Dirichlet' ;
 boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink));
+
 
 [ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
 

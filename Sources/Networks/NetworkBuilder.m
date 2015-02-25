@@ -47,7 +47,7 @@ classdef NetworkBuilder
                     
                     diameter = network.ComputeAllLinkDiameter;
                     network.AddNewLinkData(diameter,'Diameter');
-                    surface = pi/4*diameter.^2;
+                    surface =  network.ComputeAllLinkSurface;
                     network.AddNewLinkData(surface,'Surface');
                     
                 case 'DelaunayNetwork'

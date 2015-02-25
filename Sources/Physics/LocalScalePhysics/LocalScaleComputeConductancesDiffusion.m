@@ -1,40 +1,38 @@
- function conductances = LocalScaleComputeConductancesDiffusion(poreNetwork)
-    %input : poreNetwork
-    %output : conductances
+function conductances = LocalScaleComputeConductancesDiffusion(network,diffusivity)
+    %input : network, diffusivity
+	%output : conductances
 
     
-    diff_O2_dans_N2 = 2e-5;
-    
+    %diff_O2_dans_N2 = 2e-5;
     
     %Get geometric data from the network
-    CheckLinkDiameter(poreNetwork) %Check if link diameters are already computed
+    CheckLinkDiameter(network) 
 
-    nLink = poreNetwork.GetNumberOfLinks;
-    nPore = poreNetwork.GetNumberOfPores;
-    linkDiameter = poreNetwork.GetLinkDataList.Diameter;
-    linkSurface = (linkDiameter.^2).*(pi/4);
-    dimension = poreNetwork.Dimension;
-    poreCenter=poreNetwork.GetPoreCenter(1:nPore);
-    linkCenter=poreNetwork.GetLinkCenter(1:nLink);
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    linkSurface = network.GetLinkData('Surface');
+    dimension = network.Dimension;
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
 
     allLinks=1:nLink;
-    internalLinks = poreNetwork.GetLinksFrontiere(0);
-    boundaryLinks = GetLinksFrontiere(poreNetwork,1:poreNetwork.GetNumberOfBoundaries);
+    internalLinks = network.GetLinksFrontiere(0);
+    boundaryLinks = GetLinksFrontiere(network,1:network.GetNumberOfBoundaries);
     
-    a=poreCenter(poreNetwork.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
     distance1=FastNorm(a,dimension);
     
-    b=poreCenter(poreNetwork.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
     distance2=FastNorm(b,dimension);
     
     
     %Compute conductances
     conductances = zeros(1,nLink);
-    conductances(internalLinks)=diff_O2_dans_N2*linkSurface(internalLinks)./transpose(distance1(internalLinks)+distance2);
-    conductances(boundaryLinks)=diff_O2_dans_N2*linkSurface(boundaryLinks)./transpose(2*distance1(boundaryLinks));
+    conductances(internalLinks)=diffusivity*linkSurface(internalLinks)./transpose(distance1(internalLinks)+distance2);
+    conductances(boundaryLinks)=diffusivity*linkSurface(boundaryLinks)./transpose(2*distance1(boundaryLinks));
     
     
- end
+end
 
 
  
