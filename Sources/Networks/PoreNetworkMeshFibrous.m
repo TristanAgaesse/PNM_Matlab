@@ -159,7 +159,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
         function volume = ComputePoreVolume(network, numPore)
             %input : network, numPore
             %output : volume
-            methode = 'approximate_intersections';
+            methode = 'linearApproximation';
             
             fibreDiameter = network.GetEdgeDataList.('FiberDiameter');
             vertices = network.GetVerticesOfPore(numPore);
@@ -173,7 +173,24 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
                     centrePore = mean(vertices);
                     edges = network.GetEdgesOfPore(numPore);
                     
-                    if strcmp(methode,'hardcore_clipping')
+                    if strcmp(methode,'linearApproximation')
+                    
+                        [~, rawVolume] = convhulln(vertices);
+                    
+                        
+                        foo=(vertices-ones(size(vertices,1),1)*mean(vertices,1));
+                        R=min(sqrt(foo(:,1).^2+foo(:,2).^2+foo(:,3).^2));
+
+                        %[~,R] = insphere(vertices);%library min bound suite
+                        
+                        criticalDiameter = 2*R;
+                        extrusionFactor = mean(diametreFibres(edges))/criticalDiameter;
+                        
+                        volume = rawVolume*extrusionFactor;
+                        
+                        
+                        
+                    elseif strcmp(methode,'hardcore_clipping')
                         nodes = vertices;
                         links = network.GetLinksOfPore(numPore);
                         nFace = length(links);
@@ -349,8 +366,27 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
                         linkDiameter = 0;
                     end
                 case 3
-                    verticesExtrudes = PoreNetworkMeshFibrous.ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres);
-                    surface = abs(polygonArea(verticesExtrudes));%librairie mathgeom
+                    method='LinearApproximation';
+                    if strcmp(method,'LinearApproximation')
+                        vertices = PolygoneProjetterDansPlan(vertices);
+                        
+                        rawSurface = abs(polygonArea(vertices));%librairie mathgeom
+%                         try
+%                             [~,R] = incircle(vertices);%library min bound suite
+%                         catch
+%                             R=mean(diametreFibres)/2;
+%                         end
+                        foo=(vertices-ones(size(vertices,1),1)*mean(vertices,1));
+                        R=min(sqrt(foo(:,1).^2+foo(:,2).^2));
+                        criticalDiameter = 2*R;
+                        extrusionFactor = mean(diametreFibres)/criticalDiameter;
+                        
+                        surface = rawSurface*extrusionFactor;
+                    else
+                        verticesExtrudes = PoreNetworkMeshFibrous.ComputeExtrudePolygonParFibre(dimension, vertices, diametreFibres);
+                        surface = abs(polygonArea(verticesExtrudes));%librairie mathgeom
+                    end
+                    
                     linkDiameter = sqrt(4*surface/pi); %diametre �quivalent
             end
         end

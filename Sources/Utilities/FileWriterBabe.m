@@ -15,7 +15,7 @@ classdef FileWriterBabe <handle
             a=dir(file_writer.FileName);
             if ~isempty(a)
                 if a.bytes~=0
-                    user_input=input('Fichier d�j� existant. Taper 1 pour effacer le contenu, 2 pour �crire � la suite. \n');
+                    user_input=input('Fichier deja existant. Taper 1 pour effacer le contenu, 2 pour ecrire a la suite. \n');
                     if user_input==1
                         delete(file_writer.FileName);
                     end
