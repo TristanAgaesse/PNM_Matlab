@@ -38,12 +38,14 @@ classdef NetworkBuilder
                     [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,~,~,~,~] = NetworkBuilder.GenerateMesh(myGeometry);
                     
                     network = PoreNetworkMesh(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,myGeometry);
-                
+                    duree = toc;
+                    
                 case 'PoreNetworkMeshFibrous'
                     [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = NetworkBuilder.GenerateMesh(myGeometry);
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry);    
                     
                     network = PoreNetworkMeshFibrous(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
+                    duree=toc;
                     
                     diameter = network.ComputeAllLinkDiameter;
                     network.AddNewLinkData(diameter,'Diameter');
@@ -55,16 +57,18 @@ classdef NetworkBuilder
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry); 
                     
                     network = DelaunayNetwork(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
-            
+                    duree = toc;
+                    
                 case 'StructuredNetwork'
                     [dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,poreVolume,linkDiameter]=NetworkBuilder.GenerateStructuredNetwork(myGeometry);
                     
                     network=PoreNetworkEuclidien(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,myGeometry.CopyGeometry);
                     network.AddNewLinkData(linkDiameter,'Diameter');
                     network.AddNewPoreData(poreVolume,'Volume');
+                    duree = toc;
             end
             
-            duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
+            minutes = floor(duree/60);secondes = duree-60*minutes;
             fprintf('Reseau genere. Duree : %d minutes %f s. \n',minutes,secondes);
         end %BuildNetwork 
         
@@ -1083,7 +1087,22 @@ classdef NetworkBuilder
             dirty_owners = zeros(1,nbre_dirty_faces);                                  
             dirty_neighbours = cell(1,nbre_dirty_faces);    
             indice_courant_face = 1;
-            for num_cell = 1:length(cellules_voronoi)
+            
+            nCellVoronoi = length(cellules_voronoi);
+            nBoundary= length(indices_cellules_esclaves);
+            quickCellulesEsclaves=cell(1,nBoundary);
+            for i=1:nBoundary
+                quickCellulesEsclaves{i} = zeros(1,nCellVoronoi);
+                quickCellulesEsclaves{i}(indices_cellules_esclaves{i})=1;
+            end
+            
+            quickDirtyNeighbourg=cell(1,nBoundary);
+            for i=1:nBoundary
+                quickDirtyNeighbourg{i} = zeros(1,nbre_dirty_faces);
+            end
+            
+            
+            for num_cell = 1:nCellVoronoi
                 for num_face = 1:length(cellules_en_contact{num_cell})
                     %cellules_en_contact{num_cell}{num_face} = {num_autre_cell,[sommets_partages]}
                     num_autre_cell = cellules_en_contact{num_cell}{num_face}{1};
@@ -1098,18 +1117,20 @@ classdef NetworkBuilder
                         dirty_owners(indice_courant_face) = num_autre_cell; 
                         %trouver frontiere dont la cellule est esclave
                         dirty_neighbours{indice_courant_face} = []; %code pour pas encore de frontiere associee
-                        for num_frontiere = 1:length(indices_cellules_esclaves)
-                            if ismember(num_cell,indices_cellules_esclaves{num_frontiere}) || ismember(num_autre_cell,indices_cellules_esclaves{num_frontiere})
-                                dirty_neighbours{indice_courant_face} = [-num_frontiere,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                        for iBoundary = 1:nBoundary
+                            if quickCellulesEsclaves{iBoundary}(num_cell) || quickCellulesEsclaves{iBoundary}(num_autre_cell)
+                                dirty_neighbours{indice_courant_face} = [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                                quickDirtyNeighbourg{iBoundary}(indice_courant_face)=1;
                             end
                         end
                     elseif autre_cell_useless
                         dirty_owners(indice_courant_face) = num_cell;
                         %trouver frontiere dont la cellule est esclave
                         dirty_neighbours{indice_courant_face} = []; %code pour pas encore de frontiere associee
-                        for num_frontiere = 1:length(indices_cellules_esclaves)
-                            if ismember(num_cell,indices_cellules_esclaves{num_frontiere}) || ismember(num_autre_cell,indices_cellules_esclaves{num_frontiere})
-                                dirty_neighbours{indice_courant_face} = [-num_frontiere,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                        for iBoundary = 1:nBoundary
+                            if quickCellulesEsclaves{iBoundary}(num_cell) || quickCellulesEsclaves{iBoundary}(num_autre_cell)
+                                dirty_neighbours{indice_courant_face} = [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                                quickDirtyNeighbourg{iBoundary}(indice_courant_face)=1;
                             end
                         end
                     else
@@ -1137,7 +1158,7 @@ classdef NetworkBuilder
             
             a = zeros(1,nbre_dirty_faces);
             for i = 1:length(a)
-                if length(dirty_neighbours{i})>0
+                if ~isempty(dirty_neighbours{i})
                     if dirty_neighbours{i}(1) <= 0
                         a(i) = 1;
                     end
@@ -1157,11 +1178,16 @@ classdef NetworkBuilder
                     %et une cellule inutile 
                     
                     d = zeros(1,nbre_dirty_faces);
-                    for i = 1:length(d)
-                      if ismember(-iBoundary,dirty_neighbours{i})
-                        d(i) = 1;
-                      end
-                    end
+                    d(quickDirtyNeighbourg{iBoundary}>0)=1;
+                    
+%                     for i = 1:nbre_dirty_faces
+%                         if quickDirtyNeighbourg{iBoundary}(i)
+%                             d(i) = 1
+%                         end
+% %                       if ismember(-iBoundary,dirty_neighbours{i})
+% %                         d(i) = 1;
+% %                       end
+%                     end
                                             
                     numeros_faces_frontiere = find(b &d);
                     %critere : neighbour = -indice_boundary, owner est utile
@@ -1361,10 +1387,10 @@ classdef NetworkBuilder
                     for iFace = 1:nFaces
                         this_face = faces{iFace};
                         coordonnees_polygone = vertices(this_face,:);                          
-                        %coordonnees_planes = PolygoneProjetterDansPlan(coordonnees_polygone);
-                        %faces{iFace} = this_face(PolygoneOrdonnerSommetsDansPlan(coordonnees_planes));
-                        [~,I] = angleSort3d(coordonnees_polygone);
-                        faces{iFace} = this_face(I);
+                        coordonnees_planes = PolygoneProjetterDansPlan(coordonnees_polygone);
+                        faces{iFace} = this_face(PolygoneOrdonnerSommetsDansPlan(coordonnees_planes));
+%                         [~,I] = angleSort3d(coordonnees_polygone);
+%                         faces{iFace} = this_face(I);
                         
                     end
             end
