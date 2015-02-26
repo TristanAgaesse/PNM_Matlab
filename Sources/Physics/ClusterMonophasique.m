@@ -136,7 +136,7 @@ classdef ClusterMonophasique < handle
         end
         
         function UpdateCriticalPressure(cluster,interfaceChangeInformation,linkInlet,linkOutlet)         
-            %Met � jour les pressions critiques � la fronti�re d'un amas
+            %Met a jour les pressions critiques � la fronti�re d'un amas
             %liquide lorsqu'un nouveau pore est envahi.
             %input : -cluster
             %        -interfaceChangeInformation = cell array, {{num_pore_outward},{[num_liens]}}
@@ -243,8 +243,8 @@ classdef ClusterMonophasique < handle
         end
         
         function compCluster = GetComplementaryCluster(cluster)
-            %Renvoie le cluster compl�mentaire correspondant aux pores non
-            %envahis d'un cluster donn�.
+            %Renvoie le cluster complementaire correspondant aux pores non
+            %envahis d'un cluster donne.
             
             compInvadedPores = setdiff((1:cluster.Network.GetNumberOfPores),cluster.GetInvadedPores);
             compBooleanInvadedLinks = not(cluster.BooleanInvadedLinks);
@@ -256,6 +256,25 @@ classdef ClusterMonophasique < handle
             
             compCluster = ClusterMonophasique(compInvadedPores,compInterfaceLinks,compInterfacePoresOutward,compBooleanInvadedLinks,cluster.Network,criticalPressures,clusterOptions);
         end
+        
+        function fusionCluster = FuseClusters(cluster1,cluster2)
+            %Renvoit le cluster forme de l'union de deux clusters
+            %Input: cluster1,cluster2
+            %Output : fusionCluster
+            
+            clusterOptions = cluster1.GetClusterOptions;
+            
+            fusionInvadedPores = union(cluster1.GetInvadedPores,cluster2.GetInvadedPores);
+            fusionBooleanInvadedLinks = or(cluster1.BooleanInvadedLinks,cluster2.BooleanInvadedLinks);
+            fusionInterfaceLinks = setxor(cluster1.GetInterfaceLinks,cluster2.GetInterfaceLinks);
+            
+            compInterfacePoresOutward = [];                                                            % TO DO
+            criticalPressures = zeros(1,length(fusionInterfaceLinks));                              % TO DO
+            
+            fusionCluster = ClusterMonophasique(fusionInvadedPores,fusionInterfaceLinks,compInterfacePoresOutward,fusionBooleanInvadedLinks,cluster.Network,criticalPressures,clusterOptions);
+        end
+        
+        
         
         
         function poresPercolants = FindPercolationPath(cluster,linkInlet,linkOutlet)
