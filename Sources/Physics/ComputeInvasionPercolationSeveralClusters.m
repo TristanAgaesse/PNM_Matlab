@@ -1,11 +1,11 @@
-function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( network,nCluster,inletLink,outletLink,wettability,varargin )
+function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
 %COMPUTEINVASIONPERCOLATIONSEVERALCLUSTERS  Calcule l'invasion de percolation sur un reseau
 %de pores, avec plusieurs cluster
-%Input : network,nCluster,inletLink,outletLink,wettability   , ( varargin ) :
+%Input : network,nCluster,clustersInletLink,clustersOutletLink,wettability   , ( varargin ) :
 %       - network
 %       - nCluster : number of cluster at inlet
-%       - inletLink : cell(1,nCluster) avec liste des liens d'injection pour chaque cluster   
-%       - outletLink : cell(1,nCluster) avec liste des liens outlet pour chaque cluster
+%       - clustersInletLink : cell(1,nCluster) avec liste des liens d'injection pour chaque cluster   
+%       - clustersOutletLink : cell(1,nCluster) avec liste des liens outlet pour chaque cluster
 %       - wettability : 'currentWettability', 'hydrophobic', 'hydrophilic' or 'random'.
 %       - varargin (optionnel) : clusterOptions 
 %               clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
@@ -19,7 +19,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     disp('Running Invasion Percolation Several Clusters');
     tic;
     
-    CheckInputs(network,nCluster,inletLink,outletLink,wettability,varargin )
+    CheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
     CheckLinkDiameter(network) %Verification si les diametres des liens sont deja calcules
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
     
@@ -36,17 +36,17 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     
     for iCluster=1:nCluster
     
-        cluster = ClusterMonophasique.InitialiseInvasionCluster(inletLink{iCluster},outletLink{iCluster},network,clusterOptions);
+        cluster = ClusterMonophasique.InitialiseInvasionCluster(clustersInletLink{iCluster},clustersOutletLink{iCluster},network,clusterOptions);
 
         iteration = 0;
         currentPressure = 0;
         outlet_reached = false;
-        outletPores = network.GetPoresFrontiere(outletLink{iCluster});
+        outletPores = network.GetPoresFrontiere(clustersOutletLink{iCluster});
         nPore = network.GetNumberOfPores;
         invasionPressureList = zeros(1,nPore);
 
         %Find accessible pores
-        nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink{iCluster});
+        nPoreAccessible=FindNumberOfAccessiblePores(network,clustersInletLink{iCluster});
 
         poreAllreadyInvaded=0;
         stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
@@ -71,12 +71,12 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
             %envahir le pore associe et update les pressions critiques
 
             interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
-            cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink{iCluster},outletLink{iCluster}); 
+            cluster.UpdateCriticalPressure(interfaceChangeInformation,clustersInletLink{iCluster},clustersOutletLink{iCluster}); 
 
             %verifier si outlet_reached
             if ismember(invadedPore,outletPores)
                 outlet_reached = true;
-                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink{iCluster});
+                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),clustersOutletLink{iCluster});
                 cluster.InvadeOutletLink(breakthroughLinks);
             end
             
@@ -125,11 +125,11 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function CheckInputs(network,nCluster,inletLink,outletLink,wettability,varargin )
+function CheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
 
     assert(isa(network,'PoreNetwork'),'First argument network must be a Pore Network object')
-    assert(isa(inletLink,'cell') &&  length(inletLink)==nCluster,'Third argument inletLink must be a cell of length nCluster (2nd argument)')
-    assert(isa(outletLink,'cell') &&  length(outletLink)==nCluster,'Fourth argument outletLink must be a cell of length nCluster (2nd argument)')
+    assert(isa(clustersInletLink,'cell') &&  length(clustersInletLink)==nCluster,'Third argument clustersInletLink must be a cell of length nCluster (2nd argument)')
+    assert(isa(clustersOutletLink,'cell') &&  length(clustersOutletLink)==nCluster,'Fourth argument clustersOutletLink must be a cell of length nCluster (2nd argument)')
 
 
 end
@@ -137,11 +137,11 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink)
+function nPoreAccessible=FindNumberOfAccessiblePores(network,clustersInletLink)
 
     fooCluster=network.CreateVoidCluster;
     totalFloodCluster=fooCluster.GetComplementaryCluster;
-    percoPath=totalFloodCluster.FindPercolationPath(inletLink,1:network.GetNumberOfLinks);
+    percoPath=totalFloodCluster.FindPercolationPath(clustersInletLink,1:network.GetNumberOfLinks);
     nPoreAccessible=0;
     for i=1:length(percoPath)
         nPoreAccessible=nPoreAccessible+length(percoPath{i}.GetInvadedPores);
