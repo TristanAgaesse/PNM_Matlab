@@ -64,6 +64,8 @@ classdef NetworkBuilder
                     
                     network=PoreNetworkEuclidien(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,myGeometry.CopyGeometry);
                     network.AddNewLinkData(linkDiameter,'Diameter');
+                    linkSurface =  pi/4*linkDiameter.^2;
+                    network.AddNewLinkData(linkSurface,'Surface');
                     network.AddNewPoreData(poreVolume,'Volume');
                     duree = toc;
             end

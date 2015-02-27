@@ -1,13 +1,34 @@
 %Nous allons appprendre a utiliser la classe MacroscopicGeometry pour creer des
 %reseaux de pores de forme variees.
 
+
+%La fonction basique pour creer un reseau est CreateNetwork qui lit un 
+%fichier de geometrie. En fait cette fonction cree en memoire un objet 
+%MacroscopicGeometry qui contient les informations du fichier puis
+%construit le reseau avec un objet NetworkBuilder qui interprete l'objet 
+%MacroscopicGeometry. 
+%Exemple avec un reseau regulier : creons un reseau a partir du fichier
+%1block3D_Structured et visualisons le avec paraview.
+
+
+myNewGeometry=MacroscopicGeometry();
+myNewGeometry.LoadGeometry('1block3D_Structured');
+myNewGeometry
+
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+network.ExportToParaview('reseauRegulier.vtk')
+
+
+
 %%
 %Une geometrie peut etre definie dans un fichier ou par un script qui cree un 
 %objet MacroscopicGeometry.
-%Dans cet exemple nous allons utiliser la librairie math geom pour creer
-%une geometrie exotique, l'octahedron .
+%Dans cet exemple nous allons utiliser un script pour creer une geometrie 
+%complexe, l'octahedron.
 
-[V, E, F] = createOctahedron;
+[V, E, F] = createOctahedron; %utilise la librairie math_geom
 
 %Creons maintenant un objet MacroscopicGeometry correspondant a l'octahedron.
 %L'element de base d'une geometrie est le block. Celui-ci peut-etre n'importe 
@@ -51,15 +72,14 @@ viewer.View('Network')
 
 
 %Il est possible de creer un fichier contenant les parametres de la
-%geometrie macroscopique. Il suffira d'utiliser la fonction CreateNetwork
-%avec ce fichier pour creer le reseau, ou d'utiliser
-%MacroscopicGeometry.LoadGeometry pour recupere l'objet MacroscopicGeometry.
+%geometrie macroscopique. 
 
 myGeometry.WriteGeometryFile('Octahedron3D.txt');
 
-myNewGeometry=MacroscopicGeometry();
-myNewGeometry.LoadGeometry('Octahedron3D.txt');
 
 
 %Pour le moment il n'y a que les reseaux Voronoi qui peuvent avoir des formes
-%exotiques, les reseaux structures doivent etre dans un pave aligne avec les axes
+%exotiques, les reseaux reguliers doivent etre dans un pave aligne avec les axes
+
+
+

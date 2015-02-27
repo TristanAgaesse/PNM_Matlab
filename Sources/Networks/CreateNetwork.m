@@ -14,7 +14,12 @@ function [ network,viewer ] = CreateNetwork( geometryFileName )
     networkBuilder=NetworkBuilder(myGeometry);
     
     network=networkBuilder.BuildNetwork;
-
-    viewer=Viewer(network.PrivateInternalOutputStruct);
+    
+    if isa(network,'PoreNetworkMesh')
+        viewer=Viewer(network.PrivateInternalOutputStruct);
+    else
+        disp('Matlab viewer implemented only for mesh networks')
+        viewer = [];
+    end
 end
 
