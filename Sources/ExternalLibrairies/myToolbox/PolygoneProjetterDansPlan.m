@@ -1,7 +1,6 @@
 function coordonnees_planes=PolygoneProjetterDansPlan(coordonnees_polygone)
 %ProjetterPolygoneDansPlan Renvoie les coordonn�es 2D des sommets d'un
-%   polygone plan plong� dans l'espace 3D.
-
+%   polygone plan plonge dans l'espace 3D.
 %   input: - coordonnees_polygone=array(nombre_sommets,dimension)
     
     dimension=length(coordonnees_polygone(1,:));
@@ -11,9 +10,11 @@ function coordonnees_planes=PolygoneProjetterDansPlan(coordonnees_polygone)
     %centre=transpose(centre);
     vect1=coordonnees_polygone(1,:)-centre;
     vect2=coordonnees_polygone(2,:)-centre;
-    normal=cross(vect1/norm(vect1),vect2/norm(vect2));
+    a = vect1/norm(vect1);
+    b = vect2/norm(vect2);
+    normal = [a(2)*b(3)-a(3)*b(2),a(3)*b(1)-a(1)*b(3),a(1)*b(2)-a(2)*b(1)]; %cross product
     
-    axe_rotation=cross(normal,[0 0 1]);
+    axe_rotation= [normal(2),-normal(1),0] ;  % cross(normal,[0 0 1])
     if norm(axe_rotation)>1e-6
         axe_rotation=axe_rotation\norm(axe_rotation);
         a=axe_rotation(1);

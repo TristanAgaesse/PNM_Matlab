@@ -11,16 +11,16 @@
 %1block3D_Structured et visualisons le avec paraview.
 
 
-myNewGeometry=MacroscopicGeometry();
-myNewGeometry.LoadGeometry('1block3D_Structured');
-myNewGeometry
+myGeometry=MacroscopicGeometry();
+myGeometry.LoadGeometry('1block3D_Structured');
+myGeometry
 
 networkBuilder=NetworkBuilder(myGeometry);
 
 network=networkBuilder.BuildNetwork();
-network.ExportToParaview('reseauRegulier.vtk')
+network.ExportToParaview('tutorialMacroscopicGeometry_StructuredNetwork')
 
-
+clear myGeometry
 
 %%
 %Une geometrie peut etre definie dans un fichier ou par un script qui cree un 
@@ -53,7 +53,7 @@ myGeometry.AddBlock(block)
 for iBoundary=1:size(F,1)
     boundary=struct;
     boundary.Face=F(iBoundary,:);
-    boundary.Rugosity='flat';
+    boundary.Rugosity='rough';
     boundary.Type='surface';
     boundary.Name='';
     myGeometry.AddBoundary(boundary);
@@ -65,7 +65,7 @@ networkBuilder=NetworkBuilder(myGeometry);
 network=networkBuilder.BuildNetwork();
 
 %Visualiser le reseau dans Matlab avec un viewer et exportons vers paraview.
-network.ExportToParaview('tutorialMacroxcopicGeometry.vtk')
+network.ExportToParaview('tutorialMacroscopicGeometry_octahedron.vtk')
 
 viewer=Viewer(network.PrivateInternalOutputStruct);
 viewer.View('Network')

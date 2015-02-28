@@ -1,14 +1,14 @@
 function sommets_ordonnes=PolygoneOrdonnerSommetsDansPlan(coordonnees_planes)
 %ORDONNERSOMMETSPOLYGONEDANSPLAN Ordonne les sommets d'un polygone convexe 
-%   2D dans l'ordre trigonométrique.
+%   2D dans l'ordre trigonomï¿½trique.
 %   input : -coordonnees_planes: array(nombre_sommets_du_polygone,2), 
 %            coordonnees X,Y des sommets d'un polygone convexe  
 %   output : - sommets_ordonnes : array(1,nombre_sommets_du_polygone), num
 %              des sommets ordonnes dans l'ordre trigonometrique
-%Algo : on part du sommet S1 le plus à gauche. On prend S0 à
+%Algo : on part du sommet S1 le plus ï¿½ gauche. On prend S0 ï¿½
 %   la verticale de S1 sur le bas.On calcule les produits scalaires 
-%   <S0S1,SiS1> renormalisés. Ils varient de 1 à -1 lorsqu'on fait le tour
-%   des sommets dans l'ordre trigonométrique (tous les sommets sont au
+%   <S0S1,SiS1> renormalisï¿½s. Ils varient de 1 ï¿½ -1 lorsqu'on fait le tour
+%   des sommets dans l'ordre trigonomï¿½trique (tous les sommets sont au
 %   dessus de S0S1). En ordonnant les produits scalaires on ordonne les
 %   sommets.
     
@@ -23,7 +23,7 @@ function sommets_ordonnes=PolygoneOrdonnerSommetsDansPlan(coordonnees_planes)
         if iSommet~=index(1)
             vect=coordonnees_planes(iSommet,:)-S1;
             vect=vect/norm(vect);
-            produits_scalaire(iSommet)=dot((S1-S0),vect);
+            produits_scalaire(iSommet)=sum((S1-S0).*vect);
         end
     end
     [~,ind]=sort(produits_scalaire);

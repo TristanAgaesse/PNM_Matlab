@@ -1047,7 +1047,11 @@ classdef NetworkBuilder
                 end
             end
             for iVertice = 1:length(sommets_voronoi)
-                vertices_to_cells{iVertice} = cell2mat(vertices_to_cells{iVertice});
+                if ~isempty(vertices_to_cells{iVertice})
+                    vertices_to_cells{iVertice} = cat(2,vertices_to_cells{iVertice}{:});                  %cell2mat(vertices_to_cells{iVertice});
+                else
+                    vertices_to_cells{iVertice}=[];
+                end
             end
             
             for num_cell = 1:length(cellules_voronoi)-1
@@ -1063,8 +1067,14 @@ classdef NetworkBuilder
                 for i = 1:length(sommets_cell)
                     cellules_adjacentes{i} = vertices_to_cells{sommets_cell(i)};
                 end
-                cellules_adjacentes = cell2mat(cellules_adjacentes);
-                liste_cellules_adjacentes_d_indice_plus_grand = unique(cellules_adjacentes(cellules_adjacentes>num_cell));
+                cellules_adjacentes = cat(2,cellules_adjacentes{:}) ;             %cell2mat(cellules_adjacentes);
+                foo=cellules_adjacentes(cellules_adjacentes>num_cell);
+                liste_cellules_adjacentes_d_indice_plus_grand=unique(foo);
+%                 if ~isempty(foo)
+%                     liste_cellules_adjacentes_d_indice_plus_grand = foo([true,diff(sort(foo))~=0]);%Fast implementation of unique
+%                 else
+%                     liste_cellules_adjacentes_d_indice_plus_grand = zeros(0,1);
+%                 end
                 
                 for num_autre_cell = liste_cellules_adjacentes_d_indice_plus_grand
                     if(not(isempty(num_autre_cell)))    
@@ -1791,15 +1801,20 @@ classdef NetworkBuilder
                     base_vect_2 = (planePoints(3,:)-planePoints(1,:));
                     base_vect_2 = base_vect_2/norm(base_vect_2);
                     
-                    if dot(base_vect_1,base_vect_2)<1e-8 && size(planePoints,1) > 3
+                    if  sum(base_vect_1.*base_vect_2) <1e-8 && size(planePoints,1) > 3
                         base_vect_2 = (planePoints(4,:)-planePoints(1,:));
                         base_vect_2 = base_vect_2/norm(base_vect_2);
                     end
-                    foo = dot(base_vect_1,base_vect_2);
+                    foo = sum(base_vect_1.*base_vect_2);
                     if abs(foo)<1e-6
                         disp('pb computing normal vector')
                     end
-                    vect_perp = cross(base_vect_1,base_vect_2);
+                    
+                    a=base_vect_1;
+                    b=base_vect_2;
+                    c = [a(2)*b(3)-a(3)*b(2),a(3)*b(1)-a(1)*b(3),a(1)*b(2)-a(2)*b(1)]; %cross product
+                    
+                    vect_perp = c;
                     vect_perp = vect_perp/norm(vect_perp);
             end
         end
