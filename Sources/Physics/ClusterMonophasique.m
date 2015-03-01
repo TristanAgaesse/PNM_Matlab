@@ -79,45 +79,35 @@ classdef ClusterMonophasique < handle
                 
                 %mettre a jour les listes reperant la position de la frontiere
                 %Beware, the invaded pore can be a neighbour of the cluster through several links, not just indexInvadedLink
-                link_of_invaded_pore  =  cluster.Network.GetLinksOfPore(cluster.InvadedPores(time));
+                invadedPoreLinks  =  cluster.Network.GetLinksOfPore(newInvadedPore);
                 
-                [poreLinkAllreadyInInterface, loc ]= ismember(link_of_invaded_pore,cluster.InterfaceLinks); 
-                all_new_invaded_links = intersect(link_of_invaded_pore,cluster.InterfaceLinks); %TOCHANGE
-                linksToDelete = ismember(cluster.InterfaceLinks,all_new_invaded_links); %use loc
-                cluster.BooleanInvadedLinks(all_new_invaded_links) = 1*ones(1,length(all_new_invaded_links));
+                [linkAllreadyInInterface, loc ]= ismember(invadedPoreLinks,cluster.InterfaceLinks); %loop over interface links
+                linksToBeInvaded = invadedPoreLinks(linkAllreadyInInterface); 
                 
-                newLinks  =  setdiff(link_of_invaded_pore,all_new_invaded_links);  %TOCHANGE
+                cluster.BooleanInvadedLinks(linksToBeInvaded) = 1*ones(1,length(linksToBeInvaded));
                 
-                cluster.InterfaceLinks  =  [cluster.InterfaceLinks(~linksToDelete),newLinks];
+                newInterfaceLinks  =  invadedPoreLinks(~linkAllreadyInInterface);  
                 
-                pore_outward_of_new_links  =  zeros(1,length(newLinks));
-                for iLink  =  1:length(newLinks)
-                    pore_outward_of_new_links(iLink)  =  setdiff(cluster.Network.GetPoresOfLink(newLinks(iLink)),cluster.InvadedPores(time));   %TOCHANGE
+                linksToDelete = zeros(1,length(cluster.InterfaceLinks));            
+                linksToDelete(loc(linkAllreadyInInterface)) = ones(1,length(loc(linkAllreadyInInterface)));   % ismember(cluster.InterfaceLinks,linksToBeInvaded); %use loc
+                
+                cluster.InterfaceLinks  =  [cluster.InterfaceLinks(~linksToDelete),newInterfaceLinks];
+                
+                pore_outward_of_new_links  =  zeros(1,length(newInterfaceLinks));
+                allNeighbourPores=cluster.Network.GetPoresOfLink(newInterfaceLinks);
+                for iLink  =  1:length(newInterfaceLinks)
+                    neighbourPores = allNeighbourPores(iLink,:);
+                    pore_outward_of_new_links(iLink)  =  neighbourPores(neighbourPores~=newInvadedPore);  
                 end
                 cluster.InterfacePoresOutward  =  [cluster.InterfacePoresOutward(~linksToDelete),pore_outward_of_new_links];
-                
-                
-%                 all_new_invaded_links  =  intersect(link_of_invaded_pore,cluster.InterfaceLinks);
-%                 cluster.BooleanInvadedLinks(all_new_invaded_links)  =  1*ones(1,length(all_new_invaded_links));
-%                 newLinks  =  setdiff(link_of_invaded_pore,all_new_invaded_links);
-%               
-%                 linksToDelete  =  ismember(cluster.InterfaceLinks,all_new_invaded_links);
-                
-                %cluster.InterfaceLinks  =  [cluster.InterfaceLinks(~linksToDelete),newLinks];
-                
-%                 pore_outward_of_new_links  =  zeros(1,length(newLinks));
-%                 for iLink  =  1:length(newLinks)
-%                     pore_outward_of_new_links(iLink)  =  setdiff(cluster.Network.GetPoresOfLink(newLinks(iLink)),cluster.InvadedPores(time));
-%                 end
-%                 cluster.InterfacePoresOutward  =  [cluster.InterfacePoresOutward(~linksToDelete),pore_outward_of_new_links];
-                
+
                 
                 %liste des liens dont il faut updater la pression
                 unique_new_pore_outward  =  unique(pore_outward_of_new_links);
                 interfaceChangeInformation  =  cell(1,length(unique_new_pore_outward));
                 for iPore = 1:length(unique_new_pore_outward)
                     interfaceChangeInformation{iPore}{1} = unique_new_pore_outward(iPore);
-                    interfaceChangeInformation{iPore}{2} = cluster.InterfaceLinks(ismember(cluster.InterfacePoresOutward,unique_new_pore_outward(iPore)));
+                    interfaceChangeInformation{iPore}{2} = cluster.InterfaceLinks(cluster.InterfacePoresOutward==unique_new_pore_outward(iPore)); %loop over interface pores outward
                 end
             end
         end
@@ -311,27 +301,29 @@ classdef ClusterMonophasique < handle
             pore_envahis_outlet = intersect(invadedPoresList,pores_outlet);
             pore_envahis_inlet = intersect(invadedPoresList,pores_inlet);
             
+            network = cluster.Network;
+            
             num_chemin = 1;
             poresPercolants = {};
-            composantes_connexes_du_fluide = cluster.Network.FindComposantesConnexes(invadedPoresList);
+            composantes_connexes_du_fluide = network.FindComposantesConnexes(invadedPoresList);
             for num_composante = 1:length(composantes_connexes_du_fluide)
                 if ~isempty(intersect(composantes_connexes_du_fluide{num_composante},pore_envahis_outlet)) && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
                     
                     %find invaded links
                     invadedPores = composantes_connexes_du_fluide{num_composante};
-                    linkCount = zeros(1,cluster.Network.GetNumberOfLinks);
+                    linkCount = zeros(1,network.GetNumberOfLinks);
                     for iPore = invadedPores
-                        thoseLinks = cluster.Network.GetLinksOfPore(iPore);
+                        thoseLinks = network.Pores{iPore};
                         linkCount(thoseLinks) = linkCount(thoseLinks)+1;
                     end
                     
                     booleanInvadedLinks = linkCount>0;
                     interfaceLinks = find(linkCount == 1);
                     poresFrontiereOutward = [];
-                    criticalPressures = zeros(1,cluster.Network.GetNumberOfLinks);
+                    criticalPressures = zeros(1,network.GetNumberOfLinks);
                     clusterOptions=cluster.GetClusterOptions;
                     
-                    percolatingCluster = ClusterMonophasique(invadedPores,interfaceLinks,poresFrontiereOutward,booleanInvadedLinks,cluster.Network,criticalPressures,clusterOptions);
+                    percolatingCluster = ClusterMonophasique(invadedPores,interfaceLinks,poresFrontiereOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
                     poresPercolants{num_chemin} = percolatingCluster;
                     num_chemin = num_chemin+1;
                 end

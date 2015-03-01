@@ -45,7 +45,11 @@ network.GetLinkData('ContactAngle');
 %ComputeInvasionPercolation a rajoute la liste des diametres de liens qui
 %lui manquait.
 
-[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability');
+clusterOptions.Coalescence = 'numberOfInvadedNeighbours';
+clusterOptions.CapillaryPressureLaw = 'PurcellToroid';
+clusterOptions.SurfaceTension = 72e-3 ; 
+
+[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
 
 network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_80');
 
@@ -62,10 +66,6 @@ contactAngle=110;
 network.RemoveLinkData('ContactAngle');
 theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
 network.AddNewLinkData(theta,'ContactAngle');
-
-clusterOptions.Coalescence = 'numberOfInvadedNeighbours';
-clusterOptions.CapillaryPressureLaw = 'PurcellToroid';
-clusterOptions.SurfaceTension = 72e-3 ; 
 
 [cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
 

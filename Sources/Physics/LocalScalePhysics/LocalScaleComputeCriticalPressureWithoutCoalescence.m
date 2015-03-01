@@ -29,7 +29,7 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
             for i=1:length(liens)
                 if isa(network,'PoreNetworkMeshFibrous')
                     numEdges = network.FacesToEdges{liens(i)};
-                    fibreDiameter(i) = mean(network.GetEdgeDataList.FiberDiameter(numEdges));
+                    fibreDiameter(i) = sum(network.GetEdgeDataList.FiberDiameter(numEdges))/length(numEdges);
                 elseif isfield(clusterOptions,'FiberDiameterForPurcell')
                     fibreDiameter(i)=clusterOptions.FiberDiameterForPurcell;
                 else
