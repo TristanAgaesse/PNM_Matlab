@@ -1,4 +1,4 @@
-classdef  PoreNetwork 
+classdef  PoreNetwork
     %PoreNetwork : structure representant un reseau de pores fondamental,
     %contenant de relations entre pores et liens de type graph
     
