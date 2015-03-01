@@ -154,7 +154,7 @@ function effectiveTransportProperty = ComputeEffectiveTransportProperty(fieldVal
     totalOutletDebit = sum(flux(outletLink));
     deltaConcentration = mean(fieldValue(inletLink))-mean(fieldValue(outletLink));
     
-    effectiveTransportProperty = totalOutletDebit/deltaConcentration;   
+    effectiveTransportProperty = abs( totalOutletDebit/deltaConcentration );   
 end
 
 
