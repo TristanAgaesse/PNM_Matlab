@@ -2,7 +2,7 @@ function infos=postTraitementDegradation(network,floodingStepInformation)
     
 
     infos=struct;
-    nStep=floodingStepInformation.nIteration;
+    nStep=length(floodingStepInformation.times);
     
     infos.SimuOptions=floodingStepInformation.options;
     infos.FixedPressure=floodingStepInformation.fixedPressure;

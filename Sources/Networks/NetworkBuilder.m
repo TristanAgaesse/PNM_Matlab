@@ -14,7 +14,8 @@ classdef NetworkBuilder
             %constructeur a partir de output_struct provenant d'un reader
             %initialisation des proprietes
             myGeometry.ConvertScale;
-            %output_struct.MacroscopicGeometry.Vertices = output_struct.MacroscopicGeometry.ATTRIBUTE.ConvertToMeters*output_struct.MacroscopicGeometry.Vertices;
+            %output_struct.MacroscopicGeometry.Vertices = ...
+            %   output_struct.MacroscopicGeometry.ATTRIBUTE.ConvertToMeters*output_struct.MacroscopicGeometry.Vertices;
             networkBuilder.MacroscopicGeometry = myGeometry;
         end
         
@@ -35,16 +36,26 @@ classdef NetworkBuilder
             type_reseau = myGeometry.GetNetworkType;
             switch type_reseau
                 case 'PoreNetworkMesh'
-                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,~,~,~,~] = NetworkBuilder.GenerateMesh(myGeometry);
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,~,~,~,~] ...
+                    	= NetworkBuilder.GenerateMesh(myGeometry);
                     
-                    network = PoreNetworkMesh(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,myGeometry);
+                    network = PoreNetworkMesh(dimension,faces,cells,cells_to_vertices,...
+                    	owners,neighbours,boundaries,vertices,myGeometry);
                     duree = toc;
                     
+                    
                 case 'PoreNetworkMeshFibrous'
-                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = NetworkBuilder.GenerateMesh(myGeometry);
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,...
+                    	edges,vertices_to_edges,faces_to_edges,edges_to_faces] ...
+                    	= NetworkBuilder.GenerateMesh(myGeometry);
+                    
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry);    
                     
-                    network = PoreNetworkMeshFibrous(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
+                    network = PoreNetworkMeshFibrous(dimension,faces,cells,cells_to_vertices,...
+                        owners,neighbours,boundaries,vertices,edges,vertices_to_edges,...
+                        epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
+                    
+                    
                     duree=toc;
                     
                     diameter = network.ComputeAllLinkDiameter;
@@ -52,17 +63,28 @@ classdef NetworkBuilder
                     surface =  network.ComputeAllLinkSurface;
                     network.AddNewLinkData(surface,'Surface');
                     
+                    
                 case 'DelaunayNetwork'
-                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = NetworkBuilder.GenerateMesh(myGeometry);
+                    [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,...
+                    	edges,vertices_to_edges,faces_to_edges,edges_to_faces] ...
+                    	= NetworkBuilder.GenerateMesh(myGeometry);
+                    
                     epaisseur_edges = NetworkBuilder.GenerateEdgeThickness(edges,vertices,myGeometry); 
                     
-                    network = DelaunayNetwork(dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
+                    network = DelaunayNetwork(dimension,faces,cells,cells_to_vertices,...
+                        owners,neighbours,boundaries,vertices,edges,vertices_to_edges,...
+                        epaisseur_edges,faces_to_edges,edges_to_faces,myGeometry);
+                    
                     duree = toc;
                     
-                case 'StructuredNetwork'
-                    [dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,poreVolume,linkDiameter]=NetworkBuilder.GenerateStructuredNetwork(myGeometry);
                     
-                    network=PoreNetworkEuclidien(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,myGeometry.CopyGeometry);
+                case 'StructuredNetwork'
+                    [dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,poreVolume,linkDiameter]...
+                            =NetworkBuilder.GenerateStructuredNetwork(myGeometry);
+                    
+                    network = PoreNetworkEuclidien(dimension,pores,owners,neighbours,...
+                        boundaries,poreCenter,linkCenter,myGeometry.CopyGeometry);
+                    
                     network.AddNewLinkData(linkDiameter,'Diameter');
                     linkSurface =  pi/4*linkDiameter.^2;
                     network.AddNewLinkData(linkSurface,'Surface');
@@ -79,7 +101,8 @@ classdef NetworkBuilder
     methods (Static = true)      
         
         %GenerateMesh
-        function [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = GenerateMesh(myGeometry)
+        function [dimension,faces,cells,cells_to_vertices,owners,neighbours,boundaries,...
+                vertices,edges,vertices_to_edges,faces_to_edges,edges_to_faces] = GenerateMesh(myGeometry)
             %genere un maillage en fonction de la geometrie macroscopique.
             %input : geometrie macroscopique
             %output : 
@@ -110,7 +133,8 @@ classdef NetworkBuilder
             
             %Remodelage des frontieres : le maillage doit etre modifie au
             %voisinage des interfaces entre blocks et des frontieres exterieures
-            [points_in_blocks,indices_cellules_esclaves] = NetworkBuilder.RemodelerFrontieres(points_in_blocks,myGeometry);
+            [points_in_blocks,indices_cellules_esclaves] = NetworkBuilder.RemodelerFrontieres(...
+                points_in_blocks,myGeometry);
             
             %Generation du pavage de voronoi a partir des points de
             %tous les blocks mis en commun. Cele permet d'avoir un maillage 
@@ -118,23 +142,29 @@ classdef NetworkBuilder
             %Mise a jour des references vers les cellules esclaves 
             %des frontieres pour tenir compte de la nouvelle numerotation
             %due a la mise en commun des points/cellules.
-            [sommets_voronoi,cellules_voronoi,indices_cellules_esclaves] = NetworkBuilder.ProcedurePavage(points_in_blocks,indices_cellules_esclaves,myGeometry);
+            [sommets_voronoi,cellules_voronoi,indices_cellules_esclaves] = NetworkBuilder.ProcedurePavage(...
+                points_in_blocks,indices_cellules_esclaves,myGeometry);
             
             %Nettoyage du reseau : selection des cellules de voronoi et des
             %sommets adequats. Il faut faire le menage car on a utilise des
             %points en dehors du bloc pour former les frontieres exterieures.
-            cellules_inutiles = NetworkBuilder.ListerCellulesInutiles(cellules_voronoi,sommets_voronoi,indices_cellules_esclaves,myGeometry);
+            cellules_inutiles = NetworkBuilder.ListerCellulesInutiles(...
+                cellules_voronoi,sommets_voronoi,indices_cellules_esclaves,myGeometry);
             
             %Extraction des faces et de leurs pores voisins : creation de
             %face, owners, neighbour,faces_des_frontieres_exterieures
-            [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures] = NetworkBuilder.FaceExtraction(cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,myGeometry,sommets_voronoi);
+            [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures] = NetworkBuilder.FaceExtraction(...
+                cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,myGeometry,sommets_voronoi);
             
             %Nettoyage des listes cellules et vertices
-            [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules] = NetworkBuilder.MiseAJourCellulesSommets(cellules_voronoi,sommets_voronoi,cellules_inutiles);                                                                                                          
+            [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules] = NetworkBuilder.MiseAJourCellulesSommets(...
+                cellules_voronoi,sommets_voronoi,cellules_inutiles);                                                                                                          
                         
             %Nettoyage de la liste des faces, renumerotation des faces
             %aux frontieres et mise en ordre des sommets des faces
-            [faces,owners,neighbours,boundaries] = NetworkBuilder.RenumerotationFaces(dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,myGeometry,new_numeros_cellules,new_numeros_sommets,vertices);
+            [faces,owners,neighbours,boundaries] = NetworkBuilder.RenumerotationFaces(...
+                dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,...
+                myGeometry,new_numeros_cellules,new_numeros_sommets,vertices);
             
             %Creation de la liste cells : cellules to faces
             cells = NetworkBuilder.BuildPoresToLinks(owners,neighbours,nombre_cellules);
@@ -147,7 +177,8 @@ classdef NetworkBuilder
         end %GenerateMesh
         
         %GenerateStructuredNetwork
-        function [dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,poreVolume,linkDiameter]=GenerateStructuredNetwork(myGeometry)
+        function [dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,poreVolume,linkDiameter]...
+                = GenerateStructuredNetwork(myGeometry)
             
             dimension = myGeometry.GetDimension;
             
@@ -183,7 +214,7 @@ classdef NetworkBuilder
                         iLink = ilx+(nx+1)*(iy-1);
                         owners(iLink) = ilx+nx*(iy-1);
                         neighbours(iLink) = -1;
-                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)-[deltaX,0]; %TO CHECK
+                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)-[deltaX,0]; 
                         infos_liens_frontieres{1}(iy)=iLink;
                         
                         for ilx=2:nx
@@ -197,7 +228,7 @@ classdef NetworkBuilder
                         iLink = ilx+(nx+1)*(iy-1);
                         owners(iLink) = ilx+nx*(iy-1)-1;
                         neighbours(iLink) = -1;
-                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[deltaX,0] ; %TO CHECK
+                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[deltaX,0] ; 
                         infos_liens_frontieres{2}(iy)=iLink;
                     end
                     %Direction Y
@@ -210,7 +241,7 @@ classdef NetworkBuilder
                         iLink = shift+ily+(ny+1)*(ix-1);
                         owners(iLink) = ily+ny*(ix-1);
                         neighbours(iLink) = -1;
-                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)-[0,deltaY]; %TO CHECK
+                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)-[0,deltaY];
                         infos_liens_frontieres{3}(ix)=iLink;
                         
                         for ily=2:ny
@@ -224,7 +255,7 @@ classdef NetworkBuilder
                         iLink = shift+ ily+(ny+1)*(ix-1);
                         owners(iLink) = ix+nx*(ily-2);
                         neighbours(iLink) = -1;
-                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,deltaY] ; %TO CHECK
+                        linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,deltaY] ; 
                         infos_liens_frontieres{4}(ix)=iLink;
                     end
                     
@@ -249,7 +280,7 @@ classdef NetworkBuilder
                             iLink = ilx+(nx+1)*(iy-1)+(nx+1)*ny*(iz-1);
                             owners(iLink) = ilx+nx*(iy-1)+nx*ny*(iz-1);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[-deltaX,0,0]; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[-deltaX,0,0]; 
                             infos_liens_frontieres{1}(iy+ny*(iz-1))=iLink;
 
                             for ilx=2:nx
@@ -263,7 +294,7 @@ classdef NetworkBuilder
                             iLink = ilx+(nx+1)*(iy-1)+(nx+1)*ny*(iz-1);
                             owners(iLink) = ilx+nx*(iy-1)-1+nx*ny*(iz-1);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[deltaX,0,0] ; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[deltaX,0,0] ; 
                             infos_liens_frontieres{2}(iy+ny*(iz-1))=iLink;
                         end
                     end
@@ -278,7 +309,7 @@ classdef NetworkBuilder
                             iLink = shift+ily+(ny+1)*(ix-1)+nx*(ny+1)*(iz-1);
                             owners(iLink) = ily+ny*(ix-1)+nx*ny*(iz-1);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,-deltaY,0]; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,-deltaY,0]; 
                             infos_liens_frontieres{3}(ix+nx*(iz-1))=iLink;
 
                             for ily=2:ny
@@ -292,7 +323,7 @@ classdef NetworkBuilder
                             iLink = shift+ ily+(ny+1)*(ix-1)+nx*(ny+1)*(iz-1);
                             owners(iLink) = ix+nx*(ily-2)+nx*ny*(iz-1);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,deltaY,0] ; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,deltaY,0] ; 
                             infos_liens_frontieres{4}(ix+nx*(iz-1))=iLink;
                         end
                     end
@@ -308,7 +339,7 @@ classdef NetworkBuilder
                             iLink = shift+ilz+(nz+1)*(ix-1)+(iy-1)*(nz+1)*nx;
                             owners(iLink) = ix+nx*(iy-1);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,0,-deltaZ]; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,0,-deltaZ]; 
                             infos_liens_frontieres{5}(iy+ny*(ix-1))=iLink;
 
                             for ilz=2:nz
@@ -322,13 +353,10 @@ classdef NetworkBuilder
                             iLink = shift+ ilz+(nz+1)*(ix-1)+(iy-1)*(nz+1)*nx;
                             owners(iLink) = ix+nx*(iy-1)+nx*ny*(ilz-2);
                             neighbours(iLink) = -1;
-                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,0,deltaZ] ; %TO CHECK
+                            linkCenter(iLink,:) = poreCenter(owners(iLink),:)+[0,0,deltaZ] ; 
                             infos_liens_frontieres{6}(iy+ny*(ix-1))=iLink;
                         end
                     end
-                    
-                    
-                    
                     
             end
             
@@ -354,7 +382,8 @@ classdef NetworkBuilder
         end %GenerateStructuredNetwork       
         
         %ProcedurePavage   
-        function [sommets_pavage,cellules_pavage,indices_cellules_esclaves] = ProcedurePavage(points_in_blocks,indices_cellules_esclaves,myGeometry)
+        function [sommets_pavage,cellules_pavage,indices_cellules_esclaves] = ProcedurePavage(...
+                points_in_blocks,indices_cellules_esclaves,myGeometry)
             
             %Creation liste commune pour tous les points
             dimension = myGeometry.GetDimension;
@@ -590,7 +619,8 @@ classdef NetworkBuilder
 %                     infos_frontiere = geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
 %                     vertices_geo_macro = geometrie_macroscopique.Vertices;
 %                     
-%                     [nouveaux_points,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro);
+%                     [nouveaux_points,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(...
+%                               random_points_in_block,infos_block,infos_frontiere,vertices_geo_macro);
 %                     points_in_blocks{indice_block} = nouveaux_points;
 %                     indices_cellules_esclaves{indice_boundary} = ind_cells_esclaves;
 %                 end
@@ -600,11 +630,12 @@ classdef NetworkBuilder
             for iBoundary = 1:nBoundary
                if strcmp(myGeometry.GetBoundaryType(iBoundary) ,'surface')    
                     iBlock = myGeometry.FindBlockOfThisBoundary(iBoundary);
-                    random_points_in_block = points_in_blocks{iBlock};                                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %infos_block = myGeometry.Blocks.Block(iBlock);                                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                  
+                    random_points_in_block = points_in_blocks{iBlock};                                         
+                    %infos_block = myGeometry.Blocks.Block(iBlock);                        
                     %infos_frontiere = myGeometry.Boundaries.Boundary(iBoundary);
                     
-                    %[newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,myGeometry.GetAllVertices);
+                    %[newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(...
+                    %   random_points_in_block,infos_block,infos_frontiere,myGeometry.GetAllVertices);
                     [newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(random_points_in_block,myGeometry,iBoundary);
                     points_in_blocks{iBlock} = newPoints;
                     indices_cellules_esclaves{iBoundary} = ind_cells_esclaves; %les numeros des cellules changeront apres mise en commun voronoi
@@ -617,26 +648,27 @@ classdef NetworkBuilder
                if strcmp(myGeometry.GetBoundaryType(iBoundary),'cyclic')
                    %on traite la condition limite periodique lorqu'on a
                    %trouve la deuxieme frontiere de la paire
-                    if false %la premiere frontiere est deja trouvee                                                           %TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    if false %la premiere frontiere est deja trouvee                     %TO DO !!
                         iBlock = myGeometry.FindBlockOfThisBoundary(iBoundary);
                         random_points_in_block = points_in_blocks{iBlock};
                         %infos_block = geometrie_macroscopique.Blocks.Block(iBlock);
                         %infos_frontiere = geometrie_macroscopique.Boundaries.Boundary(indice_boundary);
                         
-                        %[newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(random_points_in_block,infos_block,infos_frontiere,myGeometry.GetAllVertices);
+                        %[newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(...
+                        %   random_points_in_block,infos_block,infos_frontiere,myGeometry.GetAllVertices);
                         [newPoints,ind_cells_esclaves] = NetworkBuilder.GererUneFrontiere(random_points_in_block,myGeometry,iBoundary);
                         points_in_blocks{iBlock} = newPoints;
                         indices_cellules_esclaves{indice_boundary} = ind_cells_esclaves;      
                         
                         %supprimer le nom de la premiere frontiere de 
-                        %liste_patch_periodiques_trouves                                                                %TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        %liste_patch_periodiques_trouves                                  %TO DO !!!
                     else
-                        %ajouter le nom de cette frontiere a la liste                                                    %TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        %ajouter le nom de cette frontiere a la liste                      %TO DO !!!
                         
                     end
                end
             end
-            %verifier que liste_patch_periodiques_trouves est bien vide                                                 %TO DO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            %verifier que liste_patch_periodiques_trouves est bien vide                  %TO DO !!!
             
             
             
@@ -681,8 +713,10 @@ classdef NetworkBuilder
 %                         nbre_blocks = 2;
 %                         initial_points = random_points_in_block;
 %                         inf_block = infos_block;
-% %                         test_coherence_frontiere_block_1 = isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),ones(1,length(inf_frontiere{1}.face)));
-% %                         test_coherence_frontiere_block_2 = isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),ones(1,length(inf_frontiere{2}.face)));
+% %                         test_coherence_frontiere_block_1 = isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),...
+%                                       ones(1,length(inf_frontiere{1}.face)));
+% %                         test_coherence_frontiere_block_2 = isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),...
+%                                       ones(1,length(inf_frontiere{2}.face)));
 % %                         assert(test_coherence_frontiere_block_1&&test_coherence_frontiere_block_2,'Pb infos frontieres bloc cyclic');
 %                     else
 %                         nbre_blocks = 1;
@@ -715,7 +749,8 @@ classdef NetworkBuilder
 %                     case 2
 %                         assert(length(indices_vertex) == 2,'Frontiere non plane');
 %                     case 3
-%                         %assert(length(indices_vertex) == 4&&det(vertices_frontiere([1,2,3],:))<10^(-10)*epsilon^3&&det(vertices_frontiere([1,2,4],:))<10^(-10)*epsilon^3,'Frontiere non plane');
+%                         %assert(length(indices_vertex) == 4&&det(vertices_frontiere([1,2,3],:))<10^(-10)*epsilon^3...
+%                           &&det(vertices_frontiere([1,2,4],:))<10^(-10)*epsilon^3,'Frontiere non plane');
 %                         
 %                                                                     %A FAIRE
 %                 end
@@ -739,7 +774,8 @@ classdef NetworkBuilder
                     distances_a_la_frontiere{num_block} = zeros(length(initial_points{num_block}(:,1)),1);
                     boundaryVertices = myGeometry.GetBoundaryVertices(iBoundary);
                     for num_point = 1:length(initial_points{num_block}(:,1))
-                        distances_a_la_frontiere{num_block}(num_point) = NetworkBuilder.DistancePointFrontierePlane(initial_points{num_block}(num_point,:),boundaryVertices);
+                        distances_a_la_frontiere{num_block}(num_point) = NetworkBuilder.DistancePointFrontierePlane(...
+                            initial_points{num_block}(num_point,:),boundaryVertices);
                     end
                 end
             end        
@@ -802,7 +838,8 @@ classdef NetworkBuilder
                            
                             points_out_proches_surface = zeros(nbre_points_proches_in,dimension);
                             for num_point = 1:nbre_points_proches_in
-                                points_out_proches_surface(num_point,:) = initial_points{1}(indices_sorted(num_point),:)-2*dot(vect_perp,(initial_points{1}(indices_sorted(num_point),:)-boundaryVertices(1,:)))*vect_perp;
+                                points_out_proches_surface(num_point,:) = initial_points{1}(indices_sorted(num_point),:)...
+                                    -2*dot(vect_perp,(initial_points{1}(indices_sorted(num_point),:)-boundaryVertices(1,:)))*vect_perp;
                             end
                             %les ajouter aux points du bloc
                             newPointsInBlock = vertcat(initial_points{1},points_out_proches_surface);
@@ -840,7 +877,8 @@ classdef NetworkBuilder
         
         
         %TrouverCellulesInutilesFrontiere
-        function useless_cells = TrouverCellulesInutilesFrontiere(indices_cellules_esclaves,cellules_inutiles,sommets_voronoi,cellules_voronoi,myGeometry,iBoundary)
+        function useless_cells = TrouverCellulesInutilesFrontiere(...
+                indices_cellules_esclaves,cellules_inutiles,sommets_voronoi,cellules_voronoi,myGeometry,iBoundary)
             %Trouve les cellules inutiles au maillage parmis les cellules 
             %esclaves d'une frontiere donnee
             %output: - useless_cells : tableau des indices des cellules inutiles
@@ -864,8 +902,10 @@ classdef NetworkBuilder
 %                         assert(length(infos_block) == 2,'cyclic entre 2 blocks maximum')
 %                         nbre_blocks = 2;
 %                         inf_block = infos_block;
-%                         test_coherence_frontiere_block_1 = isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),ones(1,length(inf_frontiere{1}.face)));
-%                         test_coherence_frontiere_block_2 = isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),ones(1,length(inf_frontiere{2}.face)));
+%                         test_coherence_frontiere_block_1 = isequal(ismember(inf_frontiere{1}.face,inf_block{1}.VertexNumbers),...
+%                                       ones(1,length(inf_frontiere{1}.face)));
+%                         test_coherence_frontiere_block_2 = isequal(ismember(inf_frontiere{2}.face,inf_block{2}.VertexNumbers),...
+%                                       ones(1,length(inf_frontiere{2}.face)));
 %                         assert(test_coherence_frontiere_block_1&&test_coherence_frontiere_block_2,'Pb infos frontieres bloc cyclic');
 %                     else
 %                         nbre_blocks = 1;
@@ -920,7 +960,8 @@ classdef NetworkBuilder
                                             
                                             boundaryVertices = myGeometry.GetBoundaryVertices(iBoundary);
                                             blockCenter = mean( myGeometry.GetBlockVertices(iBlock) );
-                                            vect_perp = NetworkBuilder.ComputeVecteurNormalOrienteExterieurBlock(boundaryVertices,blockCenter);
+                                            vect_perp = NetworkBuilder.ComputeVecteurNormalOrienteExterieurBlock(...
+                                            	boundaryVertices,blockCenter);
                                             
                                             if dot( (barycenter-boundaryVertices(1,:)),vect_perp)>0
                                                 useless_cells = [useless_cells,num_cell];
@@ -956,7 +997,8 @@ classdef NetworkBuilder
                                             
                                             boundaryVertices = myGeometry.GetBoundaryVertices(iBoundary);
                                             blockCenter = mean( myGeometry.GetBlockVertices(iBlock) );
-                                            vect_perp = NetworkBuilder.ComputeVecteurNormalOrienteExterieurBlock(boundaryVertices,blockCenter);
+                                            vect_perp = NetworkBuilder.ComputeVecteurNormalOrienteExterieurBlock(...
+                                                boundaryVertices,blockCenter);
                                             
                                             if dot( (barycenter-boundaryVertices(1,:)),vect_perp)>0
                                                 useless_cells = [useless_cells,num_cell];
@@ -1007,14 +1049,16 @@ classdef NetworkBuilder
             %cellules esclaves, par exemple si cette cellule servait
             %uniquement d'artifice pour remodeler la frontiere.
             for iBoundary = 1:myGeometry.GetNumberOfBoundaries 
-                indices_useless_cells_frontiere = NetworkBuilder.TrouverCellulesInutilesFrontiere(indices_cellules_esclaves{iBoundary},cellules_inutiles,sommets_voronoi,cellules_voronoi,myGeometry,iBoundary);
+                indices_useless_cells_frontiere = NetworkBuilder.TrouverCellulesInutilesFrontiere(...
+                    indices_cellules_esclaves{iBoundary},cellules_inutiles,sommets_voronoi,cellules_voronoi,myGeometry,iBoundary);
                 cellules_inutiles(indices_useless_cells_frontiere) = 1;
             end
                         
         end %ListerCellulesInutiles
         
         %FaceExtraction
-        function [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures] = FaceExtraction(cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,myGeometry,sommets_voronoi)
+        function [dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures] = FaceExtraction(...
+                cellules_voronoi,cellules_inutiles,indices_cellules_esclaves,dimension,myGeometry,sommets_voronoi)
             %Trouve les faces entre les cellules et renvoie les indices de
             %leurs sommets et leurs deux cellules voisines. 
             %Algorithme : parcourir les cellules en verifiant parmi leurs 
@@ -1048,7 +1092,7 @@ classdef NetworkBuilder
             end
             for iVertice = 1:length(sommets_voronoi)
                 if ~isempty(vertices_to_cells{iVertice})
-                    vertices_to_cells{iVertice} = cat(2,vertices_to_cells{iVertice}{:});                  %cell2mat(vertices_to_cells{iVertice});
+                    vertices_to_cells{iVertice} = cat(2,vertices_to_cells{iVertice}{:}); 
                 else
                     vertices_to_cells{iVertice}=[];
                 end
@@ -1067,7 +1111,7 @@ classdef NetworkBuilder
                 for i = 1:length(sommets_cell)
                     cellules_adjacentes{i} = vertices_to_cells{sommets_cell(i)};
                 end
-                cellules_adjacentes = cat(2,cellules_adjacentes{:}) ;             %cell2mat(cellules_adjacentes);
+                cellules_adjacentes = cat(2,cellules_adjacentes{:}) ;    
                 foo=cellules_adjacentes(cellules_adjacentes>num_cell);
                 liste_cellules_adjacentes_d_indice_plus_grand=unique(foo);
 %                 if ~isempty(foo)
@@ -1131,7 +1175,8 @@ classdef NetworkBuilder
                         dirty_neighbours{indice_courant_face} = []; %code pour pas encore de frontiere associee
                         for iBoundary = 1:nBoundary
                             if quickCellulesEsclaves{iBoundary}(num_cell) || quickCellulesEsclaves{iBoundary}(num_autre_cell)
-                                dirty_neighbours{indice_courant_face} = [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                                dirty_neighbours{indice_courant_face} = ...
+                                    [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
                                 quickDirtyNeighbourg{iBoundary}(indice_courant_face)=1;
                             end
                         end
@@ -1141,7 +1186,8 @@ classdef NetworkBuilder
                         dirty_neighbours{indice_courant_face} = []; %code pour pas encore de frontiere associee
                         for iBoundary = 1:nBoundary
                             if quickCellulesEsclaves{iBoundary}(num_cell) || quickCellulesEsclaves{iBoundary}(num_autre_cell)
-                                dirty_neighbours{indice_courant_face} = [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
+                                dirty_neighbours{indice_courant_face} = ...
+                                    [-iBoundary,dirty_neighbours{indice_courant_face}]; %-i : code pour frontiere i associee
                                 quickDirtyNeighbourg{iBoundary}(indice_courant_face)=1;
                             end
                         end
@@ -1210,7 +1256,8 @@ classdef NetworkBuilder
             end     
             nbre_faces_frontieres_repertoriees = 0;
             for i = 1:nombre_frontieres_exterieures
-                nbre_faces_frontieres_repertoriees = nbre_faces_frontieres_repertoriees+length(faces_des_frontieres_exterieures{i}{2});
+                nbre_faces_frontieres_repertoriees = nbre_faces_frontieres_repertoriees...
+                    +length(faces_des_frontieres_exterieures{i}{2});
             end
             %cas oe des faces exterieures appartiennent a 2+ frontieres
             face_to_front = zeros(1,nbre_dirty_faces);
@@ -1223,7 +1270,8 @@ classdef NetworkBuilder
                         if face_to_front(num_face) == 0
                             face_to_front(num_face) = indice_frontiere_exterieure;
                         elseif face_to_front(num_face)<0 %cas doublon deje repere (face appartenant a 3+ frontieres)
-                            doublons{-face_to_front(num_face)}{2} = [doublons{-face_to_front(num_face)}{2},indice_frontiere_exterieure];
+                            doublons{-face_to_front(num_face)}{2} = ...
+                                [doublons{-face_to_front(num_face)}{2},indice_frontiere_exterieure];
                         else %cas nouveau doublon
                             doublons{indice_doublon}{1} = num_face; 
                             doublons{indice_doublon}{2} = [face_to_front(num_face),indice_frontiere_exterieure];
@@ -1271,7 +1319,8 @@ classdef NetworkBuilder
         end %FaceExtraction
         
         %MiseAJourCellulesSommets
-        function [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules_utiles] = MiseAJourCellulesSommets(cellules_voronoi,sommets_voronoi,cellules_inutiles)                                                                                                         
+        function [cells_to_vertices,vertices,new_numeros_cellules,new_numeros_sommets,nombre_cellules_utiles] = MiseAJourCellulesSommets(...
+                cellules_voronoi,sommets_voronoi,cellules_inutiles)                                                                                                         
 
                 %Determiner les sommets utiles a partir des cellules utiles
                 %sommet utile = utile pour au moins une cellule
@@ -1347,7 +1396,9 @@ classdef NetworkBuilder
         end %BuildPoresToLinks
         
         %%RenumerotationFaces
-        function [faces,owners,neighbours,boundaries] = RenumerotationFaces(dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,myGeometry,new_numeros_cellules,new_numeros_sommets,vertices)
+        function [faces,owners,neighbours,boundaries] = RenumerotationFaces(...
+                dirty_faces,dirty_owners,dirty_neighbours,faces_des_frontieres_exterieures,...
+                myGeometry,new_numeros_cellules,new_numeros_sommets,vertices)
             %Mise a jour des listes faces, owners, neighbours.
             %renumerotation des faces pour acces rapide aux faces d'une
             %frontiere et codage des infos frontieres du reseau de pores
@@ -1386,7 +1437,8 @@ classdef NetworkBuilder
                 infos_liens_frontieres{i} = faces_des_frontieres_exterieures{i}{2};
             end
             
-            [boundaries,owners,neighbours,~,faces] = NetworkBuilder.RenumerotationLiensFrontieres(infos_liens_frontieres,new_owners,new_neighbours,new_faces);
+            [boundaries,owners,neighbours,~,faces] = NetworkBuilder.RenumerotationLiensFrontieres(...
+                infos_liens_frontieres,new_owners,new_neighbours,new_faces);
             
             %Ordonner sommmets des faces selon l'ordre trigonometrique ou
             %anti-trigonometrique, de faeon a avoir les aretes des faces
@@ -1429,7 +1481,8 @@ classdef NetworkBuilder
         end %RenumerotationFaces
         
         %RenumerotationFacesFrontieres
-        function [boundaries,owners,neighbours,newOrder,faces] = RenumerotationLiensFrontieres(infos_liens_frontieres,old_owners,old_neighbours,varargin)
+        function [boundaries,owners,neighbours,newOrder,faces] = RenumerotationLiensFrontieres(...
+                infos_liens_frontieres,old_owners,old_neighbours,varargin)
             %renumerote les liens pour respecter le codage des liens
             %frontieres. 
             %input : infos_liens_frontieres,old_owners,old_neighbours,
@@ -1638,7 +1691,8 @@ classdef NetworkBuilder
                 liste_sommets_1 = edges(blocks_to_edges{iBlock},1);
                 liste_sommets_2 = edges(blocks_to_edges{iBlock},2);
                 coordonnes_sommets_edges = horzcat(vertices(liste_sommets_1,:),vertices(liste_sommets_2,:));
-                edgeThickness(blocks_to_edges{iBlock}) = NetworkBuilder.GenerateEdgeThicknessOneBlock(coordonnes_sommets_edges,myGeometry,iBlock);
+                edgeThickness(blocks_to_edges{iBlock}) = NetworkBuilder.GenerateEdgeThicknessOneBlock(...
+                    coordonnes_sommets_edges,myGeometry,iBlock);
             end
             
         end %GenerateEdgeThickness

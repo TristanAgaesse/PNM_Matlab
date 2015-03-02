@@ -97,7 +97,7 @@ function saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCu
 
             elseif signe(2)==1 %pore au dessus 
 
-            else %pore intersect�
+            else %pore intersecte
                 assert(signe(1)==1 && signe(2)==-1)
                 NODES=network.GetVerticesOfPore(iPore);
                 %centrePore=mean(NODES);
@@ -199,7 +199,8 @@ function [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( clus
     end
     
     if isa(poreNetwork,'PoreNetworkImageBased')
-        assert(isfield(options,'codeForLiquid') && isfield(options,'codeForSolid'),'Codes for liquid and solid required when working with images')
+        assert(isfield(options,'codeForLiquid') && isfield(options,'codeForSolid'),...
+                    'Codes for liquid and solid required when working with images')
         codeForLiquid=options.codeForLiquid;
         codeForSolid=options.codeForSolid;
     

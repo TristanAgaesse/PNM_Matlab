@@ -9,7 +9,6 @@
 %Commençons par créer un réseau 3D. 
 [ network,viewer ]=CreateNetwork('1block3D');
 
-inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
 
 
 %%
@@ -28,11 +27,13 @@ inletLink=network.GetLinksFrontiere(1);outletLink=network.GetLinksFrontiere(2);
 %contenant les angles de contact. On utilise la fonction AddNewLinkData
 %avec le nom 'ContactAngle'. 
 
-contactAngle=80;
-theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
-network.AddNewLinkData(theta,'ContactAngle');
+theta=80;
+nLink = network.GetNumberOfLinks;
+contactAngle=theta*pi/180*ones(1,nLink);
 
-network.GetLinkDataList 
+network.AddNewLinkData(contactAngle,'ContactAngle');
+
+disp(network.GetLinkDataList) 
 
 network.GetLinkData('ContactAngle');
 
@@ -45,11 +46,15 @@ network.GetLinkData('ContactAngle');
 %ComputeInvasionPercolation a rajoute la liste des diametres de liens qui
 %lui manquait.
 
+inletLink=network.GetLinksFrontiere(1);
+outletLink=network.GetLinksFrontiere(2);
+
 clusterOptions.Coalescence = 'numberOfInvadedNeighbours';
 clusterOptions.CapillaryPressureLaw = 'PurcellToroid';
 clusterOptions.SurfaceTension = 72e-3 ; 
 
-[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
+cluster = ComputeInvasionPercolation(network,inletLink,outletLink, ...
+                                     'currentWettability',clusterOptions);
 
 network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_80');
 
@@ -62,12 +67,14 @@ network.GetPoreDataList
 %uniforme de 110°. On retire d'abord l'ancien linkData 'ContactAngle', on
 %ajoute le nouveau puis . 
 
-contactAngle=110;
+theta=110;
+contactAngle=theta*pi/180*ones(1,nLink);
+
 network.RemoveLinkData('ContactAngle');
-theta=contactAngle*pi/180*ones(1,network.GetNumberOfLinks);
 network.AddNewLinkData(theta,'ContactAngle');
 
-[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'currentWettability',clusterOptions);
+cluster = ComputeInvasionPercolation(network,inletLink,outletLink, ...
+                                     'currentWettability',clusterOptions);
 
 network.AddNewPoreData(cluster.GetInvadedPoresBooleans,'InvadedPores_110');
 
@@ -92,7 +99,9 @@ boundaryConditions.outletType = 'Dirichlet';
 boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
 boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
 
-concentrations = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
+concentrations = ComputeLinearTransport(network,transportPores, ...
+                                conductancesDiffusion,boundaryConditions);
+                            
 network.AddNewPoreData(concentrations,'DiffusionConcentrations');
 
 
@@ -102,7 +111,7 @@ network.AddNewPoreData(concentrations,'DiffusionConcentrations');
 %linkData du reseau, la fonction la calcule et l'ajoute au reseau pour une
 %future utilisation. 
 
-network.GetLinkDataList
+disp(network.GetLinkDataList)
 
 
 %%

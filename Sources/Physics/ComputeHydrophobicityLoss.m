@@ -37,7 +37,8 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
 %---------------------------------------------------------------------------------------------    
     
     
-    [nIterations,outputInformation,cluster,degradationPercentage,temps] = InitializeAlgorithm(options,network,initialCluster,clusterPressure,inletLink,outletLink);
+    [nIterations,outputInformation,cluster,degradationPercentage,temps] = InitializeAlgorithm(...
+                        options,network,initialCluster,clusterPressure,inletLink,outletLink);
     
     
     disp('Begin degradation')
@@ -61,7 +62,9 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
             
             %recherche du prochain pore envahi sous l'effet de la degration
             try
-                [indexInvadedLink,timeStep,temps_invasion_potentielle]=FindNextInvadedLink(cluster,clusterPressure,degradationPercentage,options.DeltaContactAngle,degradationSpeed,inletLink,outletLink,options);
+                [indexInvadedLink,timeStep,temps_invasion_potentielle]=FindNextInvadedLink(...
+                     cluster,clusterPressure,degradationPercentage,options.DeltaContactAngle,...
+                     degradationSpeed,inletLink,outletLink,options);
             catch err
                 if (strcmp(err.identifier,'FindNextInvadedLink:EmptyTempsPotentielValable'))
                     disp(err.message)
@@ -120,7 +123,8 @@ end
     
 
 %---------------------------------------------------------------------------------------------    
-function [nIterations,outputInformation,cluster,degradationPercentage,temps] = InitializeAlgorithm(options,network,initialCluster,clusterPressure,inletLink,outletLink)
+function [nIterations,outputInformation,cluster,degradationPercentage,temps] = InitializeAlgorithm(...
+                        options,network,initialCluster,clusterPressure,inletLink,outletLink)
 
     nIterations=options.nIterations;
 
@@ -149,7 +153,9 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink(cluster,clusterPressure,degradationPercentage,deltaContactAngle,degradationSpeed,linkInlet,linkOutlet,options)
+function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink(...
+                        cluster,clusterPressure,degradationPercentage,deltaContactAngle,...
+                        degradationSpeed,linkInlet,linkOutlet,options)
 
     %option='localLinearisationOfCapillaryPressure';
     methode=options.InvasionTimeSearch;
@@ -163,6 +169,8 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
 
         UpdateContactAngle(cluster.Network,degradationPercentage,deltaContactAngle);
 
+        contactAngle = cluster.Network.GetLinkData('ContactAngle');
+        
         interfaceUpdateInformation=cluster.GetInterfaceChangeInformation(1:length(cluster.GetInterfaceLinks));  %tous les liens frontiere
         UpdateCriticalPressure(cluster,interfaceUpdateInformation,linkInlet,linkOutlet)
 

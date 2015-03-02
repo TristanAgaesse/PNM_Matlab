@@ -13,7 +13,8 @@
 
 myGeometry=MacroscopicGeometry();
 myGeometry.LoadGeometry('1block3D_Structured');
-myGeometry
+
+disp(myGeometry)
 
 networkBuilder=NetworkBuilder(myGeometry);
 

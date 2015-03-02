@@ -15,7 +15,8 @@ classdef ClusterMonophasique < handle
     end
     
     methods
-        function cluster = ClusterMonophasique(invadedPores,interfaceLinks,interfacePoresOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions)
+        function cluster = ClusterMonophasique(invadedPores,interfaceLinks,interfacePoresOutward,...
+                                booleanInvadedLinks,network,criticalPressures,clusterOptions)
             %Constructeur
             cluster.InvadedPores  =  invadedPores;
             cluster.InterfaceLinks  =  interfaceLinks;
@@ -61,10 +62,11 @@ classdef ClusterMonophasique < handle
             %input : -cluster
             %        -indexInvadedLink (indice du lien envahi dans la liste
             %        cluster.InterfaceLinks)
-            %output : interfaceChangeInformation : interfaceChangeInformation{iPoreOutaward}  =  { {numPore} ,{[indices des liens interface donnant sur ce pore]}
+            %output : interfaceChangeInformation : 
+            %       interfaceChangeInformation{iPoreOutaward}  =  { {numPore} ,{[indices des liens interface donnant sur ce pore]}
             
-            
-            assert(0<indexInvadedLink && indexInvadedLink<=length(cluster.InterfaceLinks),'indexInvadedLink must be the reference of a link in cluster.InterfaceLinks')
+            assert(0<indexInvadedLink && indexInvadedLink<=length(cluster.InterfaceLinks),...
+                        'indexInvadedLink must be the reference of a link in cluster.InterfaceLinks')
             
             %envahir le pore associe
             time  =  length(find(cluster.InvadedPores))+1;
@@ -89,7 +91,7 @@ classdef ClusterMonophasique < handle
                 newInterfaceLinks  =  invadedPoreLinks(~linkAllreadyInInterface);  
                 
                 linksToDelete = zeros(1,length(cluster.InterfaceLinks));            
-                linksToDelete(loc(linkAllreadyInInterface)) = ones(1,length(loc(linkAllreadyInInterface)));   % ismember(cluster.InterfaceLinks,linksToBeInvaded); %use loc
+                linksToDelete(loc(linkAllreadyInInterface)) = ones(1,length(loc(linkAllreadyInInterface)));  
                 
                 cluster.InterfaceLinks  =  [cluster.InterfaceLinks(~linksToDelete),newInterfaceLinks];
                 
@@ -107,7 +109,8 @@ classdef ClusterMonophasique < handle
                 interfaceChangeInformation  =  cell(1,length(unique_new_pore_outward));
                 for iPore = 1:length(unique_new_pore_outward)
                     interfaceChangeInformation{iPore}{1} = unique_new_pore_outward(iPore);
-                    interfaceChangeInformation{iPore}{2} = cluster.InterfaceLinks(cluster.InterfacePoresOutward==unique_new_pore_outward(iPore)); %loop over interface pores outward
+                    interfaceChangeInformation{iPore}{2} = cluster.InterfaceLinks(...
+                                cluster.InterfacePoresOutward==unique_new_pore_outward(iPore)); %loop over interface pores outward
                 end
             end
         end
@@ -172,7 +175,8 @@ classdef ClusterMonophasique < handle
                     
                     isLinkOutlet=ismember(liens,linkOutlet);%outlet
                     
-                    cluster.CriticalPressures(liens(isLinkOutlet)) = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet),options);
+                    cluster.CriticalPressures(liens(isLinkOutlet)) = ...
+                        LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens(isLinkOutlet),options);
                     
                     cluster.CriticalPressures(liens(not(or(isLinkInlet,isLinkOutlet)))) = Inf ;%wall
                     
@@ -241,7 +245,8 @@ classdef ClusterMonophasique < handle
         end
         
         function setCriticalPressures(cluster,criticalPressures)
-            assert(length(criticalPressures) == cluster.Network.GetNumberOfLinks,'critical pressures doit etre un tableau 1*network.GetNumberOfLink')
+            assert(length(criticalPressures) == cluster.Network.GetNumberOfLinks,...
+                'critical pressures doit etre un tableau 1*network.GetNumberOfLink')
             cluster.CriticalPressures = criticalPressures;
         end
         
@@ -266,7 +271,9 @@ classdef ClusterMonophasique < handle
             compInterfacePoresOutward = [];                                                            % TO DO
             criticalPressures = zeros(1,length(compInterfaceLinks));                              % TO DO
             
-            compCluster = ClusterMonophasique(compInvadedPores,compInterfaceLinks,compInterfacePoresOutward,compBooleanInvadedLinks,cluster.Network,criticalPressures,clusterOptions);
+            compCluster = ClusterMonophasique(compInvadedPores,compInterfaceLinks,...
+                        compInterfacePoresOutward,compBooleanInvadedLinks,...
+                        cluster.Network,criticalPressures,clusterOptions);
         end
         
         function fusionCluster = FuseClusters(cluster1,cluster2)
@@ -283,7 +290,9 @@ classdef ClusterMonophasique < handle
             compInterfacePoresOutward = [];                                                            % TO DO
             criticalPressures = zeros(1,length(fusionInterfaceLinks));                              % TO DO
             
-            fusionCluster = ClusterMonophasique(fusionInvadedPores,fusionInterfaceLinks,compInterfacePoresOutward,fusionBooleanInvadedLinks,cluster.Network,criticalPressures,clusterOptions);
+            fusionCluster = ClusterMonophasique(fusionInvadedPores,fusionInterfaceLinks,...
+                compInterfacePoresOutward,fusionBooleanInvadedLinks,...
+                cluster.Network,criticalPressures,clusterOptions);
         end
         
         
@@ -307,7 +316,8 @@ classdef ClusterMonophasique < handle
             poresPercolants = {};
             composantes_connexes_du_fluide = network.FindComposantesConnexes(invadedPoresList);
             for num_composante = 1:length(composantes_connexes_du_fluide)
-                if ~isempty(intersect(composantes_connexes_du_fluide{num_composante},pore_envahis_outlet)) && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
+                if ~isempty(intersect(composantes_connexes_du_fluide{num_composante},pore_envahis_outlet)) ...
+                        && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
                     
                     %find invaded links
                     invadedPores = composantes_connexes_du_fluide{num_composante};
@@ -323,7 +333,9 @@ classdef ClusterMonophasique < handle
                     criticalPressures = zeros(1,network.GetNumberOfLinks);
                     clusterOptions=cluster.GetClusterOptions;
                     
-                    percolatingCluster = ClusterMonophasique(invadedPores,interfaceLinks,poresFrontiereOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
+                    percolatingCluster = ClusterMonophasique(invadedPores,interfaceLinks,...
+                        poresFrontiereOutward,booleanInvadedLinks,...
+                        network,criticalPressures,clusterOptions);
                     poresPercolants{num_chemin} = percolatingCluster;
                     num_chemin = num_chemin+1;
                 end
@@ -335,7 +347,9 @@ classdef ClusterMonophasique < handle
         function copiedCluster = CopyCluster(cluster)
             %CopyCluster : fait une copie du cluster (utile car cluster est
             %un handle donc n'accepte pas facilement d'etre copie).
-            copiedCluster = ClusterMonophasique(cluster.InvadedPores,cluster.InterfaceLinks,cluster.InterfacePoresOutward ,cluster.BooleanInvadedLinks,cluster.Network,cluster.CriticalPressures,cluster.GetClusterOptions);
+            copiedCluster = ClusterMonophasique(cluster.InvadedPores,cluster.InterfaceLinks,...
+                cluster.InterfacePoresOutward ,cluster.BooleanInvadedLinks,...
+                cluster.Network,cluster.CriticalPressures,cluster.GetClusterOptions);
         end
         
     end
@@ -351,7 +365,9 @@ classdef ClusterMonophasique < handle
             criticalPressures = zeros(1,network.GetNumberOfLinks);
             clusterOptions=struct;
             
-            cluster = ClusterMonophasique(invadedPores,interfaceLinks,poresFrontiereOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
+            cluster = ClusterMonophasique(invadedPores,interfaceLinks,...
+                poresFrontiereOutward,booleanInvadedLinks,...
+                network,criticalPressures,clusterOptions);
             
         end
         
@@ -378,7 +394,9 @@ classdef ClusterMonophasique < handle
                 clusterOptions = varargin{1};
             end
             
-            cluster = ClusterMonophasique(invadedPores,interfaceLinks,inletPoreOutward,booleanInvadedLinks,poreNetwork,criticalPressures,clusterOptions);
+            cluster = ClusterMonophasique(invadedPores,interfaceLinks,...
+                inletPoreOutward,booleanInvadedLinks,...
+                poreNetwork,criticalPressures,clusterOptions);
             
             %initialisation des pressions critiques
             [poreOutwardUnique,~,m] = unique(inletPoreOutward);
@@ -392,7 +410,8 @@ classdef ClusterMonophasique < handle
             end
             for iInletLink = 1:length(linkInlet)
                 iporeOutwardUnique = m(iInletLink);
-                linksToInitialise{iporeOutwardUnique}{2} = [linksToInitialise{iporeOutwardUnique}{2},linkInlet(iInletLink)]; %numeros des liens associe a ce pore
+                linksToInitialise{iporeOutwardUnique}{2} = ...
+                    [linksToInitialise{iporeOutwardUnique}{2},linkInlet(iInletLink)]; %numeros des liens associe a ce pore
             end
             
             
@@ -422,7 +441,9 @@ classdef ClusterMonophasique < handle
             criticalPressures = zeros(1,network.GetNumberOfLinks);
             
            
-            cluster = ClusterMonophasique(invadedPores,interfaceLinks,interfacePoreOutward,booleanInvadedLinks,network,criticalPressures,clusterOptions);
+            cluster = ClusterMonophasique(invadedPores,interfaceLinks,...
+                interfacePoreOutward,booleanInvadedLinks,...
+                network,criticalPressures,clusterOptions);
             
             %initialisation des pressions critiques
             [poreOutwardUnique,~,m] = unique(interfacePoreOutward);
@@ -436,7 +457,8 @@ classdef ClusterMonophasique < handle
             end
             for iInterfaceLink = 1:length(interfaceLinks)
                 iporeOutwardUnique = m(iInterfaceLink);
-                linksToInitialise{iporeOutwardUnique}{2} = [linksToInitialise{iporeOutwardUnique}{2},interfaceLinks(iInterfaceLink)]; %numeros des liens associe a ce pore
+                linksToInitialise{iporeOutwardUnique}{2} = ...
+                    [linksToInitialise{iporeOutwardUnique}{2},interfaceLinks(iInterfaceLink)]; %numeros des liens associe a ce pore
             end
             
             

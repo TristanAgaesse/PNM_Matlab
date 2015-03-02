@@ -203,7 +203,8 @@ classdef  PoreNetwork
             indice = 1;
             for i = num_frontieres
                 if i == 0
-                    start_face = poreNetwork.Boundaries.Boundary(end).ATTRIBUTE.StartFace+poreNetwork.Boundaries.Boundary(end).ATTRIBUTE.NombreFaces;
+                    start_face = poreNetwork.Boundaries.Boundary(end).ATTRIBUTE.StartFace...
+                        +poreNetwork.Boundaries.Boundary(end).ATTRIBUTE.NombreFaces;
                     faces_frontieres{indice} = start_face:poreNetwork.GetNumberOfLinks;
                 elseif i>0 && i <= length(poreNetwork.Boundaries.Boundary)
                     start_face = poreNetwork.Boundaries.Boundary(i).ATTRIBUTE.StartFace;
@@ -232,7 +233,7 @@ classdef  PoreNetwork
             for iBoundary = 1:nBoundary
                 start = poreNetwork.Boundaries.Boundary(iBoundary).ATTRIBUTE.StartFace;
                 finish = start+poreNetwork.Boundaries.Boundary(iBoundary).ATTRIBUTE.NombreFaces-1;
-                if numLink >= start && numLink <= finish
+                if and( numLink>=start, numLink<=finish )
                    numFrontiere = iBoundary ;
                    return
                 end
@@ -240,8 +241,8 @@ classdef  PoreNetwork
         end
         
         function pores_frontiere = GetPoresFrontiere(poreNetwork,linkFrontiere)
-            %renvoie la liste des pores attach�s � une liste de liens situés sur une frontière. Un pore peut apparaitre plusieurs fois dans la
-            %liste.
+            %renvoie la liste des pores attaches a une liste de liens situes sur une frontière. 
+            %Un pore peut apparaitre plusieurs fois dans la liste.
             %input : poreNetwork,linkFrontiere
             %output :pores_frontiere
             
@@ -333,11 +334,13 @@ classdef  PoreNetwork
                         ref_pore = stack_pores_a_explorer.pop;
                         %ref_pore : position dans la liste_pore_envahis   
                         if pores_envahis_explores(ref_pore) == 0
-                            ref_voisins_envahis = find(ismember(liste_pores_envahis,network.GetPoresVoisinsOfPore(liste_pores_envahis(ref_pore))));
+                            ref_voisins_envahis = find(ismember(liste_pores_envahis,...
+                                network.GetPoresVoisinsOfPore(liste_pores_envahis(ref_pore))));
                             %les voisins sont les pores ayant un lien commun,
                             %on suppose que les liens sont automatiquement
                             %envahis
-                            ref_voisins_envahis_non_explores = ref_voisins_envahis(ismember(ref_voisins_envahis,find(~pores_envahis_explores)));   
+                            ref_voisins_envahis_non_explores = ref_voisins_envahis(...
+                                ismember(ref_voisins_envahis,find(~pores_envahis_explores)));   
                             for i = 1:length(ref_voisins_envahis_non_explores)
                                 stack_pores_a_explorer.push(ref_voisins_envahis_non_explores(i));
                             end

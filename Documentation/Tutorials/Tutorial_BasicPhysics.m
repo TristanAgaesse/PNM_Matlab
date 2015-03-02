@@ -5,8 +5,8 @@
 
 %Commencons par contruire un reseau de pores.
 [ network,viewer ]=CreateNetwork('3block2D');
-viewer.View('Network')
 
+viewer.View('Network')
 
 figure;colorbar;
 viewer.View('Boundaries')
@@ -27,7 +27,8 @@ help ComputeInvasionPercolation
 
 inletLink=network.GetLinksFrontiere(2);
 outletLink=network.GetLinksFrontiere([4,5,6]);
-[cluster,breakthroughPressure,invasionPressureList]=ComputeInvasionPercolation(network,inletLink,outletLink,'hydrophobic');
+
+cluster = ComputeInvasionPercolation(network,inletLink,outletLink,'hydrophobic');
 
 class(cluster)
 
@@ -55,14 +56,25 @@ transportPores = 1:network.GetNumberOfPores ;
 dynamicViscosity = 1e-3; %viscosity water at ambiant conditions
 conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
 
+
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 boundaryConditions.inletType = 'Dirichlet' ;
 boundaryConditions.outletType = 'Dirichlet' ;
-boundaryConditions.inletValue = 1*ones(1,length(boundaryConditions.inletLink));
-boundaryConditions.outletValue = 0.1*ones(1,length(boundaryConditions.outletLink));
 
-[ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesPermeability,boundaryConditions);
+nInletLink = length(boundaryConditions.inletLink);
+nOutletLink = length(boundaryConditions.outletLink);
+
+boundaryConditions.inletValue = 1*ones(1,nInletLink);
+boundaryConditions.outletValue = 0.1*ones(1,nOutletLink);
+
+    
+[ pressure, ~, permeabilityCoefficient ] = ComputeLinearTransport( ...
+                                            network,transportPores, ...
+                                           	conductancesPermeability, ...
+                                           	boundaryConditions  ...
+                                           	);
+
 
 disp('Permeability coefficient :')
 disp(permeabilityCoefficient)
@@ -89,16 +101,21 @@ boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
 boundaryConditions.outletLink = network.GetLinksFrontiere([1,2,3]);
 
 boundaryConditions.inletType = 'Neumann' ;
-linkSurfaces = network.GetLinkData('Surface');   
-inletSurfacicFlux = 1;
-boundaryConditions.inletValue = inletSurfacicFlux*linkSurfaces(boundaryConditions.inletLink);
+allLinkSurfaces = network.GetLinkData('Surface');   
+surfacicFlux = 1;
+boundaryConditions.inletValue = surfacicFlux*allLinkSurfaces(boundaryConditions.inletLink);
 
+nOutletLink = length(boundaryConditions.outletLink);
 boundaryConditions.outletType = 'Dirichlet' ;
-boundaryConditions.outletValue = -1 *ones(1,length(boundaryConditions.outletLink));
+boundaryConditions.outletValue = -1 *ones(1,nOutletLink);
 
 
-[ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport(network,transportPores,conductancesDiffusion,boundaryConditions);
-
+[ concentrations, ~, diffusionCoefficient ] = ComputeLinearTransport( ...
+                                                network,transportPores, ...
+                                                conductancesDiffusion, ...
+                                                boundaryConditions  ...
+                                                );
+                                            
 disp('Diffusion coefficient :')
 disp(diffusionCoefficient)
 

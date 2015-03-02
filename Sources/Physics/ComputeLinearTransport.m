@@ -24,7 +24,8 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
 
     
     %Checking inputs
-    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=CheckInputs(network,transportPores,conductances,boundaryConditions);
+    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=...
+                    CheckInputs(network,transportPores,conductances,boundaryConditions);
     
     
     %Decompose transportPores into percolation paths = connexes components
@@ -57,12 +58,16 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
         
         %Remplissage matrice
         
-        stiffnessMatrix = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,poresPercolantsIndices,nPorePercolant);
+        stiffnessMatrix = FillMatrix(network,conductances,liens_internes_envahis,...
+                            liens_inlet_envahis,liens_outlet_envahis,...
+                            inletType,outletType,poresPercolantsIndices,nPorePercolant);
         
         
         %Remplissage du terme de droite 
         
-        rigthHandSide = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,inletValue,outletValue,poresPercolantsIndices,nPorePercolant);
+        rigthHandSide = FillRigthHandSide(network,conductances,...
+                        liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,...
+                        inletValue,outletValue,poresPercolantsIndices,nPorePercolant);
         
         
         %Resolution du systeme lineaire
@@ -77,7 +82,10 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
         
         
         %Reassemblage de l'output concentration
-        [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,poresPercolants,conductances,fieldVal,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,inletValue,outletValue);
+        [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,...
+                            poresPercolants,conductances,fieldVal,...
+                            liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
+                            inletType,outletType,inletValue,outletValue);
         
     end
     
@@ -99,12 +107,16 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=CheckInputs(network,transportPores,conductances,boundaryConditions)
+function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=...
+                        CheckInputs(network,transportPores,conductances,boundaryConditions)
+                    
     %Check inputs and initialize algorithm
 
     assert( isa(network,'PoreNetwork'),'LinearTransport : first input must be a PoreNetwork object')
-    assert( length(transportPores)<=network.GetNumberOfPores,'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
-    assert( length(conductances)==network.GetNumberOfLinks,'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
+    assert( length(transportPores)<=network.GetNumberOfPores,...
+            'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
+    assert( length(conductances)==network.GetNumberOfLinks,...
+            'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
     assert( isa(boundaryConditions,'struct') );
     assert( max(boundaryConditions.inletLink)<=network.GetNumberOfLinks )
@@ -161,7 +173,8 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,poresPercolantsIndices,nPorePercolant)
+function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
+                              inletType,outletType,poresPercolantsIndices,nPorePercolant)
     %Fill sparse rigidity matrix
     
     value_diag=zeros(1,nPorePercolant);
@@ -228,7 +241,9 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,inletValue,outletValue,poresPercolantsIndices,nPorePercolant)
+function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,...
+                            inletType,outletType,inletValue,outletValue,poresPercolantsIndices,nPorePercolant)
+                        
     %Fill rigth hand side
 
     terme_droite = zeros(1,nPorePercolant);
@@ -239,7 +254,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
         
     	indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
         for i=1:length(liens_inlet_envahis)
-            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+inletValue(liens_inlet_envahis(i))*conductances(liens_inlet_envahis(i));
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))...
+                            +inletValue(liens_inlet_envahis(i))*conductances(liens_inlet_envahis(i));
         end
         
     elseif  strcmp(inletType,'Neumann')
@@ -256,7 +272,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
         
         indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
         for i =1:length(liens_outlet_envahis)
-            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+outletValue(liens_outlet_envahis(i))*conductances(liens_outlet_envahis(i));
+            terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))...
+                    +outletValue(liens_outlet_envahis(i))*conductances(liens_outlet_envahis(i));
         end
         
     elseif  strcmp(outletType,'Neumann')
@@ -273,7 +290,10 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,poresPercolants,conductances,fieldVal,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,inletValue,outletValue)
+function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,poresPercolants,conductances,fieldVal,...
+                        liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
+                        inletType,outletType,inletValue,outletValue)
+                    
     %Reassemble the solution of the differents connexes components
 
     fieldValue(poresPercolants) = fieldVal;

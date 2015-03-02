@@ -12,8 +12,8 @@
 %La fonction CreateNetwork a cree en memoire deux objets, network et
 %viewer. Nous allons voir que ces objets appartiennent a des classes.
 
- class(network)
- class(viewer)
+ disp( class(network) )
+ disp( class(viewer) )
 
 %%
 % On voit que le reseau est un objet de la classe PoreNetworkMeshFibrous.

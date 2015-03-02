@@ -29,7 +29,10 @@ for iCluster=1:nCluster
     clustersOutletLink{iCluster} = network.GetLinksFrontiere([1,2,3]);
 end
 
-[clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( network,nCluster,clustersInletLink,clustersOutletLink,'currentWettability',clusterOptions );
+[clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ...
+                          	network,nCluster,...
+                          	clustersInletLink,clustersOutletLink,...
+                          	'currentWettability',clusterOptions );
 
 
 
