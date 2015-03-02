@@ -1,4 +1,4 @@
-function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, poreNetwork, options )
+function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, network, options )
 %COMPUTESATURATION Calcule la saturation totale ou la courbe de saturation
 %d'un reseau de pore envahi par un cluster.
 % Input : -cluster
@@ -14,12 +14,12 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, po
 
     
     %Checking initial state
-    [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, poreNetwork, options );
-    CheckPoreVolume(poreNetwork);
+    [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, network, options );
+    CheckPoreVolume(network);
     
     
     %Calcul de la saturation totale
-    volumePore=poreNetwork.GetPoreDataList.('Volume');
+    volumePore=network.GetPoreDataList.('Volume');
     totalVolume=sum(volumePore);
     invadedVolume=sum(volumePore(cluster.GetInvadedPores));
     totalSaturation=invadedVolume/totalVolume;

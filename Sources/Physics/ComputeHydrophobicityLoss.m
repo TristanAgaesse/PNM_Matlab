@@ -43,7 +43,7 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
     
     disp('Begin degradation')
     
-    degradationSpeed=ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
+    degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
     
     disp('Iteration : ')
     for iIteration=1:nIterations
@@ -55,14 +55,14 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
             timeStep=1/max(degradationSpeed);
             temps=temps+timeStep;
             
-            degradationPercentage=degradationPercentage+timeStep*degradationSpeed;
+            degradationPercentage = degradationPercentage+timeStep*degradationSpeed;
             UpdateContactAngle(network,degradationPercentage,options.DeltaContactAngle);
             
         elseif options.ClusterGrowth == true
             
             %recherche du prochain pore envahi sous l'effet de la degration
             try
-                [indexInvadedLink,timeStep,temps_invasion_potentielle]=FindNextInvadedLink(...
+                [indexInvadedLink,timeStep,temps_invasion_potentielle] = FindNextInvadedLink(...
                      cluster,clusterPressure,degradationPercentage,options.DeltaContactAngle,...
                      degradationSpeed,inletLink,outletLink,options);
             catch err
@@ -74,19 +74,19 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
                 end
             end
 
-            outputInformation.invasionTimeDistribution{iIteration}=temps_invasion_potentielle+temps;
+            outputInformation.invasionTimeDistribution{iIteration} = temps_invasion_potentielle+temps;
             temps=temps+timeStep;
 
             if indexInvadedLink>0
                 
                 %envahissement de ce pore
-                interfaceChangeInformation=cluster.InvadeNewPore(indexInvadedLink);
+                interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
                 cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
 
                 outputInformation.invasionPressures{iIteration}=clusterPressure;
                 
                 %gestion du burst (=haines jump) subsequent
-                [indexMinPressureLink,minPressure]=cluster.GetMinimalPressureLink;
+                [indexMinPressureLink,minPressure] = cluster.GetMinimalPressureLink;
                 while minPressure<clusterPressure
                     
                     minPressureLink=cluster.InterfaceLinks(indexMinPressureLink);
@@ -99,9 +99,9 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
                         cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
                     end
 
-                    outputInformation.invasionPressures{iIteration}=[outputInformation.invasionPressures{iIteration},minPressure];
+                    outputInformation.invasionPressures{iIteration} = [outputInformation.invasionPressures{iIteration},minPressure];
 
-                    [indexMinPressureLink,minPressure]=cluster.GetMinimalPressureLink;
+                    [indexMinPressureLink,minPressure] = cluster.GetMinimalPressureLink;
                 end
             end
         end
@@ -114,9 +114,9 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
         outputInformation.clusters{iIteration}=savedCluster;
 
         %evolution de l'etat de degradation
-        degradationPercentage=degradationPercentage+timeStep*degradationSpeed;
+        degradationPercentage = degradationPercentage+timeStep*degradationSpeed;
 
-        degradationSpeed=ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
+        degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
     end
     
 end
@@ -194,7 +194,7 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
             %de Laplace
             R=cluster.Network.GetLinkDataList.Diameter(linksToUpdate)/2;
             gamma=cluster.ClusterOptions.SurfaceTension;
-            deltaTheta = acos(-clusterPressure*R/(2*gamma))-contactAngle(linksToUpdate);
+            deltaTheta = contactAngle(linksToUpdate)-acos(-clusterPressure*R/(2*gamma));
             temps_invasion_potentielle(linksToUpdate) = deltaTheta./degradationSpeed(linksToUpdate);
             
         end

@@ -373,7 +373,7 @@ classdef ClusterMonophasique < handle
         
         function cluster = InitialiseInvasionCluster(linkInlet,linkOutlet,poreNetwork,varargin)
             %input: linkInlet,linkOutlet,poreNetwork, varargin(optionnel : clusterOptions)
-            %output : cluster paramétré de façon à commencer
+            %output : cluster parametre de façon à commencer
             %       une invasion percolation depuis les linkInlet
             
             %listes qui rep�rent les pores et les liens envahis

@@ -11,10 +11,11 @@ clusterOptions.SurfaceTension = 60e-3; %Water/air surface tension at 80°C
 
 
 %Degradation parameters
+options.DegradationMechanism='uniform';
+
 options.nIterations = 300 ;
 options.DeltaContactAngle=30/180*pi;
 options.ClusterGrowth = true  ;
-options.DegradationMechanism='uniform';
 options.InvasionTimeSearch='exactTimeForLaplaceLaw' ;
 
 
