@@ -17,9 +17,9 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, ne
     [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, network, options );
     CheckPoreVolume(network);
     
-    
+
     %Calcul de la saturation totale
-    volumePore=network.GetPoreDataList.('Volume');
+    volumePore=network.GetPoreData('Volume');
     totalVolume=sum(volumePore);
     invadedVolume=sum(volumePore(cluster.GetInvadedPores));
     totalSaturation=invadedVolume/totalVolume;
@@ -51,7 +51,7 @@ function saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCu
     %Calcul de Cmin et Cmax des sommets pour chaque cellule (C pour
     %coordinate suivant l'axe=axialCoordinates)
 
-    poreVolume=network.GetPoreDataList.('Volume');
+    poreVolume=network.GetPoreData('Volume');
     totalPoreVolume=sum(poreVolume);
 
     axialCoordinates=network.GetAllVerticesCoordinates*transpose(axe);
@@ -147,7 +147,7 @@ function saturationProfile=ComputeSaturationProfileMesh(network,cluster,nPointCu
         increasingInvadedVolume(iPointCurve)=invadedVolumeBeneath;
     end
 
-    volumeTranche=totalPoreVolume/nPointCurve;%Approximation valable si le r�seau est un pav� � fronti�res planes 
+    volumeTranche=totalPoreVolume/nPointCurve;%Approximation valable si le reseau est un pave a frontieres planes 
     for iPointCurve=1:nPointCurve
         if iPointCurve>1
             saturationProfile(iPointCurve,2)=(increasingInvadedVolume(iPointCurve)-increasingInvadedVolume(iPointCurve-1))/volumeTranche;

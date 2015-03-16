@@ -30,7 +30,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     end
     
     
-    allInvadedPores=zeros(1,network.GetNumberOfPores);
+    labelInvadedPores=zeros(1,network.GetNumberOfPores);
     clusters = cell(1,nCluster);
     fusionIndices = zeros(1,nCluster);
     
@@ -66,7 +66,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
 
             invadedPore = cluster.GetOutwardPore(indexInvadedLink);
            
-            poreAllreadyInvaded = allInvadedPores(invadedPore);
+            poreAllreadyInvaded = labelInvadedPores(invadedPore);
             
             %envahir le pore associe et update les pressions critiques
 
@@ -81,7 +81,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
             end
             
             if not(poreAllreadyInvaded)
-                allInvadedPores(invadedPore)=iCluster;
+                labelInvadedPores(invadedPore)=iCluster;
             end
             
             stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
@@ -111,7 +111,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     end
     clusters=newClusters;
     
-    invadedPores = find(allInvadedPores);
+    invadedPores = find(labelInvadedPores);
 
     
     

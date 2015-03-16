@@ -115,10 +115,11 @@ classdef ClusterMonophasique < handle
             end
         end
         
+        
         function InvadeOutletLink(cluster,invadedOutletLink)
             %Gere l'envahissement d'un lien situe à l'outlet
             %input: cluster, invadedOutletLink
-            
+                        
             cluster.BooleanInvadedLinks(invadedOutletLink) = 1*ones(1,length(invadedOutletLink));
             
             [cluster.InterfaceLinks,index] = setdiff(cluster.InterfaceLinks,invadedOutletLink);
@@ -126,8 +127,9 @@ classdef ClusterMonophasique < handle
             cluster.InterfacePoresOutward = cluster.InterfacePoresOutward(index);
         end
 
+        
         function interfaceChangeInformation = GetInterfaceChangeInformation(cluster,indexLinksToUpdate)
-            %Donne la structure interfaceChangeInformation utilisée par
+            %Donne la structure interfaceChangeInformation utilisee par
             %UpdateCriticalPressure pour mettre a jour les pressions
             %capillaires
             %input: cluster, indexLinksToUpdate (indices dans la liste des liens d'interface du cluster)
@@ -150,8 +152,9 @@ classdef ClusterMonophasique < handle
 
         end
         
+        
         function UpdateCriticalPressure(cluster,interfaceChangeInformation,linkInlet,linkOutlet)         
-            %Met a jour les pressions critiques � la fronti�re d'un amas
+            %Met a jour les pressions critiques a la frontiere d'un amas
             %liquide lorsqu'un nouveau pore est envahi.
             %input : -cluster
             %        -interfaceChangeInformation = cell array, {{num_pore_outward},{[num_liens]}}
@@ -168,7 +171,7 @@ classdef ClusterMonophasique < handle
                 liens = interfaceChangeInformation{iInterfacePore}{2};
                 nLien = length(liens);
                 
-                if pore == -1 %liens sur une frontiere
+                if pore == -1 %liens sur une frontiere envahis depuis l'interieur du domaine
                     
                     isLinkInlet=ismember(liens,linkInlet);%inlet
                     cluster.CriticalPressures(liens(isLinkInlet))=Inf;
@@ -181,7 +184,7 @@ classdef ClusterMonophasique < handle
                     cluster.CriticalPressures(liens(not(or(isLinkInlet,isLinkOutlet)))) = Inf ;%wall
                     
                     
-                else %liens internes
+                else %liens internes ou inlet envahis depuis l'exterieur
                     
                     Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(cluster.Network,liens,options);
                     
@@ -244,11 +247,13 @@ classdef ClusterMonophasique < handle
             criticalPressures = cluster.CriticalPressures;
         end
         
+        
         function setCriticalPressures(cluster,criticalPressures)
             assert(length(criticalPressures) == cluster.Network.GetNumberOfLinks,...
                 'critical pressures doit etre un tableau 1*network.GetNumberOfLink')
             cluster.CriticalPressures = criticalPressures;
         end
+        
         
         function booleanArray = GetInvadedPoresBooleans(cluster)
             %input: cluster
@@ -258,6 +263,7 @@ classdef ClusterMonophasique < handle
                 booleanArray(iPore) = 1;
             end
         end
+        
         
         function compCluster = GetComplementaryCluster(cluster)
             %Renvoie le cluster complementaire correspondant aux pores non
@@ -275,6 +281,7 @@ classdef ClusterMonophasique < handle
                         compInterfacePoresOutward,compBooleanInvadedLinks,...
                         cluster.Network,criticalPressures,clusterOptions);
         end
+        
         
         function fusionCluster = FuseClusters(cluster1,cluster2)
             %Renvoit le cluster forme de l'union de deux clusters

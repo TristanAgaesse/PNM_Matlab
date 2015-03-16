@@ -79,10 +79,19 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
 
             if indexInvadedLink>0
                 
+                
                 %envahissement de ce pore
-                interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
-                cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
-
+                invadedLink=cluster.InterfaceLinks(indexInvadedLink);
+                
+                if network.GetFrontiereOfLink(invadedLink)~=0
+                    %assert(ismember(invadedLink,outletLink))
+                    fprintf('New breakthrough point on boundary %d',network.GetFrontiereOfLink(invadedLink));
+                    cluster.InvadeOutletLink(invadedLink);
+                else
+                    interfaceChangeInformation=cluster.InvadeNewPore(indexInvadedLink);
+                    cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink);
+                end
+                
                 outputInformation.invasionPressures{iIteration}=clusterPressure;
                 
                 %gestion du burst (=haines jump) subsequent
@@ -171,6 +180,7 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
 
         contactAngle = cluster.Network.GetLinkData('ContactAngle');
         
+        %Update all critical pressures
         interfaceUpdateInformation=cluster.GetInterfaceChangeInformation(1:length(cluster.GetInterfaceLinks));  %tous les liens frontiere
         UpdateCriticalPressure(cluster,interfaceUpdateInformation,linkInlet,linkOutlet)
 

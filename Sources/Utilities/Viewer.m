@@ -93,12 +93,16 @@ classdef Viewer
                 assert(length(champ_cellules)==length(cells_to_vertices),'L''input doit donner un scalaire par cell');
                 inf=min(champ_cellules(champ_cellules~=0));
                 sup=max(champ_cellules(champ_cellules~=0));
+                delta=sup-inf;
+                if abs(delta/mean(champ_cellules(champ_cellules~=0)))<1e-5;
+                    delta=1;
+                end
                 colormap(jet);
                 color_foo=zeros(1,length(champ_cellules));
                 for i = 1:length(champ_cellules)
                     if champ_cellules(i)~=0
                         %foo=1-(champ_cellules(i)-inf)/(sup-inf);
-                        foo=(champ_cellules(i)-inf)/(sup-inf);
+                        foo=(champ_cellules(i)-inf)/delta;
                         color_foo(i)=foo;
                     else
                         color_foo(i)=1;

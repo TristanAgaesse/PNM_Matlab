@@ -27,11 +27,13 @@ dropletPressure=[0.2,0.5,0.9,1.3];
 
 nLink = network.GetNumberOfLinks;
 
+contactAngle=pi*(100+20*rand(1,nLink))/180.*ones(1,nLink); %MAKE IT VARY
+
 for i =1:3
     %% Computing degradation
     
     %Varying initial hydrophobicity parameter
-    contactAngle=pi*(100+20*rand(1,nLink))/180.*ones(1,nLink); %MAKE IT VARY
+    
     network.AddNewLinkData(contactAngle,'ContactAngle')
     
     clusterOptions.Coalescence = 'numberOfInvadedNeighbours';  %MAKE IT VARY
@@ -58,8 +60,8 @@ for i =1:3
     %% Post processing                                        
     infoDegradation=postTraitementDegradation(network,outputInformation);
 
-    
 
+    
 
         %Image degradation
     figure

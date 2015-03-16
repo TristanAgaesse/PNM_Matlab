@@ -46,10 +46,12 @@ function infos=postTraitementDegradation(network,floodingStepInformation)
     disp('Post-Traitement : PourcentageDegradationMoyennePore')
     pourcentageDegradation=cell(1,nStep);
     for iStep=1:nStep
+        invadedPores=floodingStepInformation.clusters{iStep}.GetInvadedPores;
+        unprocessedDegradation=floodingStepInformation.degradationPercentage{iStep};
         pourcentageDegradation{iStep}=zeros(1,network.GetNumberOfPores);
-        for iPore=1:network.GetNumberOfPores
-            
-            pourcentageDegradation{iStep}(iPore)=mean(floodingStepInformation.degradationPercentage{iStep}(network.GetLinksOfPore(iPore)) );
+        for iPore=invadedPores
+            poreLinks=network.GetLinksOfPore(iPore);
+            pourcentageDegradation{iStep}(iPore)=sum(unprocessedDegradation(poreLinks))/length(poreLinks);
         end
     end
     infos.PourcentageDegradationMoyennePore=pourcentageDegradation;
