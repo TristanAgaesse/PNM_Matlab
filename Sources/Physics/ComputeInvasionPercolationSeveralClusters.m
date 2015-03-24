@@ -30,7 +30,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     end
     
     
-    labelInvadedPores=zeros(1,network.GetNumberOfPores);
+    labelInvadedPores = zeros(1,network.GetNumberOfPores);
     clusters = cell(1,nCluster);
     fusionIndices = zeros(1,nCluster);
     
@@ -46,9 +46,9 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
         invasionPressureList = zeros(1,nPore);
 
         %Find accessible pores
-        nPoreAccessible=FindNumberOfAccessiblePores(network,clustersInletLink{iCluster});
+        nPoreAccessible = FindNumberOfAccessiblePores(network,clustersInletLink{iCluster});
 
-        poreAllreadyInvaded=0;
+        poreAllreadyInvaded = 0;
         stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
         
         %Boucle d'invasion pore par pore
@@ -65,7 +65,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
             invasionPressureList(iteration) = invasionPressure;    
 
             invadedPore = cluster.GetOutwardPore(indexInvadedLink);
-           
+            
             poreAllreadyInvaded = labelInvadedPores(invadedPore);
             
             %envahir le pore associe et update les pressions critiques
@@ -81,7 +81,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
             end
             
             if not(poreAllreadyInvaded)
-                labelInvadedPores(invadedPore)=iCluster;
+                labelInvadedPores(invadedPore) = iCluster;
             end
             
             stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
@@ -154,18 +154,9 @@ end
 %---------------------------------------------------------------------------------------------        
 function CheckLinkDiameter(network)
     if not(isfield(network.GetLinkDataList,'Diameter'))
-        disp('Calcul du diam�tre des liens...');
-        tic;
-        nLink = network.GetNumberOfLinks;
-        diameter = zeros(1,nLink);
-        for iLink = 1:nLink
-            diameter(iLink) = network.ComputeLinkDiameter(iLink);
-        end
+        diameter = network.ComputeAllLinkDiameter;
         network.AddNewLinkData(diameter,'Diameter');
-        duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
-        fprintf('Calcul du diam�tre des liens termin�. Dur�e : %d minutes %f s. \n',minutes,secondes);
     end
-
 end
 
 
