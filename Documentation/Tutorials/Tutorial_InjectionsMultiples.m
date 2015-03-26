@@ -19,14 +19,14 @@ network.AddNewLinkData(theta,'ContactAngle');
 
 %Define the injection points : here we are choosing that 100% of inlet links  
 %are independant injection points
-inletLink = network.GetLinksFrontiere([4,5,6]);
+inletLink = network.GetLinksFrontiere([1,2,3]);
 nCluster = length(inletLink);
 
 clustersInletLink = cell(1,nCluster);
 clustersOutletLink = cell(1,nCluster);
 for iCluster=1:nCluster
     clustersInletLink{iCluster} = inletLink(iCluster);
-    clustersOutletLink{iCluster} = network.GetLinksFrontiere([1,2,3]);
+    clustersOutletLink{iCluster} = network.GetLinksFrontiere([4,5,6]);
 end
 
 [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ...
@@ -41,4 +41,5 @@ end
 nBreakthrough = length(clusters);
 
 
+viewer.View('PoreList',clusters{1}.GetInvadedPores)
 

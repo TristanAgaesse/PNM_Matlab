@@ -32,7 +32,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     
     labelInvadedPores = zeros(1,network.GetNumberOfPores);
     clusters = cell(1,nCluster);
-    fusionIndices = zeros(1,nCluster);
+    fusionIndices = 1:nCluster;
     
     for iCluster=1:nCluster
     

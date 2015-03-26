@@ -299,7 +299,7 @@ classdef ClusterMonophasique < handle
             
             fusionCluster = ClusterMonophasique(fusionInvadedPores,fusionInterfaceLinks,...
                 compInterfacePoresOutward,fusionBooleanInvadedLinks,...
-                cluster.Network,criticalPressures,clusterOptions);
+                cluster1.Network,criticalPressures,clusterOptions);
         end
         
         
