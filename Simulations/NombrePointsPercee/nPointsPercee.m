@@ -1,15 +1,14 @@
-function [nBreakthroughList,nInletLinkList] = nPointsPercee(thicknessList,randomSeedList)
-
+function [nBreakthroughList,nInletLinkList,nOutletLinkList,thicknessListReshaped] = nPointsPercee(thicknessList,randomSeedList)
 
     %Calcule le nombre de points de percée lors d'une invasion avec 100% de
     %points d'injection.
-    
-
-    
+        
     nIteration = length(thicknessList)*length(randomSeedList);
     
     nBreakthroughList = zeros(1,nIteration);
     nInletLinkList = zeros(1,nIteration); 
+    nOutletLinkList = zeros(1,nIteration); 
+    thicknessListReshaped = zeros(1,nIteration); 
     
     
     parfor iteration=1:nIteration
@@ -20,32 +19,39 @@ function [nBreakthroughList,nInletLinkList] = nPointsPercee(thicknessList,random
 
         Lx = 1;
         Lz = thickness/10;
-        nPore = 4000*Lz;
+        nPore = floor(4000*Lz);
 
         network = BuildNetwork(nPore,Lx,Lz,randomSeed);
 
 
         [clusterOptions,nCluster,clustersInletLink,clustersOutletLink] = SetIPoptions(network);
 
-        clusters = ComputeInvasionPercolationSeveralClusters( ...
-                                    network,nCluster,...
-                                    clustersInletLink,clustersOutletLink,...
-                                    'currentWettability',clusterOptions );
+        try
+            clusters = ComputeInvasionPercolationSeveralClusters( ...
+                                        network,nCluster,...
+                                        clustersInletLink,clustersOutletLink,...
+                                        'currentWettability',clusterOptions );
 
 
+            %Compute number of breakthrough points
 
-        %Compute number of breakthrough points
+            nBreakthroughList(iteration) = length(clusters);
 
-        nBreakthroughList(iteration) = length(clusters);
+            thicknessListReshaped(iteration) = thickness;
+            nInletLinkList(iteration) = nCluster;
 
+            nOutletLinkList(iteration)=length(clustersOutletLink{1});
+        
+        catch
+            disp('bug')
+        end
 
-        nInletLinkList(iteration) = nCluster;
-
+        
     end
     
-    %plot results
-    figure;
-    scatter(nInletLinkList,nBreakthroughList./(nInletLinkList).^2);
+%     %plot results
+%     figure;
+%     scatter(nInletLinkList,nBreakthroughList./(nInletLinkList).^2);
     
 end
 
@@ -124,8 +130,4 @@ function [clusterOptions,nCluster,clustersInletLink,clustersOutletLink]=SetIPopt
         clustersOutletLink{iCluster} = network.GetLinksFrontiere(2);
     end
 end
-
-
-
-
 
