@@ -246,11 +246,8 @@ classdef  PoreNetwork
             %input : poreNetwork,linkFrontiere
             %output :pores_frontiere
             
-            faces = linkFrontiere;
-            pores_frontiere = zeros(1,length(faces));
-            for i = 1:length(faces)
-                pores_frontiere(i) = poreNetwork.LinkOwners(faces(i));
-            end
+            pores_frontiere = poreNetwork.LinkOwners(linkFrontiere);
+
         end
         
         

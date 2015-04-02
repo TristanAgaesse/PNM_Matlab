@@ -34,6 +34,11 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     clusters = cell(1,nCluster);
     fusionIndices = 1:nCluster;
     
+    %Find connexe component of the network. It's usefull to stop invasion 
+    %when the connexe component is fully invaded
+    connexComponents = FindSizeOfConnexeComponents(network,cell2mat(clustersInletLink));
+    
+    
     for iCluster=1:nCluster
     
         cluster = ClusterMonophasique.InitialiseInvasionCluster(clustersInletLink{iCluster},clustersOutletLink{iCluster},network,clusterOptions);
@@ -46,8 +51,10 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
         invasionPressureList = zeros(1,nPore);
 
         %Find accessible pores
-        nPoreAccessible = FindNumberOfAccessiblePores(network,clustersInletLink{iCluster});
-
+        %nPoreAccessible = FindNumberOfAccessiblePores(network,clustersInletLink{iCluster});
+        outwardPore = cluster.GetOutwardPore(1:cluster.GetInterfaceLength);
+        nPoreAccessible = GetNumberOfAccessiblePores(outwardPore,connexComponents);
+        
         poreAllreadyInvaded = 0;
         stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
         
@@ -137,19 +144,27 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function nPoreAccessible=FindNumberOfAccessiblePores(network,clustersInletLink)
+function connexComponents=FindSizeOfConnexeComponents(network,inletLink)
 
-    fooCluster=network.CreateVoidCluster;
-    totalFloodCluster=fooCluster.GetComplementaryCluster;
-    percoPath=totalFloodCluster.FindPercolationPath(clustersInletLink,1:network.GetNumberOfLinks);
-    nPoreAccessible=0;
+    fooCluster=network.CreateVoidCluster; 
+	totalFloodCluster=fooCluster.GetComplementaryCluster; 
+	percoPath=totalFloodCluster.FindPercolationPath(inletLink,1:network.GetNumberOfLinks); 
+    
+    connexComponents=zeros(1,network.GetNumberOfPores);
     for i=1:length(percoPath)
-        nPoreAccessible=nPoreAccessible+length(percoPath{i}.GetInvadedPores);
+        thisConnexComponent = percoPath{i}.GetInvadedPores;
+        connexComponents(thisConnexComponent) = i;
     end
 
 end
 
+%---------------------------------------------------------------------------------------------        
+function nPoreAccessible = GetNumberOfAccessiblePores(outwardPore,connexComponents)
 
+    thisConnexeComponent=unique(connexComponents(outwardPore));
+    nPoreAccessible=sum(ismember(connexComponents,thisConnexeComponent));
+    
+end
 
 %---------------------------------------------------------------------------------------------        
 function CheckLinkDiameter(network)

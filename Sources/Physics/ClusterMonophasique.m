@@ -234,6 +234,10 @@ classdef ClusterMonophasique < handle
             links = cluster.InterfaceLinks;
         end
         
+        function interfaceLength = GetInterfaceLength(cluster)
+            interfaceLength = length(cluster.InterfaceLinks);
+        end
+        
         function options = GetClusterOptions(cluster)
             options = cluster.ClusterOptions;
         end
