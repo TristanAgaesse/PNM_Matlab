@@ -28,7 +28,7 @@ for i =1:3
     options.nIterations = 300 ;
     options.DeltaContactAngle=30/180*pi;
     options.ClusterGrowth = false  ;
-    options.DegradationMechanism=degradationMechanism{i}
+    options.DegradationMechanism=degradationMechanism{i};
     options.InvasionTimeSearch='exactTimeForLaplaceLaw' ;
 
     clusterPressure=0.9*invasionPressureList(end);

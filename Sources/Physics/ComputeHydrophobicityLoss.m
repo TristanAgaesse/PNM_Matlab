@@ -33,6 +33,8 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
 %         outputInformation.outletLink
 %         outputInformation.options
 %         outputInformation.fixedPressure
+%         outputInformation.nIteration
+%         outputInformation.invasionTimeDistribution
 
 %---------------------------------------------------------------------------------------------    
     

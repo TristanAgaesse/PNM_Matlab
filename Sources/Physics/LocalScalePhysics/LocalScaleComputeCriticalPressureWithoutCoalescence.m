@@ -40,4 +40,9 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
             alpha = theta-pi+asin(sin(theta)./(1+linkDiameter./fibreDiameter));
             Pc = -(4*sigma./linkDiameter).*cos(theta-alpha)./(1+fibreDiameter.*(1-cos(alpha))./(linkDiameter));
     end
+    
+    Pc(linkDiameter==0)=Inf; %instead of -Inf computed for hydrophilic links with linkDiameter=0
+    
+    assert(isempty(find(isnan(Pc),1)),'Nan found for a capillary pressure');
+
 end

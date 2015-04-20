@@ -1,4 +1,4 @@
-function [nBreakthroughList,nInletLinkList,nOutletLinkList,thicknessListReshaped] = nPointsPercee(thicknessList,randomSeedList)
+function [nBreakthroughList,nInletLinkList,nOutletLinkList,thicknessListReshaped] = nPointsPercee(thicknessList,randomSeedList,Nx)
 
     %Calcule le nombre de points de percée lors d'une invasion avec 100% de
     %points d'injection.
@@ -19,7 +19,7 @@ function [nBreakthroughList,nInletLinkList,nOutletLinkList,thicknessListReshaped
 
         Lx = 1;
         Lz = thickness/10;
-        nPore = floor(4000*Lz);
+        nPore = floor(Lz*Nx^3);
 
         network = BuildNetwork(nPore,Lx,Lz,randomSeed);
 
