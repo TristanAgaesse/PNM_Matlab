@@ -35,32 +35,36 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
 %         outputInformation.fixedPressure
 %         outputInformation.nIteration
 %         outputInformation.invasionTimeDistribution
-
+%         outputInformation.contactAngle
 %---------------------------------------------------------------------------------------------    
     
+    disp('ComputeHydrophobicityLoss')
     
     [nIterations,outputInformation,cluster,degradationPercentage,temps] = InitializeAlgorithm(...
                         options,network,initialCluster,clusterPressure,inletLink,outletLink);
     
-    
-    disp('Begin degradation')
-    
-    degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
-    
+        
     disp('Iteration : ')
     for iIteration=1:nIterations
         fprintf ('%d ', iIteration)
         
         if options.ClusterGrowth == false
             
-            outputInformation.invasionTimeDistribution{iIteration}=[];
+            degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
+            
             timeStep=1/max(degradationSpeed);
             temps=temps+timeStep;
             
             degradationPercentage = degradationPercentage+timeStep*degradationSpeed;
+            degradationPercentage(degradationPercentage>100)=100;
             UpdateContactAngle(network,degradationPercentage,options.DeltaContactAngle);
             
+            outputInformation.contactAngle{iIteration}=network.GetLinkData('ContactAngle');
+            outputInformation.invasionTimeDistribution{iIteration}=[];
+            
         elseif options.ClusterGrowth == true
+            
+            degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
             
             %recherche du prochain pore envahi sous l'effet de la degration
             try
@@ -79,8 +83,19 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
             outputInformation.invasionTimeDistribution{iIteration} = temps_invasion_potentielle+temps;
             temps=temps+timeStep;
 
+            %Update contact angles and degradationPercentage
+            degradationPercentage = degradationPercentage+timeStep*degradationSpeed;
+            degradationPercentage(degradationPercentage>100)=100;
+            
+            UpdateContactAngle(network,degradationPercentage,options.DeltaContactAngle);
+            outputInformation.contactAngle{iIteration}=network.GetLinkData('ContactAngle');
+            
+            %Update all critical pressures
+            interfaceUpdateInformation=cluster.GetInterfaceChangeInformation(1:length(cluster.GetInterfaceLinks));  %tous les liens frontiere
+            UpdateCriticalPressure(cluster,interfaceUpdateInformation,inletLink,outletLink)
+
+            
             if indexInvadedLink>0
-                
                 
                 %envahissement de ce pore
                 invadedLink=cluster.InterfaceLinks(indexInvadedLink);
@@ -123,11 +138,7 @@ function outputInformation=ComputeHydrophobicityLoss(network,initialCluster,clus
         savedCluster=cluster.CopyCluster;
         savedCluster.Network=[];
         outputInformation.clusters{iIteration}=savedCluster;
-
-        %evolution de l'etat de degradation
-        degradationPercentage = degradationPercentage+timeStep*degradationSpeed;
-
-        degradationSpeed = ComputeDegradationSpeed(network,cluster,inletLink,outletLink,options);
+        
     end
     
 end
@@ -144,6 +155,9 @@ function [nIterations,outputInformation,cluster,degradationPercentage,temps] = I
     outputInformation.clusters=cell(1,nIterations);
     outputInformation.invasionPressures=cell(1,nIterations);
     outputInformation.degradationPercentage=cell(1,nIterations);
+    outputInformation.contactAngle=cell(1,nIterations);
+    outputInformation.invasionTimeDistribution=cell(1,nIterations);
+    
     outputInformation.fixedPressure=0;
 
     outputInformation.inletLink=inletLink;
@@ -164,7 +178,7 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink(...
+function [indexInvadedLink,temps,temps_potentiels_valables]=FindNextInvadedLink(...
                         cluster,clusterPressure,degradationPercentage,deltaContactAngle,...
                         degradationSpeed,linkInlet,linkOutlet,options)
 
@@ -178,13 +192,10 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
         %On recalcule a chaque pas de temps les pressions critiques
         %en fonction des nouveaux angles de contact
 
-        UpdateContactAngle(cluster.Network,degradationPercentage,deltaContactAngle);
+        
 
         contactAngle = cluster.Network.GetLinkData('ContactAngle');
         
-        %Update all critical pressures
-        interfaceUpdateInformation=cluster.GetInterfaceChangeInformation(1:length(cluster.GetInterfaceLinks));  %tous les liens frontiere
-        UpdateCriticalPressure(cluster,interfaceUpdateInformation,linkInlet,linkOutlet)
 
         temps_invasion_potentielle=zeros(1,cluster.Network.GetNumberOfLinks);
 
@@ -197,23 +208,29 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
             %Pour trouver le prochain pas de temps, on linearise
             %la pression localement en fonction de l'angle de contact
 
-            foo = 1-(clusterPressure*ones(1,cluster.Network.GetNumberOfLinks))./(criticalPressures.*tan(contactAngle));
-            temps_invasion_potentielle(linksToUpdate) = foo(linksToUpdate)./degradationSpeed(linksToUpdate);
+%             foo = 1-(clusterPressure*ones(1,cluster.Network.GetNumberOfLinks))./(criticalPressures.*tan(contactAngle));
+%             temps_invasion_potentielle(linksToUpdate) = foo(linksToUpdate)./degradationSpeed(linksToUpdate);
 
 
         elseif strcmp(methode,'exactTimeForLaplaceLaw')
             %Pour trouver le prochain pas de temps, on inverse la loi
             %de Laplace
-            R=cluster.Network.GetLinkDataList.Diameter(linksToUpdate)/2;
-            gamma=cluster.ClusterOptions.SurfaceTension;
-            deltaTheta = contactAngle(linksToUpdate)-acos(-clusterPressure*R/(2*gamma));
+%             R=cluster.Network.GetLinkDataList.Diameter(linksToUpdate)/2;
+%             gamma=cluster.ClusterOptions.SurfaceTension;
+            invasionAngle=acos(clusterPressure.*cos(contactAngle(linksToUpdate))./criticalPressures(linksToUpdate));
+            deltaTheta = contactAngle(linksToUpdate)-invasionAngle;
             temps_invasion_potentielle(linksToUpdate) = deltaTheta./degradationSpeed(linksToUpdate);
             
         end
         
         assert(isempty(find(isnan(temps_invasion_potentielle),1)),'NaN found !!!')
         
-        temps_potentiels_valables=temps_invasion_potentielle(and(temps_invasion_potentielle>0,degradationPercentage<100));
+        temps_potentiels_valables=temps_invasion_potentielle(linksToUpdate);
+        temps_potentiels_valables=temps_potentiels_valables(and(and(...
+                        temps_potentiels_valables>0,imag(temps_potentiels_valables)==0),degradationPercentage(linksToUpdate)<100));
+%         temps_potentiels_valables=temps_invasion_potentielle(and(and(temps_invasion_potentielle~=0,...
+%                                 imag(temps_invasion_potentielle)==0),degradationPercentage<100));
+                            
         if isempty(temps_potentiels_valables)
             exception = MException('FindNextInvadedLink:EmptyTempsPotentielValable','Pas de nouvel envahissement possible');
             throw(exception);
@@ -225,24 +242,24 @@ function [indexInvadedLink,temps,temps_invasion_potentielle]=FindNextInvadedLink
         assert(length(indexInvadedLink)==1)
 
 
-    elseif strcmp(methode,'linearDecreaseOfCapillaryPressure')
-        %ici on suppose que la pression decroit lineairement vis a vis
-        %du pourcentage de perte de PTFE. La vitesse de perte de PTFE
-        %est recalculee a chaque pas de temps
-        temps_invasion_potentielle=zeros(1,cluster.Network.GetNumberOfLinks);
-        foo=200*(1-((clusterPressure*ones(1,cluster.Network.GetNumberOfLinks))./criticalPressures))-degradationPercentage;
-
-        for iLink=cluster.GetInterfaceLinks
-            if degradationSpeed(iLink)~=0 && cluster.Network.GetFrontiereOfLink(iLink)==0
-                temps_invasion_potentielle(iLink)=foo(iLink)/degradationSpeed(iLink);
-            end
-        end
-
-        temps_potentiels_valables=temps_invasion_potentielle(and(temps_invasion_potentielle>0,degradationPercentage<100));
-
-        temps=min(temps_potentiels_valables);
-        ind=find(temps_invasion_potentielle==temps);
-        indexInvadedLink=find(cluster.GetInterfaceLinks==ind);
+%     elseif strcmp(methode,'linearDecreaseOfCapillaryPressure')
+%         %ici on suppose que la pression decroit lineairement vis a vis
+%         %du pourcentage de perte de PTFE. La vitesse de perte de PTFE
+%         %est recalculee a chaque pas de temps
+%         temps_invasion_potentielle=zeros(1,cluster.Network.GetNumberOfLinks);
+%         foo=200*(1-((clusterPressure*ones(1,cluster.Network.GetNumberOfLinks))./criticalPressures))-degradationPercentage;
+% 
+%         for iLink=cluster.GetInterfaceLinks
+%             if degradationSpeed(iLink)~=0 && cluster.Network.GetFrontiereOfLink(iLink)==0
+%                 temps_invasion_potentielle(iLink)=foo(iLink)/degradationSpeed(iLink);
+%             end
+%         end
+% 
+%         temps_potentiels_valables=temps_invasion_potentielle(and(temps_invasion_potentielle>0,degradationPercentage<100));
+% 
+%         temps=min(temps_potentiels_valables);
+%         ind=find(temps_invasion_potentielle==temps);
+%         indexInvadedLink=find(cluster.GetInterfaceLinks==ind);
 
     end
 end

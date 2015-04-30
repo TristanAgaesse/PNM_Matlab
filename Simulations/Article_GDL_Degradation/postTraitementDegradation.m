@@ -93,8 +93,58 @@ function infos=postTraitementDegradation(network,outputInformation)
     
     
     disp('Post-Traitement : InvasionTimeDistribution')
-    
     infos.InvasionTimeDistribution=outputInformation.invasionTimeDistribution;
+    
+    
+    disp('Post-Traitement : MeanInvasionTime')
+    meanInvasionTime=zeros(1,nStep);
+    for iStep=1:nStep
+        meanInvasionTime(iStep)=mean(outputInformation.invasionTimeDistribution{iStep});
+    end
+    infos.MeanInvasionTime = meanInvasionTime;
+    
+    
+    disp('Post-Traitement : ContactAngle')
+    infos.ContactAngle=outputInformation.contactAngle;
+    
+    disp('Post-Traitement : MeanContactAngle')
+    meanContactAngle=zeros(1,nStep);
+    for iStep=1:nStep
+        meanContactAngle(iStep)=mean(infos.ContactAngle{iStep} );
+    end
+    infos.MeanContactAngle=meanContactAngle;
+    
+    
+    disp('Post-Traitement : InterfaceLinkContactAngle')
+    interfaceLinkContactAngle=cell(1,nStep);
+    for iStep=1:nStep
+        contactAngles=outputInformation.contactAngle{iStep};
+        interfaceLinkContactAngle{iStep}=contactAngles(outputInformation.clusters{iStep}.GetInterfaceLinks);
+    end
+    infos.InterfaceLinkContactAngle=interfaceLinkContactAngle;
+    
+    disp('Post-Traitement : InterfaceLinkMeanContactAngle')
+    interfaceLinkMeanContactAngle=zeros(1,nStep);
+    for iStep=1:nStep
+        interfaceLinkMeanContactAngle(iStep)=mean(infos.InterfaceLinkContactAngle{iStep});
+    end
+    infos.InterfaceLinkMeanContactAngle=interfaceLinkMeanContactAngle;
+    
+    
+    disp('Post-Traitement : InterfaceLinkDiameter')
+    diameter=network.GetLinkData('Diameter');
+    interfaceLinkDiameter=cell(1,nStep);
+    for iStep=1:nStep
+        interfaceLinkDiameter{iStep}=diameter(outputInformation.clusters{iStep}.GetInterfaceLinks);
+    end
+    infos.InterfaceLinkDiameter=interfaceLinkDiameter;
+    
+    disp('Post-Traitement : InterfaceLinkMeanDiameter')
+    interfaceLinkMeanDiameter=zeros(1,nStep);
+    for iStep=1:nStep
+        interfaceLinkMeanDiameter(iStep)=mean(infos.InterfaceLinkDiameter{iStep}) ;
+    end
+    infos.InterfaceLinkMeanDiameter=interfaceLinkMeanDiameter;
     
     
     
@@ -111,7 +161,28 @@ function infos=postTraitementDegradation(network,outputInformation)
     diffusionCoefficient=zeros(1,nStep);
     for iStep=1:nStep
          try
-            [ ~, ~, ~, diffCoeff ]=ComputeDiffusion(network, outputInformation.clusters{iStep}.GetComplementaryCluster,outletLink, inletLink);
+            transportPores = setdiff(1:network.GetNumberOfPores,outputInformation.clusters{iStep}.GetInvadedPores) ;
+
+            diffusivity = 2e-5; % 02 in N2 at ambiant conditions
+            conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
+
+            boundaryConditions.inletLink = outletLink;
+            boundaryConditions.outletLink = inletLink;
+
+            boundaryConditions.inletType = 'Dirichlet' ;
+            boundaryConditions.outletType = 'Dirichlet' ;
+
+            nInletLink = length(boundaryConditions.inletLink);
+            nOutletLink = length(boundaryConditions.outletLink);
+
+            boundaryConditions.inletValue = 1*ones(1,nInletLink);
+            boundaryConditions.outletValue = 0.1*ones(1,nOutletLink);
+            
+            [ ~, ~, diffCoeff ] = ComputeLinearTransport( ...
+                                                            network,transportPores, ...
+                                                            conductancesDiffusion, ...
+                                                            boundaryConditions  ...
+                                                            );
         catch
             disp('Erreur lors du calcul de la diffusion');
             diffCoeff=0;

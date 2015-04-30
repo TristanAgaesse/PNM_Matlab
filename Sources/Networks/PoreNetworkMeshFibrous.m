@@ -184,7 +184,7 @@ classdef PoreNetworkMeshFibrous < PoreNetworkMesh
                         %[~,R] = insphere(vertices);%library min bound suite
                         
                         criticalDiameter = 2*R;
-                        extrusionFactor = mean(diametreFibres(edges))/criticalDiameter;
+                        extrusionFactor = mean(fibreDiameter(edges))/criticalDiameter;
                         
                         volume = rawVolume*extrusionFactor;
                         

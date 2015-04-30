@@ -94,7 +94,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
           
     
     %Compute effective transport property
-    effectiveTransportProperty = ComputeEffectiveTransportProperty(fieldValue,flux,inletLink,outletLink);
+    effectiveTransportProperty = ComputeEffectiveTransportProperty(network,fieldValue,flux,transportPores,inletLink,outletLink);
     
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
@@ -115,6 +115,7 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     assert( isa(network,'PoreNetwork'),'LinearTransport : first input must be a PoreNetwork object')
     assert( length(transportPores)<=network.GetNumberOfPores,...
             'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
+    assert( ~isempty(transportPores),'LinearTransport : second input transportPores must not be empty')
     assert( length(conductances)==network.GetNumberOfLinks,...
             'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
@@ -159,12 +160,21 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function effectiveTransportProperty = ComputeEffectiveTransportProperty(fieldValue,flux,inletLink,outletLink)
+function effectiveTransportProperty = ComputeEffectiveTransportProperty(network,fieldValue,flux,transportPores,inletLink,outletLink)
     %Compute effective transport property
     
     %very simplistic formula here, should be checked
     totalOutletDebit = sum(flux(outletLink));
-    deltaConcentration = mean(fieldValue(inletLink))-mean(fieldValue(outletLink));
+    
+    
+    inletPores=setdiff(network.GetPoresOfLink(inletLink),-1);
+    inletPores=inletPores(ismember(inletPores,transportPores));
+    
+    outletPores=setdiff(network.GetPoresOfLink(outletLink),-1);
+    outletPores=outletPores(ismember(outletPores,transportPores));
+    
+    deltaConcentration = mean(fieldValue(inletPores))-mean(fieldValue(outletPores));
+    
     
     effectiveTransportProperty = abs( totalOutletDebit/deltaConcentration );   
 end
