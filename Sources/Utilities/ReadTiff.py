@@ -11,18 +11,21 @@ import os
 import numpy as np
 
 scriptDirectory = sys.argv[1]
-outputDirectory = sys.argv[2]
-outputName = sys.argv[3]
+inputDirectory = sys.argv[2]
+inputName = sys.argv[3]
 
 sys.path.append(scriptDirectory)
 import tifffile as tff
 
+#Read tiff file
+inputFileName = inputDirectory+os.sep+inputName
 
-matFile = outputDirectory+os.sep+'temp_'+outputName+'.mat'
+image = tff.imread(inputFileName)
+image = image.astype(np.uint16)
 
-data= hdf5storage.loadmat(matFile)
-image=data['image']
+#Write temporary mat file
+matFile = inputDirectory+os.sep+'temp_'+inputName+'.mat'
+print(matFile)
+hdf5storage.savemat(matFile,{'temp_image':image})
 
-outputFileName = outputDirectory+os.sep+outputName+'.tiff'
 
-tff.imsave(outputFileName,image.astype(np.uint16))
