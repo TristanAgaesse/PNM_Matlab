@@ -24,11 +24,14 @@ function image=ReadTiff(filename)
     
     %call python script which reads the image in the .tiff file and writes
     %a temporary .mat file
+    disp('Calling python function from Matlab')
+    commandLine=['python',' ',pythonScript,' ',scriptDirectory,' ',tiffFileDir,' ',tiffFileName,ext];
+    disp(commandLine)
+    system(commandLine)
     
-    system(['python',' ',pythonScript,' ',scriptDirectory,' ',tiffFileDir,' ',tiffFileName,ext])
     
     %load the image in the temporary .mat file
-    matFileName=fullfile(tiffFileDir,strcat('temp_',tiffFileName,'.mat'));
+    matFileName=fullfile(tiffFileDir,strcat('temp_',tiffFileName,ext,'.mat'));
     load(matFileName)
     
     image=temp_image;    

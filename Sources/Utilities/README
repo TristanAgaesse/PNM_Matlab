@@ -1,2 +1,9 @@
 
-The python files tifffile.py and WriteTiff.py are intended to be in the same directory than their matlab counterparts WriteTiff.m
+The python files tifffile.py and WriteTiff.py are intended to be in the same 
+directory than their matlab counterparts WriteTiff.m.
+These python functions are called from matlab to convert between tiff files 
+and mat files. On some operating systems calling a python function from 
+matlab changes the enviromment seen by the python function, which can lead
+to incompatibilities between python librairies and matlab libraries. In case
+it happens, you should execute manualy the python function in a terminal
+copy-pasting the command displayed in matlab. 

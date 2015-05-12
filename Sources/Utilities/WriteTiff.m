@@ -27,7 +27,10 @@ function WriteTiff(filename,image)
     
     %call python script which reads the image in the .mat file and write it
     %to tiff format
-    system(['python',' ',pythonScript,' ',scriptDirectory,' ',outputDir,' ',name])
+    disp('Calling python function from Matlab')
+    commandLine=['python',' ',pythonScript,' ',scriptDirectory,' ',outputDir,' ',name];
+    disp(commandLine)
+    system(commandLine)
     
     delete(matFileName)
     
