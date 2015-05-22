@@ -11,6 +11,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
 %               clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
 %               clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder','PurcellToroid'
 %               clusterOptions.SurfaceTension = value of surface tension
+%               clusterOptions.StopCondition = 'Breakthrough','OutletPoresReached'
 %
 %Output : [clusters,invadedPores]
 
@@ -19,16 +20,10 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     disp('Running Invasion Percolation Several Clusters');
     tic;
     
-    CheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
+    [clusterOptions,stopCondition]=ReadCheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin );
     CheckLinkDiameter(network) %Verification si les diametres des liens sont deja calcules
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
-    
-
-    clusterOptions = struct;
-    if not(isempty(varargin))
-        clusterOptions = varargin{1};        
-    end
-    
+ 
     
     labelInvadedPores = zeros(1,network.GetNumberOfPores);
     clusters = cell(1,nCluster);
@@ -132,13 +127,23 @@ end
 
 
 %---------------------------------------------------------------------------------------------        
-function CheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
+function [clusterOptions,stopCondition]=ReadCheckInputs(network,nCluster,clustersInletLink,clustersOutletLink,wettability,varargin )
 
     assert(isa(network,'PoreNetwork'),'First argument network must be a Pore Network object')
     assert(isa(clustersInletLink,'cell') &&  length(clustersInletLink)==nCluster,'Third argument clustersInletLink must be a cell of length nCluster (2nd argument)')
     assert(isa(clustersOutletLink,'cell') &&  length(clustersOutletLink)==nCluster,'Fourth argument clustersOutletLink must be a cell of length nCluster (2nd argument)')
 
-
+    clusterOptions = struct;
+    if not(isempty(varargin))
+        clusterOptions = varargin{1};        
+    end
+    
+    if isfield(clusterOptions,'StopCondition')
+        stopCondition = clusterOptions.StopCondition;
+        assert( strcmp(stopCondition,'Breakthrough') || strcmp(stopCondition,'OutletPoresReached'),'clusterOptions.StopCondition = Breakthrough or OutletPoresReached')
+    else
+        stopCondition = 'OutletPoresReached';
+    end
 end
 
 

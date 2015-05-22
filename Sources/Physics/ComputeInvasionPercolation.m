@@ -1,5 +1,5 @@
 function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasionPercolation(network,inletLink,outletLink,wettability,varargin)
-%ComputeInvasionPercolation Calcule l'invasion de percolation sur un r�seau
+%ComputeInvasionPercolation Calcule l'invasion de percolation sur un reseau
 %de pores, avec un unique cluster
 %Input : network,inletLink,outletLink,wettability   , ( varargin ) :
 %       - network
@@ -10,6 +10,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
 %               clusterOptions.Coalescence = 'none' or 'numberOfInvadedNeighbours'
 %               clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder','PurcellToroid'
 %               clusterOptions.SurfaceTension = value of surface tension
+%               clusterOptions.StopCondition = 'Breakthrough','OutletPoresReached'
 %
 %Output : [cluster,breakthroughPressure,invasionPressureList]
 
@@ -17,19 +18,16 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     %Initialisation de l'algorithme.
     disp('Running Invasion Percolation');
     tic;
+    
+    [clusterOptions,stopCondition]=ReadCheckInputs(network,inletLink,outletLink,wettability,varargin);
     CheckLinkDiameter(network) %Verification si les diametres des liens sont deja calcules
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
 
-
-    clusterOptions = struct;
-    if not(isempty(varargin))
-        clusterOptions = varargin{1};        
-    end
+    
     cluster = ClusterMonophasique.InitialiseInvasionCluster(inletLink,outletLink,network,clusterOptions);
     
     iteration = 0;
     currentPressure = 0;
-    outlet_reached = false;
     outletPores = network.GetPoresFrontiere(outletLink);
     nPore = network.GetNumberOfPores;
     invasionPressureList = zeros(1,nPore);
@@ -37,10 +35,12 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     %Find accessible pores
     nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
     
-    stopCondition = outlet_reached || iteration>=nPoreAccessible ;
+    
+    outlet_reached = false;
+    stop = outlet_reached || iteration>=nPoreAccessible ;
     
     %Boucle d'invasion pore par pore
-    while not(stopCondition)
+    while not(stop)
         iteration = iteration+1;
         %trouver la face de plus petite pression critique
         
@@ -59,6 +59,8 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
         interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
         cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink); 
         
+        
+        
         %verifier si outlet_reached
         if ismember(invadedPore,outletPores)
             outlet_reached = true;
@@ -66,7 +68,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
             cluster.InvadeOutletLink(breakthroughLinks);
         end
         
-        stopCondition = outlet_reached || iteration>=nPoreAccessible ;
+        stop = outlet_reached || iteration>=nPoreAccessible ;
     end
     
     %Mise en forme des output
@@ -79,6 +81,25 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     
 end
 
+
+%---------------------------------------------------------------------------------------------        
+function [clusterOptions,stopCondition]=ReadCheckInputs(network,inletLink,outletLink,wettability,varargin)
+
+    assert(isa(network,'PoreNetwork'),'First argument network must be a Pore Network object')
+
+    clusterOptions = struct;
+    if not(isempty(varargin))
+        clusterOptions = varargin{1};        
+    end
+    
+    if isfield(clusterOptions,'StopCondition')
+        stopCondition = clusterOptions.StopCondition;
+        assert( strcmp(stopCondition,'Breakthrough') || strcmp(stopCondition,'OutletPoresReached'),'clusterOptions.StopCondition = Breakthrough or OutletPoresReached')
+    else
+        stopCondition = 'OutletPoresReached';
+    end
+    
+end
 
 
 %---------------------------------------------------------------------------------------------        
