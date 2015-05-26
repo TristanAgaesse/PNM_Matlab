@@ -34,11 +34,11 @@ classdef ClusterMonophasique < handle
             end
             
             if isfield(clusterOptions,'Coalescence')
-                if strcmp(clusterOptions.Coalescence,'none')
+                if ~strcmp(clusterOptions.Coalescence,'numberOfInvadedNeighbours')
                     clusterOptions.Coalescence  =  'none';
                 end
             else
-                clusterOptions.Coalescence  =  'numberOfInvadedNeighbours';
+                clusterOptions.Coalescence  =  'none';
             end
             
             cluster.ClusterOptions  =  clusterOptions;

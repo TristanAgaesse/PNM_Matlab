@@ -51,10 +51,10 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
         nPoreAccessible = GetNumberOfAccessiblePores(outwardPore,connexComponents);
         
         poreAllreadyInvaded = 0;
-        stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
+        stop = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
         
         %Boucle d'invasion pore par pore
-        while not(stopCondition)
+        while not(stop)
             iteration = iteration+1;
             %trouver la face de plus petite pression critique
 
@@ -86,7 +86,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
                 labelInvadedPores(invadedPore) = iCluster;
             end
             
-            stopCondition = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
+            stop = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
         end
 
         
@@ -135,7 +135,7 @@ function [clusterOptions,stopCondition]=ReadCheckInputs(network,nCluster,cluster
 
     clusterOptions = struct;
     if not(isempty(varargin))
-        clusterOptions = varargin{1};        
+        clusterOptions = varargin{1}{1};        
     end
     
     if isfield(clusterOptions,'StopCondition')
