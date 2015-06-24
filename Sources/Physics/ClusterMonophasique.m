@@ -306,10 +306,17 @@ classdef ClusterMonophasique < handle
             
             fusionInvadedPores = union(cluster1.GetInvadedPores,cluster2.GetInvadedPores);
             fusionBooleanInvadedLinks = or(cluster1.BooleanInvadedLinks,cluster2.BooleanInvadedLinks);
-            fusionInterfaceLinks = setxor(cluster1.GetInterfaceLinks,cluster2.GetInterfaceLinks);
             
-            compInterfacePoresOutward = [];                                                            % TO DO
-            criticalPressures = zeros(1,length(fusionInterfaceLinks));                              % TO DO
+            interfaceIntersection = intersect(cluster1.GetInterfaceLinks,cluster2.GetInterfaceLinks);
+            [xorInterface1,xorIndices1]=setdiff(cluster1.GetInterfaceLinks,interfaceIntersection);
+            [xorInterface2,xorIndices2]=setdiff(cluster2.GetInterfaceLinks,interfaceIntersection);
+            
+            fusionInterfaceLinks = [xorInterface1,xorInterface2];
+            
+            compInterfacePoresOutward = [cluster1.InterfacePoresOutward(xorIndices1),cluster2.InterfacePoresOutward(xorIndices2)]; 
+            criticalPressures = zeros(1,length(cluster1.Network.GetNumberOfLinks));
+            criticalPressures(xorInterface1)=cluster1.CriticalPressures(xorInterface1);
+            criticalPressures(xorInterface2)=cluster2.CriticalPressures(xorInterface2);
             
             fusionCluster = ClusterMonophasique(fusionInvadedPores,fusionInterfaceLinks,...
                 compInterfacePoresOutward,fusionBooleanInvadedLinks,...

@@ -109,7 +109,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
             clusters{iclusterAllreadyThere}=clusters{iclusterAllreadyThere}.FuseClusters(cluster);
         
         else
-            clusters{iCluster}=cluster;
+            clusters{iCluster}=cluster.CopyCluster;
         end
 
     end
@@ -120,7 +120,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
     newClusters = cell(1,0);
     for iCluster=1:nCluster
         if ~ isempty(clusters{iCluster})
-            newClusters{end+1}=clusters{iCluster};
+            newClusters{end+1}=clusters{iCluster}.CopyCluster;
         end
     end
     clusters=newClusters;
@@ -147,12 +147,13 @@ function [clusterOptions,stopCondition]=ReadCheckInputs(network,nCluster,cluster
 
     clusterOptions = struct;
     if not(isempty(varargin))
-        clusterOptions = varargin{1}{1};        
+        clusterOptions = varargin{1};        
     end
     
     if isfield(clusterOptions,'StopCondition')
+        assert( strcmp(clusterOptions.StopCondition,'Breakthrough') || strcmp(clusterOptions.StopCondition,'OutletPoresReached'),'clusterOptions.StopCondition = Breakthrough or OutletPoresReached')
+        
         stopCondition = clusterOptions.StopCondition;
-        assert( strcmp(stopCondition,'Breakthrough') || strcmp(stopCondition,'OutletPoresReached'),'clusterOptions.StopCondition = Breakthrough or OutletPoresReached')
     else
         stopCondition = 'OutletPoresReached';
     end
