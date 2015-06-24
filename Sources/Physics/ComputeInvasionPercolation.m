@@ -19,7 +19,7 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     disp('Running Invasion Percolation');
     tic;
     
-    [clusterOptions,stopCondition]=ReadCheckInputs(network,inletLink,outletLink,wettability,varargin);
+    [clusterOptions,stopCondition]=ReadCheckInputs(network,inletLink,outletLink,wettability,varargin{1});
     CheckLinkDiameter(network) %Verification si les diametres des liens sont deja calcules
     AssignContactAngle(network,wettability) %Assignation du Contact Angle
 
@@ -54,18 +54,27 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
         
         invadedPore = cluster.GetOutwardPore(indexInvadedLink);
         
-        %envahir le pore associe et update les pressions critiques
-        
-        interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
-        cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink); 
-        
-        
-        
-        %verifier si outlet_reached
-        if ismember(invadedPore,outletPores)
+        if invadedPore<=0 && strcmp(stopCondition,'Breakthrough')
+            %Stop if breakthrough 
+            assert(ismember(cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink),outletLink))
             outlet_reached = true;
-            breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
-            cluster.InvadeOutletLink(breakthroughLinks);
+            cluster.InvadeOutletLink(indexInvadedLink);
+        
+        else
+            assert(invadedPore >0)
+            
+            %envahir le pore associe et update les pressions critiques
+            interfaceChangeInformation = cluster.InvadeNewPore(indexInvadedLink);
+            cluster.UpdateCriticalPressure(interfaceChangeInformation,inletLink,outletLink); 
+            
+            if strcmp(stopCondition,'OutletPoresReached')
+                %verifier si outlet_reached
+                if ismember(invadedPore,outletPores)
+                    outlet_reached = true;
+                    breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
+                    cluster.InvadeOutletLink(breakthroughLinks);
+                end
+            end
         end
         
         stop = outlet_reached || iteration>=nPoreAccessible ;

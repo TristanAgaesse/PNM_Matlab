@@ -26,6 +26,8 @@ classdef ClusterMonophasique < handle
             cluster.CriticalPressures  =  criticalPressures;
             
             if isfield(clusterOptions,'CapillaryPressureLaw')
+                assert(strcmp(clusterOptions.CapillaryPressureLaw,'LaplaceCylinder') || strcmp(clusterOptions.CapillaryPressureLaw,'PurcellToroid'))
+                
                 if strcmp(clusterOptions.CapillaryPressureLaw,'PurcellToroid')
                     clusterOptions.CapillaryPressureLaw  = 'PurcellToroid' ;
                 end
@@ -33,7 +35,9 @@ classdef ClusterMonophasique < handle
                 clusterOptions.CapillaryPressureLaw  = 'LaplaceCylinder' ;
             end
             
-            if isfield(clusterOptions,'Coalescence')
+            if isfield(clusterOptions,'Coalescence') 
+                assert(strcmp(clusterOptions.Coalescence,'none') || strcmp(clusterOptions.Coalescence,'numberOfInvadedNeighbours'))
+                
                 if strcmp(clusterOptions.Coalescence,'none')
                     clusterOptions.Coalescence  =  'none';
                 end
@@ -233,6 +237,12 @@ classdef ClusterMonophasique < handle
         function links = GetInterfaceLinks(cluster)
             links = cluster.InterfaceLinks;
         end
+        
+        function absoluteNumber = GetInterfaceLinkAbsoluteNumber(cluster,linkRelativeIndex)
+            interfaceLinks=cluster.InterfaceLinks;
+            absoluteNumber = interfaceLinks(linkRelativeIndex);
+        end
+        
         
         function interfaceLength = GetInterfaceLength(cluster)
             interfaceLength = length(cluster.InterfaceLinks);
