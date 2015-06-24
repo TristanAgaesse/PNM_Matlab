@@ -42,7 +42,7 @@ classdef ClusterMonophasique < handle
                     clusterOptions.Coalescence  =  'none';
                 end
             else
-                clusterOptions.Coalescence  =  'numberOfInvadedNeighbours';
+                clusterOptions.Coalescence  =  'none';
             end
             
             cluster.ClusterOptions  =  clusterOptions;

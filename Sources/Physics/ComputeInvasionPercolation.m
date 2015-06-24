@@ -32,12 +32,11 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
     nPore = network.GetNumberOfPores;
     invasionPressureList = zeros(1,nPore);
     
-    %Find accessible pores
+    %Set maximum number of iterations as number of accessible pores
     nPoreAccessible=FindNumberOfAccessiblePores(network,inletLink);
-    
-    
     outlet_reached = false;
     stop = outlet_reached || iteration>=nPoreAccessible ;
+    
     
     %Boucle d'invasion pore par pore
     while not(stop)
@@ -75,8 +74,8 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
                     cluster.InvadeOutletLink(breakthroughLinks);
                 end
             end
+
         end
-        
         stop = outlet_reached || iteration>=nPoreAccessible ;
     end
     

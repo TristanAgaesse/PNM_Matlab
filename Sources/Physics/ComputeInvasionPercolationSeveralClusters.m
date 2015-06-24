@@ -97,7 +97,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
                 end
             end
             
-                        
+
             stop = outlet_reached || iteration>=nPoreAccessible || poreAllreadyInvaded;
         end
 
@@ -147,7 +147,7 @@ function [clusterOptions,stopCondition]=ReadCheckInputs(network,nCluster,cluster
 
     clusterOptions = struct;
     if not(isempty(varargin))
-        clusterOptions = varargin{1};        
+        clusterOptions = varargin{1}{1};        
     end
     
     if isfield(clusterOptions,'StopCondition')
