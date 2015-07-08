@@ -1,0 +1,264 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Tutorial_GeometryDefinition</title><meta name="generator" content="MATLAB 8.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-07-08"><meta name="DC.source" content="Tutorial_GeometryDefinition.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, tt, code { font-size:12px; }
+pre { margin:0px 0px 20px; }
+pre.error { color:red; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="comment">%Nous allons appprendre a utiliser la classe MacroscopicGeometry pour creer des</span>
+<span class="comment">%reseaux de pores de forme variees.</span>
+
+
+<span class="comment">%La fonction basique pour creer un reseau est CreateNetwork qui lit un</span>
+<span class="comment">%fichier de geometrie. En fait cette fonction cree en memoire un objet</span>
+<span class="comment">%MacroscopicGeometry qui contient les informations du fichier puis</span>
+<span class="comment">%construit le reseau avec un objet NetworkBuilder qui interprete l'objet</span>
+<span class="comment">%MacroscopicGeometry.</span>
+<span class="comment">%Exemple avec un reseau regulier : creons un reseau a partir du fichier</span>
+<span class="comment">%1block3D_Structured et visualisons le avec paraview.</span>
+
+
+myGeometry=MacroscopicGeometry();
+myGeometry.LoadGeometry(<span class="string">'1block3D_Structured'</span>);
+
+disp(myGeometry)
+
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+network.ExportToParaview(<span class="string">'tutorialMacroscopicGeometry_StructuredNetwork'</span>)
+
+clear <span class="string">myGeometry</span>
+</pre><pre class="codeoutput">  MacroscopicGeometry with properties:
+
+          Dimension: 3
+           Vertices: [8x3 double]
+             Blocks: {[1x1 struct]}
+         Boundaries: {1x6 cell}
+     AnisotropyBand: {1x0 cell}
+           NVertice: 8
+             NBlock: 1
+          NBoundary: 6
+    NAnisotropyBand: 0
+        NetworkType: 'StructuredNetwork'
+         PavageType: ''
+    ConvertToMeters: 1.0000e-06
+         RandomSeed: 0
+
+Generation du reseau...
+Reseau genere. Duree : 0 minutes 0.061937 s. 
+G&#65533;n&#65533;ration du fichier VTK...
+Fichier VTK g&#65533;n&#65533;r&#65533;. Dur&#65533;e : 0 minutes 2.438662 s.
+</pre><pre class="codeinput"><span class="comment">%Une geometrie peut etre definie dans un fichier ou par un script qui cree un</span>
+<span class="comment">%objet MacroscopicGeometry.</span>
+<span class="comment">%Dans cet exemple nous allons utiliser un script pour creer une geometrie</span>
+<span class="comment">%complexe, l'octahedron.</span>
+
+[V, E, F] = createOctahedron; <span class="comment">%utilise la librairie math_geom</span>
+
+<span class="comment">%Creons maintenant un objet MacroscopicGeometry correspondant a l'octahedron.</span>
+<span class="comment">%L'element de base d'une geometrie est le block. Celui-ci peut-etre n'importe</span>
+<span class="comment">%quel polynome convexe. Cette syntaxe est inspiree de l'outil blockMesh de openFoam.</span>
+
+myGeometry=MacroscopicGeometry();
+
+myGeometry.SetDimension(3);
+myGeometry.SetConvertToMeters(1e-3);  <span class="comment">%scale unit =  1e-3 m</span>
+myGeometry.SetNetworkType(<span class="string">'PoreNetworkMeshFibrous'</span>) ;
+myGeometry.SetPavageType(<span class="string">'RandomVoronoi'</span>);
+
+myGeometry.AddVertices(V);
+
+nPore = 1000;
+block=struct;
+block.VertexNumbers=1:size(V,1);
+block.Filling.PoreNumber=nPore;
+block.Filling.FiberThickness=0.0001;
+myGeometry.AddBlock(block)
+
+<span class="keyword">for</span> iBoundary=1:size(F,1)
+    boundary=struct;
+    boundary.Face=F(iBoundary,:);
+    boundary.Rugosity=<span class="string">'rough'</span>;
+    boundary.Type=<span class="string">'surface'</span>;
+    boundary.Name=<span class="string">''</span>;
+    myGeometry.AddBoundary(boundary);
+<span class="keyword">end</span>
+
+<span class="comment">%Une fois la geometrie definie, le reseau est construit avec un NetworkBuilder</span>
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+
+<span class="comment">%Visualiser le reseau dans Matlab avec un viewer et exportons vers paraview.</span>
+network.ExportToParaview(<span class="string">'tutorialMacroscopicGeometry_octahedron.vtk'</span>)
+
+viewer=Viewer(network.PrivateInternalOutputStruct);
+viewer.View(<span class="string">'Network'</span>)
+
+
+<span class="comment">%Il est possible de creer un fichier contenant les parametres de la</span>
+<span class="comment">%geometrie macroscopique.</span>
+
+myGeometry.WriteGeometryFile(<span class="string">'Octahedron3D.txt'</span>);
+
+
+
+<span class="comment">%Pour le moment il n'y a que les reseaux Voronoi qui peuvent avoir des formes</span>
+<span class="comment">%exotiques, les reseaux reguliers doivent etre dans un pave aligne avec les axes</span>
+</pre><pre class="codeoutput">Generation du reseau...
+Calcul du diametre des liens...
+Calcul du diametre des liens termine. Duree : 0 minutes 4.236330 s. 
+Reseau genere. Duree : 0 minutes 24.648169 s. 
+Writing VTK file...
+VTK file writen. Time spent : 0 minutes 37.517691 s.</pre><img vspace="5" hspace="5" src="Tutorial_GeometryDefinition_01.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2013a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%Nous allons appprendre a utiliser la classe MacroscopicGeometry pour creer des
+%reseaux de pores de forme variees.
+
+
+%La fonction basique pour creer un reseau est CreateNetwork qui lit un 
+%fichier de geometrie. En fait cette fonction cree en memoire un objet 
+%MacroscopicGeometry qui contient les informations du fichier puis
+%construit le reseau avec un objet NetworkBuilder qui interprete l'objet 
+%MacroscopicGeometry. 
+%Exemple avec un reseau regulier : creons un reseau a partir du fichier
+%1block3D_Structured et visualisons le avec paraview.
+
+
+myGeometry=MacroscopicGeometry();
+myGeometry.LoadGeometry('1block3D_Structured');
+
+disp(myGeometry)
+
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+network.ExportToParaview('tutorialMacroscopicGeometry_StructuredNetwork')
+
+clear myGeometry
+
+%%
+%Une geometrie peut etre definie dans un fichier ou par un script qui cree un 
+%objet MacroscopicGeometry.
+%Dans cet exemple nous allons utiliser un script pour creer une geometrie 
+%complexe, l'octahedron.
+
+[V, E, F] = createOctahedron; %utilise la librairie math_geom
+
+%Creons maintenant un objet MacroscopicGeometry correspondant a l'octahedron.
+%L'element de base d'une geometrie est le block. Celui-ci peut-etre n'importe 
+%quel polynome convexe. Cette syntaxe est inspiree de l'outil blockMesh de openFoam.
+
+myGeometry=MacroscopicGeometry();
+
+myGeometry.SetDimension(3);
+myGeometry.SetConvertToMeters(1e-3);  %scale unit =  1e-3 m
+myGeometry.SetNetworkType('PoreNetworkMeshFibrous') ;
+myGeometry.SetPavageType('RandomVoronoi');
+
+myGeometry.AddVertices(V);
+
+nPore = 1000;
+block=struct; 
+block.VertexNumbers=1:size(V,1);
+block.Filling.PoreNumber=nPore;
+block.Filling.FiberThickness=0.0001;
+myGeometry.AddBlock(block)
+
+for iBoundary=1:size(F,1)
+    boundary=struct;
+    boundary.Face=F(iBoundary,:);
+    boundary.Rugosity='rough';
+    boundary.Type='surface';
+    boundary.Name='';
+    myGeometry.AddBoundary(boundary);
+end
+
+%Une fois la geometrie definie, le reseau est construit avec un NetworkBuilder
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+
+%Visualiser le reseau dans Matlab avec un viewer et exportons vers paraview.
+network.ExportToParaview('tutorialMacroscopicGeometry_octahedron.vtk')
+
+viewer=Viewer(network.PrivateInternalOutputStruct);
+viewer.View('Network')
+
+
+%Il est possible de creer un fichier contenant les parametres de la
+%geometrie macroscopique. 
+
+myGeometry.WriteGeometryFile('Octahedron3D.txt');
+
+
+
+%Pour le moment il n'y a que les reseaux Voronoi qui peuvent avoir des formes
+%exotiques, les reseaux reguliers doivent etre dans un pave aligne avec les axes
+
+
+
+
+##### SOURCE END #####
+--></body></html>
