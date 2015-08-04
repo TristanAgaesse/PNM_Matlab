@@ -269,7 +269,7 @@ classdef  PoreNetwork
             %Output : adjacencyMatrix
                 
                 nPore = network.GetNumberOfPores;
-                               
+                
                 internalLink=network.GetLinksFrontiere(0);
                 theirPore=network.GetPoresOfLink(internalLink);
  

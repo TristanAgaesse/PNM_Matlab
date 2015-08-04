@@ -4,18 +4,18 @@ function conductances = LocalScaleComputeConductancesStokes(network,dynamicVisco
     
     
     %viscosite_dyn_water = 1e-3;
-
+    
     
     %Get geometric data from the network
     CheckLinkDiameter(network) %Check if link diameters are already computed
-
+    
     nLink = network.GetNumberOfLinks;
     nPore = network.GetNumberOfPores;
     linkSurface = network.GetLinkData('Surface');
     dimension = network.Dimension;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
-
+    
     allLinks=1:nLink;
     internalLinks = network.GetLinksFrontiere(0);
     boundaryLinks = GetLinksFrontiere(network,1:network.GetNumberOfBoundaries);
@@ -36,7 +36,7 @@ end
 
 
 function CheckLinkDiameter(network)
-
+    
     if not(isfield(network.GetLinkDataList,'Diameter'))
         diameter = network.ComputeAllLinkDiameter;
         network.AddNewLinkData(diameter,'Diameter');
