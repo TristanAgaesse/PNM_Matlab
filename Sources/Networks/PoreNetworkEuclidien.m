@@ -91,14 +91,14 @@ classdef PoreNetworkEuclidien < PoreNetwork
             if dimension==3
                 for iLink=1:nLink
                     neighbourPore=network.GetPoresOfLink(iLink);
-                    points_output((2*iLink-1)+nPore,:)=network.GetPoreCenter(neighbourPore(2));
+                    points_output(2*(iLink-1)+nPore+1,:)=network.GetPoreCenter(neighbourPore(2));
                     if neighbourPore(1)~=-1
-                        points_output((2*iLink)+nPore,:)=network.GetPoreCenter(neighbourPore(1));
+                        points_output(2*(iLink-1)+1+nPore+1,:)=network.GetPoreCenter(neighbourPore(1));
                     else
-                        points_output((2*iLink)+nPore,:)=network.GetPoreCenter(neighbourPore(2));
+                        points_output(2*(iLink-1)+1+nPore+1,:)=network.GetPoreCenter(neighbourPore(2));
                     end
                     
-                    link_to_points{iLink}=[(2*iLink-1)+nPore,(2*iLink)+nPore];
+                    link_to_points{iLink}=[2*(iLink-1)+nPore+1,2*(iLink-1)+1+nPore+1];
                 end
             else
                 for iLink=1:nLink
@@ -116,7 +116,7 @@ classdef PoreNetworkEuclidien < PoreNetwork
             
             %Partie VERTICES du fichier
             nVertice=nPore;
-            vertices_output=horzcat(ones(nVertice,1),transpose(1:nPore));
+            vertices_output=horzcat(ones(nVertice,1),transpose(0:nPore-1));
             
             %Partie LINES du fichier
             nLine=nLink;

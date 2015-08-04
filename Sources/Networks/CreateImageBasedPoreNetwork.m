@@ -193,7 +193,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
         linkCapillaryRadius=internalLinkCapillaryRadius;
         linkCenter=internalLinkCenter;
         
-        iLinkShift=length(linksOwners)+1;
+        iLinkShift=length(linksOwners);
         infos_liens_frontieres=cell(1,6);
 
         for iFrontiere=1:6
@@ -221,7 +221,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
             poreList=unique(frontiere);
             poreList=setdiff(poreList,0);
             nLinkFrontiere=length(poreList);
-            infos_liens_frontieres{iFrontiere}=iLinkShift:(iLinkShift+nLinkFrontiere-1);
+            infos_liens_frontieres{iFrontiere}=iLinkShift+1:(iLinkShift+nLinkFrontiere);
 
             linksOwners=[linksOwners,zeros(1,nLinkFrontiere)];
             linksNeighbours=[linksNeighbours,zeros(1,nLinkFrontiere)];
@@ -234,13 +234,13 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 
             linkFrontiere=1:nLinkFrontiere;
             numPoreOwner=poreList(linkFrontiere);
-            linksOwners(linkFrontiere+iLinkShift-1)=numPoreOwner;
-            linksNeighbours(linkFrontiere+iLinkShift-1)=-1;
+            linksOwners(linkFrontiere+iLinkShift)=numPoreOwner;
+            linksNeighbours(linkFrontiere+iLinkShift)=-1;
             
-            linkCapillaryRadius(linkFrontiere+iLinkShift-1)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
-            linkCenter(linkFrontiere+iLinkShift-1,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
+            linkCapillaryRadius(linkFrontiere+iLinkShift)=boundaryLinkCapillaryRadius{iFrontiere}(numPoreOwner);
+            linkCenter(linkFrontiere+iLinkShift,:)=boundaryLinkCenter{iFrontiere}(numPoreOwner,:); 
             for i=1:length(raw_data_link)
-                raw_data_link{i}(linkFrontiere+iLinkShift-1)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
+                raw_data_link{i}(linkFrontiere+iLinkShift)=boundary_raw_data_link{i}{iFrontiere}(numPoreOwner);
             end
             
             iLinkShift=iLinkShift+nLinkFrontiere;
