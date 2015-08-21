@@ -9,6 +9,7 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         MaterialImage
         PoreVoxelEnds
         PoreVoxelOrder
+        PoreVoxelLabelIndices
     end
     
     methods
@@ -21,9 +22,10 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             
             pore_network_image_based.VoxelEdgeLength=voxelEdgeLength;
             pore_network_image_based.MaterialImage=materialImage;
-            [labelEnds,orderLabels]=PoreNetworkImageBased.ParseLabeledImage(poresImage);
+            [labelEnds,orderLabels,labelIndices]=PoreNetworkImageBased.ParseLabeledImage(poresImage);
             pore_network_image_based.PoreVoxelEnds=labelEnds;
             pore_network_image_based.PoreVoxelOrder=orderLabels;
+            pore_network_image_based.PoreVoxelLabelIndices=labelIndices;
         end
         
         function image=GetImage(network)
@@ -35,7 +37,8 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         end
         
         function linearIndices=GetVoxelOfPore(network,iPore)
-            vRange=network.PoreVoxelEnds(iPore)+1:network.PoreVoxelEnds(iPore+1);
+            numLabel = network.PoreVoxelLabelIndices(iPore);
+            vRange=network.PoreVoxelEnds(numLabel)+1:network.PoreVoxelEnds(numLabel+1);
             linearIndices=network.PoreVoxelOrder(vRange);
         end
         
@@ -54,14 +57,55 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
     end
     
     methods (Static=true )
-        function [labelEnds,orderLabels] = ParseLabeledImage(labelImage)
+        function [labelEnds,orderLabels,labelIndices] = ParseLabeledImage(labelImage)
             
             labelImage = reshape(labelImage,[1,numel(labelImage)]);
         	[sortedLabels,orderLabels] = sort(labelImage);
             labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ; 
-            assert(labelEnds(end)<numel(labelImage))
+%             assert(labelEnds(end)<numel(labelImage))
             labelEnds=[labelEnds,numel(labelImage)];
+            
+            labelIndices = zeros(1,max(labelImage(:))+1);
+            labelIndices(sortedLabels(labelEnds(1:end-1))+1)=1:length(labelEnds)-1;
         end
         
+        function linearIndices=GetVoxelsOfLabel(numLabel,labelEnds,orderLabels,labelIndices)
+            
+            if numLabel>=0 && numLabel<=length(labelIndices)
+                
+                iLabel = labelIndices(numLabel+1);
+                if iLabel>0 || numLabel==0
+                	vRange=labelEnds(iLabel)+1:labelEnds(iLabel+1);
+                	linearIndices=orderLabels(vRange);
+            
+                else
+                    linearIndices=[];
+                end
+            
+            else
+                linearIndices=[];
+            end
+            
+        end
+        
+        
+        function Test_ParseLabeledImage()
+
+            links=[0, 0, 2, 1,2,1, 4];
+            [labelEnds,orderLabels,labelIndices] = PoreNetworkImageBased.ParseLabeledImage(links);
+            voxels1=PoreNetworkImageBased.GetVoxelsOfLabel(1,labelEnds,orderLabels,labelIndices);
+            voxels2=PoreNetworkImageBased.GetVoxelsOfLabel(2,labelEnds,orderLabels,labelIndices);
+            voxels3=PoreNetworkImageBased.GetVoxelsOfLabel(3,labelEnds,orderLabels,labelIndices);
+            voxels4=PoreNetworkImageBased.GetVoxelsOfLabel(4,labelEnds,orderLabels,labelIndices);
+
+            assert( isequal(voxels1,[4, 6]))  
+            assert( isequal(voxels2,[3,5])) 
+            assert( isequal(voxels3,[]))  
+            assert( isequal(voxels4,7))  
+
+        end
+
     end
+
+    
 end
