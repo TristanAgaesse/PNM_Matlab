@@ -63,10 +63,10 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         	[sortedLabels,orderLabels] = sort(labelImage);
             labelEnds=find(sortedLabels([2:end,1])-sortedLabels) ; 
 %             assert(labelEnds(end)<numel(labelImage))
-            labelEnds=[labelEnds,numel(labelImage)];
+            labelEnds=[0,labelEnds];
             
             labelIndices = zeros(1,max(labelImage(:))+1);
-            labelIndices(sortedLabels(labelEnds(1:end-1))+1)=1:length(labelEnds)-1;
+            labelIndices(sortedLabels(labelEnds(2:end))+1)=1:length(labelEnds)-1;
         end
         
         function linearIndices=GetVoxelsOfLabel(numLabel,labelEnds,orderLabels,labelIndices)
@@ -93,16 +93,19 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
 
             links=[0, 0, 2, 1,2,1, 4];
             [labelEnds,orderLabels,labelIndices] = PoreNetworkImageBased.ParseLabeledImage(links);
+            voxels0=PoreNetworkImageBased.GetVoxelsOfLabel(0,labelEnds,orderLabels,labelIndices);
             voxels1=PoreNetworkImageBased.GetVoxelsOfLabel(1,labelEnds,orderLabels,labelIndices);
             voxels2=PoreNetworkImageBased.GetVoxelsOfLabel(2,labelEnds,orderLabels,labelIndices);
             voxels3=PoreNetworkImageBased.GetVoxelsOfLabel(3,labelEnds,orderLabels,labelIndices);
             voxels4=PoreNetworkImageBased.GetVoxelsOfLabel(4,labelEnds,orderLabels,labelIndices);
 
+            assert( isequal(voxels0,[1, 2]))
             assert( isequal(voxels1,[4, 6]))  
             assert( isequal(voxels2,[3,5])) 
             assert( isequal(voxels3,[]))  
             assert( isequal(voxels4,7))  
-
+            
+            disp('Test OK')
         end
 
     end
