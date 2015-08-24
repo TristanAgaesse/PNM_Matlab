@@ -37,9 +37,10 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         end
         
         function linearIndices=GetVoxelOfPore(network,iPore)
-            numLabel = network.PoreVoxelLabelIndices(iPore);
-            vRange=network.PoreVoxelEnds(numLabel)+1:network.PoreVoxelEnds(numLabel+1);
-            linearIndices=network.PoreVoxelOrder(vRange);
+%             numLabel = network.PoreVoxelLabelIndices(iPore);
+%             vRange=network.PoreVoxelEnds(numLabel)+1:network.PoreVoxelEnds(numLabel+1);
+%             linearIndices=network.PoreVoxelOrder(vRange);
+            linearIndices=PoreNetworkImageBased.GetVoxelsOfLabel(iPore,network.PoreVoxelEnds,network.PoreVoxelOrder,network.PoreVoxelLabelIndices);
         end
         
         function image=GetImagePoreData(network,poreDataName)
@@ -91,8 +92,8 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
         
         function Test_ParseLabeledImage()
 
-            links=[0, 0, 2, 1,2,1, 4];
-            [labelEnds,orderLabels,labelIndices] = PoreNetworkImageBased.ParseLabeledImage(links);
+            image=[0, 0, 2, 1,2,1, 4];
+            [labelEnds,orderLabels,labelIndices] = PoreNetworkImageBased.ParseLabeledImage(image);
             voxels0=PoreNetworkImageBased.GetVoxelsOfLabel(0,labelEnds,orderLabels,labelIndices);
             voxels1=PoreNetworkImageBased.GetVoxelsOfLabel(1,labelEnds,orderLabels,labelIndices);
             voxels2=PoreNetworkImageBased.GetVoxelsOfLabel(2,labelEnds,orderLabels,labelIndices);
@@ -104,6 +105,24 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             assert( isequal(voxels2,[3,5])) 
             assert( isequal(voxels3,[]))  
             assert( isequal(voxels4,7))  
+            
+            image=[[0, 0, 2]; [1,2,1];[4 5 5] ];
+            [labelEnds,orderLabels,labelIndices] = PoreNetworkImageBased.ParseLabeledImage(image);
+            voxels0=PoreNetworkImageBased.GetVoxelsOfLabel(0,labelEnds,orderLabels,labelIndices);
+            voxels1=PoreNetworkImageBased.GetVoxelsOfLabel(1,labelEnds,orderLabels,labelIndices);
+            voxels2=PoreNetworkImageBased.GetVoxelsOfLabel(2,labelEnds,orderLabels,labelIndices);
+            voxels3=PoreNetworkImageBased.GetVoxelsOfLabel(3,labelEnds,orderLabels,labelIndices);
+            voxels4=PoreNetworkImageBased.GetVoxelsOfLabel(4,labelEnds,orderLabels,labelIndices);
+            voxels5=PoreNetworkImageBased.GetVoxelsOfLabel(5,labelEnds,orderLabels,labelIndices);
+            
+            assert( isequal(voxels0,[1, 4]))
+            assert( isequal(voxels1,[2, 8]))  
+            assert( isequal(voxels2,[5,7])) 
+            assert( isequal(voxels3,[]))  
+            assert( isequal(voxels4,3)) 
+            assert( isequal(voxels5,[6,9]))
+            
+            
             
             disp('Test OK')
         end
