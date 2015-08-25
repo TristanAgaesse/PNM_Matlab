@@ -1,37 +1,28 @@
 function linkCassieBaxterContactAngle = LocalScaleComputeCassieBaxterContactAngle(network,pureContactAngle)
-    %input : network
-    %output : linkContactAngle
+    %input : network,pureContactAngle
+    %output : linkCassieBaxterContactAngle
     
+    linkPhases=network.GetLinkData('RawData_NeighborPhases');
+    nPhase = size(linkPhases,2);
     
-    %Get geometric data from the network
+    assert(length(pureContactAngle)==nPhase);
+    
     nLink = network.GetNumberOfLinks;
-    nPore = network.GetNumberOfPores;
-    dimension = network.Dimension;
-    poreCenter=network.GetPoreCenter(1:nPore);
-    linkCenter=network.GetLinkCenter(1:nLink);
     
-    allLinks=1:nLink;
-    internalLinks = network.GetLinksFrontiere(0);
-    boundaryLinks = GetLinksFrontiere(network,1:network.GetNumberOfBoundaries);
+    %Compute phase proportional coefficients
+    foosum=sum(linkPhases,2);
+    validLinks=foosum>0;
+    assert(length(validLinks)==sum(validLinks))
+    for iPhase=1:nPhase
+        linkPhases(validLinks,iPhase)=linkPhases(validLinks,iPhase)./foosum(validLinks);
+    end
     
-    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
-    distance1=FastNorm(a,dimension);
+    meanCos = zeros(nLink,1);
+    for iPhase=1:nPhase
+        meanCos = meanCos+linkPhases(:,iPhase)*pureContactAngle(iPhase);
+    end
     
-    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
-    distance2=FastNorm(b,dimension);
-    
-    %Compute length
-    linkContactAngle = zeros(1,nLink);
-
+    linkCassieBaxterContactAngle = acos(meanCos);
     
 end       
 
-
-function myNorm=FastNorm(myVect,dimension)
-    %Vectorial version of the norm function
-    if dimension==2
-        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2) ;
-    elseif dimension==3
-        myNorm=sqrt(myVect(:,1).^2+myVect(:,2).^2+myVect(:,3).^2) ;
-    end
-end        
