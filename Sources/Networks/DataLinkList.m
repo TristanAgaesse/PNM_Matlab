@@ -14,7 +14,11 @@ classdef DataLinkList <  Data
         end
         
         function AddData(data_link_list,data,name)
-            assert(length(data)==data_link_list.NombreLink,'Un link data doit �tre un tableau de taille NombreLinks');
+            
+            if size(data,1)~=data_link_list.NombreLink
+                data=transpose(data);
+                assert(size(data,1)==data_link_list.NombreLink,'n link data doit etre un tableau de taille NombreLinks')
+            end            
             data_link_list.LinkDatas.(name)=data;
         end
        

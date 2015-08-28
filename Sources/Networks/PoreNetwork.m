@@ -117,9 +117,9 @@ classdef  PoreNetwork
             data_struct = poreNetwork.PoreDataList.PoreDatas;
         end       
         
-        function AddNewPoreData(poreNetwork,data,name)
+        function AddNewPoreData(network,data,name)
             %input : poreNetwork,data,name
-            poreNetwork.PoreDataList.AddData(data,name);
+            network.PoreDataList.AddData(data,name);
         end
                
         function RemovePoreData(poreNetwork,name)

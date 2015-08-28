@@ -14,7 +14,11 @@ classdef DataPoreList <  Data
         end
         
         function AddData(data_pore_list,data,name)
-            assert(length(data)==data_pore_list.NombrePore,'Un pore data doit �tre un tableau de taille NombrePores');
+            
+            if size(data,1)~=data_pore_list.NombrePore
+                data=transpose(data);
+                assert(size(data,1)==data_pore_list.NombrePore,'Un pore data doit etre un tableau de taille NombrePores')
+            end            
             data_pore_list.PoreDatas.(name)=data;
         end
 
