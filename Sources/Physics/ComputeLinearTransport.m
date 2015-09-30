@@ -311,13 +311,13 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     %Calcul des flux internes
     numOwner = network.LinkOwners(liens_internes_envahis);
     numNeighbour = network.LinkNeighbours(liens_internes_envahis);
-    flux(liens_internes_envahis) = conductances(liens_internes_envahis).*(fieldValue(numOwner)-fieldValue(numNeighbour));
+    flux(liens_internes_envahis) = transpose(conductances(liens_internes_envahis)).*(fieldValue(numOwner)-fieldValue(numNeighbour));
 
     %calcul des flux inlet
         
     if strcmp(inletType,'Dirichlet')
         numOwner = network.LinkOwners(liens_inlet_envahis);
-        flux(liens_inlet_envahis) = conductances(liens_inlet_envahis).*(inletValue(liens_inlet_envahis)-fieldValue(numOwner));
+        flux(liens_inlet_envahis) = transpose(conductances(liens_inlet_envahis)).*(inletValue(liens_inlet_envahis)-fieldValue(numOwner));
 
     elseif  strcmp(inletType,'Neumann')
     	flux(liens_inlet_envahis) = inletValue(liens_inlet_envahis);
@@ -327,7 +327,7 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     
     if strcmp(outletType,'Dirichlet')
         numOwner = network.LinkOwners(liens_outlet_envahis);
-        flux(liens_outlet_envahis) = conductances(liens_outlet_envahis).*(fieldValue(numOwner)-outletValue(liens_outlet_envahis));
+        flux(liens_outlet_envahis) = transpose(conductances(liens_outlet_envahis)).*(fieldValue(numOwner)-outletValue(liens_outlet_envahis));
 
     elseif  strcmp(outletType,'Neumann')
         flux(liens_outlet_envahis) = outletValue(liens_outlet_envahis);

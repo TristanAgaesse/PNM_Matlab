@@ -27,9 +27,9 @@ function conductances = LocalScaleComputeConductancesDiffusion(network,diffusivi
     
     
     %Compute conductances
-    conductances = zeros(1,nLink);
-    conductances(internalLinks)=diffusivity*linkSurface(internalLinks)./transpose(distance1(internalLinks)+distance2);
-    conductances(boundaryLinks)=diffusivity*linkSurface(boundaryLinks)./transpose(2*distance1(boundaryLinks));
+    conductances = zeros(nLink,1);
+    conductances(internalLinks)=diffusivity*linkSurface(internalLinks)./(distance1(internalLinks)+distance2);
+    conductances(boundaryLinks)=diffusivity*linkSurface(boundaryLinks)./(2*distance1(boundaryLinks));
     
     
 end
