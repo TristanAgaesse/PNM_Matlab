@@ -1,0 +1,115 @@
+<CustomFilterDefinitions>
+  <CustomProxyDefinition name="CalculatorContour" group="filters">
+    <CompoundSourceProxy id="5042" servers="1">
+      <Proxy group="filters" type="Contour" id="4920" servers="1" compound_name="114">
+        <Property name="ComputeGradients" id="4920.ComputeGradients" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4920.ComputeGradients.bool"/>
+        </Property>
+        <Property name="ComputeNormals" id="4920.ComputeNormals" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4920.ComputeNormals.bool"/>
+        </Property>
+        <Property name="ComputeScalars" id="4920.ComputeScalars" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4920.ComputeScalars.bool"/>
+        </Property>
+        <Property name="ContourValues" id="4920.ContourValues" number_of_elements="1">
+          <Element index="0" value="0.5"/>
+          <Domain name="scalar_range" id="4920.ContourValues.scalar_range"/>
+        </Property>
+        <Property name="GenerateTriangles" id="4920.GenerateTriangles" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="bool" id="4920.GenerateTriangles.bool"/>
+        </Property>
+        <Property name="Input" id="4920.Input" number_of_elements="1">
+          <Proxy value="4806" output_port="0"/>
+          <Domain name="groups" id="4920.Input.groups"/>
+          <Domain name="input_array" id="4920.Input.input_array"/>
+          <Domain name="input_type" id="4920.Input.input_type"/>
+        </Property>
+        <Property name="Locator" id="4920.Locator" number_of_elements="1">
+          <Proxy value="4917"/>
+          <Domain name="groups" id="4920.Locator.groups"/>
+          <Domain name="proxy_list" id="4920.Locator.proxy_list">
+            <Proxy value="4917"/>
+            <Proxy value="4918"/>
+            <Proxy value="4919"/>
+          </Domain>
+        </Property>
+        <Property name="SelectInputScalars" id="4920.SelectInputScalars" number_of_elements="5">
+          <Element index="0" value=""/>
+          <Element index="1" value=""/>
+          <Element index="2" value=""/>
+          <Element index="3" value="0"/>
+          <Element index="4" value="Result"/>
+          <Domain name="array_list" id="4920.SelectInputScalars.array_list">
+            <String text="Result"/>
+            <String text="Tiff Scalars"/>
+          </Domain>
+          <Domain name="field_list" id="4920.SelectInputScalars.field_list">
+            <Entry value="0" text="Point Data"/>
+          </Domain>
+        </Property>
+      </Proxy>
+      <Proxy group="filters" type="Calculator" id="4806" servers="1" compound_name="Calculator1">
+        <Property name="AttributeMode" id="4806.AttributeMode" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="enum" id="4806.AttributeMode.enum">
+            <Entry value="1" text="Point Data"/>
+            <Entry value="2" text="Cell Data"/>
+          </Domain>
+        </Property>
+        <Property name="CoordinateResults" id="4806.CoordinateResults" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4806.CoordinateResults.bool"/>
+        </Property>
+        <Property name="Function" id="4806.Function" number_of_elements="1">
+          <Element index="0" value="Tiff Scalars=114"/>
+        </Property>
+        <Property name="Input" id="4806.Input" number_of_elements="1">
+          <Domain name="groups" id="4806.Input.groups"/>
+          <Domain name="input_array" id="4806.Input.input_array"/>
+          <Domain name="input_type" id="4806.Input.input_type"/>
+        </Property>
+        <Property name="ReplaceInvalidValues" id="4806.ReplaceInvalidValues" number_of_elements="1">
+          <Element index="0" value="1"/>
+          <Domain name="bool" id="4806.ReplaceInvalidValues.bool"/>
+        </Property>
+        <Property name="ReplacementValue" id="4806.ReplacementValue" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="range" id="4806.ReplacementValue.range"/>
+        </Property>
+        <Property name="ResultArrayName" id="4806.ResultArrayName" number_of_elements="1">
+          <Element index="0" value="Result"/>
+        </Property>
+        <Property name="ResultNormals" id="4806.ResultNormals" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4806.ResultNormals.bool"/>
+        </Property>
+        <Property name="ResultTCoords" id="4806.ResultTCoords" number_of_elements="1">
+          <Element index="0" value="0"/>
+          <Domain name="bool" id="4806.ResultTCoords.bool"/>
+        </Property>
+      </Proxy>
+      <Proxy group="incremental_point_locators" type="MergePoints" id="4917" servers="1" compound_name="auto_4917">
+        <Property name="Divisions" id="4917.Divisions" number_of_elements="3">
+          <Element index="0" value="50"/>
+          <Element index="1" value="50"/>
+          <Element index="2" value="50"/>
+        </Property>
+        <Property name="NumberOfPointsPerBucket" id="4917.NumberOfPointsPerBucket" number_of_elements="1">
+          <Element index="0" value="8"/>
+        </Property>
+      </Proxy>
+      <ExposedProperties>
+        <Property name="Function" proxy_name="Calculator1" exposed_name="Function"/>
+        <Property name="Input" proxy_name="Calculator1" exposed_name="Input"/>
+      </ExposedProperties>
+      <OutputPort name="Output" proxy="114" port_index="0"/>
+      <Hints>
+        <ShowInMenu/>
+      </Hints>
+    </CompoundSourceProxy>
+  </CustomProxyDefinition>
+</CustomFilterDefinitions>
