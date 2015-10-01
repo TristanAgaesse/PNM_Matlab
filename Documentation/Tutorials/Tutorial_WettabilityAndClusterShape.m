@@ -68,10 +68,10 @@ network.GetPoreDataList
 %ajoute le nouveau puis . 
 
 theta=110;
-contactAngle=theta*pi/180*ones(1,nLink);
+contactAngle=theta*pi/180*ones(nLink,1);
 
 network.RemoveLinkData('ContactAngle');
-network.AddNewLinkData(theta,'ContactAngle');
+network.AddNewLinkData(contactAngle,'ContactAngle');
 
 cluster = ComputeInvasionPercolation(network,inletLink,outletLink, ...
                                      'currentWettability',clusterOptions);

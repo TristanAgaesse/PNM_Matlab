@@ -28,7 +28,9 @@ help ComputeInvasionPercolation
 inletLink=network.GetLinksFrontiere(2);
 outletLink=network.GetLinksFrontiere([4,5,6]);
 
-cluster = ComputeInvasionPercolation(network,inletLink,outletLink,'hydrophobic');
+clusterOptions=struct;
+
+cluster = ComputeInvasionPercolation(network,inletLink,outletLink,'hydrophobic',clusterOptions);
 
 class(cluster)
 

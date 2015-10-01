@@ -28,9 +28,9 @@ function conductances = LocalScaleComputeConductancesStokes(network,dynamicVisco
     
     
     %Compute conductances
-    conductances = zeros(1,nLink);
-    conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*dynamicViscosity*transpose(distance1(internalLinks)+distance2));
-    conductances(boundaryLinks)=linkSurface(boundaryLinks)./(8*pi*dynamicViscosity*transpose(2*distance1(boundaryLinks)));
+    conductances = zeros(nLink,1);
+    conductances(internalLinks)=linkSurface(internalLinks)./(8*pi*dynamicViscosity*(distance1(internalLinks)+distance2));
+    conductances(boundaryLinks)=linkSurface(boundaryLinks)./(8*pi*dynamicViscosity*(2*distance1(boundaryLinks)));
     
 end       
 

@@ -94,7 +94,7 @@ end
 function [clusterOptions,stopCondition]=ReadCheckInputs(network,inletLink,outletLink,wettability,varargin)
 
     assert(isa(network,'PoreNetwork'),'First argument network must be a Pore Network object')
-
+    
     clusterOptions = struct;
     if not(isempty(varargin))
         clusterOptions = varargin{1};        

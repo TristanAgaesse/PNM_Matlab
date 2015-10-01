@@ -25,7 +25,7 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
 
         %Pressure on toroid
 
-            fibreDiameter=zeros(1,length(liens));
+            fibreDiameter=zeros(length(liens),1);
             for i=1:length(liens)
                 if isa(network,'PoreNetworkMeshFibrous')
                     numEdges = network.FacesToEdges{liens(i)};
@@ -45,4 +45,5 @@ function Pc = LocalScaleComputeCriticalPressureWithoutCoalescence(network,liens,
     
     assert(isempty(find(isnan(Pc),1)),'Nan found for a capillary pressure');
 
+    Pc=transpose(Pc);
 end
