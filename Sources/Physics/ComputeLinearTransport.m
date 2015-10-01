@@ -24,7 +24,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
 
     
     %Checking inputs
-    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=...
+    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,boundaryLinkInnerPore]=...
                     CheckInputs(network,transportPores,conductances,boundaryConditions);
     
     
@@ -67,7 +67,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
         
         rigthHandSide = FillRigthHandSide(network,conductances,...
                         liens_inlet_envahis,liens_outlet_envahis,inletType,outletType,...
-                        inletValue,outletValue,poresPercolantsIndices,nPorePercolant);
+                        inletValue,outletValue,poresPercolantsIndices,nPorePercolant,boundaryLinkInnerPore);
         
         
         %Resolution du systeme lineaire
@@ -107,16 +107,17 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux]=...
+function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,boundaryLinkInnerPore]=...
                         CheckInputs(network,transportPores,conductances,boundaryConditions)
                     
     %Check inputs and initialize algorithm
-
+    conductances=transpose(conductances);
+    
     assert( isa(network,'PoreNetwork'),'LinearTransport : first input must be a PoreNetwork object')
     assert( length(transportPores)<=network.GetNumberOfPores,...
             'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
     assert( ~isempty(transportPores),'LinearTransport : second input transportPores must not be empty')
-    assert( length(conductances)==network.GetNumberOfLinks,...
+    assert( size(conductances,2)==network.GetNumberOfLinks,...
             'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
     assert( isa(boundaryConditions,'struct') );
@@ -142,6 +143,49 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
 
     inletType = boundaryConditions.inletType;
     outletType = boundaryConditions.outletType;
+    
+    boundaryLinkInnerPore=FindBoundaryLinkInnerPore(transportPores,inletLink,outletLink,network);    
+end
+
+%---------------------------------------------------------------------------------------------
+function boundaryLinkInnerPore=FindBoundaryLinkInnerPore(transportPores,inletLink,outletLink,network)
+    % output : boundaryLinkInnerPore : donne pour chaque lien inlet et 
+    %       outlet le numero du pore qui donne vers l'interieur du domaine.    
+    
+    assert(isempty(intersect(inletLink,outletLink)),'inletLink and outletLink have some link in common !');
+    
+    boundaryLinkInnerPore=zeros(1,network.GetNumberOfLinks);
+    
+    boundaryLink=[inletLink,outletLink];
+    linksNeighboors=network.GetPoresOfLink(boundaryLink);
+    
+    % Check that all boundary link has only one neighbor pore inside the 
+    % transport domain and note the number of this pore
+    
+    
+    % 1 : boundary link qui sont internes au reseau 
+    
+    isInternal = ismember(boundaryLink,network.GetLinksFrontiere(0));
+    internalLinksNeighboors= linksNeighboors(isInternal,:);
+    
+    booleanTransportPores=zeros(network.GetNumberOfPores,1);
+    booleanTransportPores(transportPores)=1;
+    
+    linksNeighboorsElements=horzcat(booleanTransportPores(internalLinksNeighboors(:,1)),booleanTransportPores(internalLinksNeighboors(:,2)));
+    linksNeighboorsElements=sort(linksNeighboorsElements,2);
+    
+    assert(all(linksNeighboorsElements(:,2)),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
+    assert(all(not(linksNeighboorsElements(:,1))),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
+    
+    boundaryLinkInnerPore( boundaryLink(isInternal) )=internalLinksNeighboors(:,2);
+
+    % 2 : boundary link qui sont sur la frontiere du reseau
+    
+    boudaryLink_surface = boundaryLink(not(isInternal));
+    innerPore = network.LinkOwners(boudaryLink_surface);
+    %assert(all(booleanTransportPores(innerPore)),'un link inlet ou outlet non situe sur la frontiere de transport pores !');
+    boundaryLinkInnerPore(boudaryLink_surface) = innerPore;
+    
 end
 
 
@@ -252,7 +296,7 @@ end
 
 %---------------------------------------------------------------------------------------------
 function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envahis,liens_outlet_envahis,...
-                            inletType,outletType,inletValue,outletValue,poresPercolantsIndices,nPorePercolant)
+                            inletType,outletType,inletValue,outletValue,poresPercolantsIndices,nPorePercolant,boundaryLinkInnerPore)
                         
     %Fill rigth hand side
 
@@ -262,7 +306,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
             
     if strcmp(inletType,'Dirichlet')
         
-    	indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
+        indiceOwner = poresPercolantsIndices(boundaryLinkInnerPore(liens_inlet_envahis));
+    	%indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
         for i=1:length(liens_inlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))...
                             +inletValue(liens_inlet_envahis(i))*conductances(liens_inlet_envahis(i));
@@ -270,7 +315,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
         
     elseif  strcmp(inletType,'Neumann')
         
-        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
+        %indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_inlet_envahis));
+        indiceOwner = poresPercolantsIndices(boundaryLinkInnerPore(liens_inlet_envahis));
         for i =1:length(liens_inlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))+inletValue(liens_inlet_envahis(i));
         end
@@ -280,7 +326,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
     
     if strcmp(outletType,'Dirichlet')
         
-        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
+        %indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
+        indiceOwner = poresPercolantsIndices(boundaryLinkInnerPore(liens_outlet_envahis));
         for i =1:length(liens_outlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))...
                     +outletValue(liens_outlet_envahis(i))*conductances(liens_outlet_envahis(i));
@@ -288,7 +335,8 @@ function terme_droite = FillRigthHandSide(network,conductances,liens_inlet_envah
         
     elseif  strcmp(outletType,'Neumann')
         
-        indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
+        %indiceOwner = poresPercolantsIndices(network.LinkOwners(liens_outlet_envahis));
+        indiceOwner = poresPercolantsIndices(boundaryLinkInnerPore(liens_outlet_envahis));
         for i =1:length(liens_outlet_envahis)
             terme_droite(indiceOwner(i)) = terme_droite(indiceOwner(i))-outletValue(liens_outlet_envahis(i));       
         end
@@ -311,13 +359,13 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     %Calcul des flux internes
     numOwner = network.LinkOwners(liens_internes_envahis);
     numNeighbour = network.LinkNeighbours(liens_internes_envahis);
-    flux(liens_internes_envahis) = transpose(conductances(liens_internes_envahis)).*(fieldValue(numOwner)-fieldValue(numNeighbour));
+    flux(liens_internes_envahis) = conductances(liens_internes_envahis).*(fieldValue(numOwner)-fieldValue(numNeighbour));
 
     %calcul des flux inlet
         
     if strcmp(inletType,'Dirichlet')
         numOwner = network.LinkOwners(liens_inlet_envahis);
-        flux(liens_inlet_envahis) = transpose(conductances(liens_inlet_envahis)).*(inletValue(liens_inlet_envahis)-fieldValue(numOwner));
+        flux(liens_inlet_envahis) = conductances(liens_inlet_envahis).*(inletValue(liens_inlet_envahis)-fieldValue(numOwner));
 
     elseif  strcmp(inletType,'Neumann')
     	flux(liens_inlet_envahis) = inletValue(liens_inlet_envahis);
@@ -327,7 +375,7 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     
     if strcmp(outletType,'Dirichlet')
         numOwner = network.LinkOwners(liens_outlet_envahis);
-        flux(liens_outlet_envahis) = transpose(conductances(liens_outlet_envahis)).*(fieldValue(numOwner)-outletValue(liens_outlet_envahis));
+        flux(liens_outlet_envahis) = conductances(liens_outlet_envahis).*(fieldValue(numOwner)-outletValue(liens_outlet_envahis));
 
     elseif  strcmp(outletType,'Neumann')
         flux(liens_outlet_envahis) = outletValue(liens_outlet_envahis);
