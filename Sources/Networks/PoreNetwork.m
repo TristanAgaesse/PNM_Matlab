@@ -250,6 +250,20 @@ classdef  PoreNetwork
 
         end
         
+        function [boundaryLinks,innerLinks]=GetPoreRegionBoundaryLinks(network,poreList)
+            %Input: network, poreList
+            %Output: boundaryLinks,innerLinks
+            linkCount = zeros(1,network.GetNumberOfLinks);
+            for iPore = poreList
+                thoseLinks = network.Pores{iPore};
+                linkCount(thoseLinks) = linkCount(thoseLinks)+1;
+            end
+            innerLinks = find(linkCount==2);
+            boundaryLinks = find(linkCount == 1);
+            assert(not(any(linkCount>2)));
+        end
+        
+        
         
         %Utilities
         

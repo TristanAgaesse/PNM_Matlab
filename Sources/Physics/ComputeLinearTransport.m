@@ -128,9 +128,10 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
 	assert( length(boundaryConditions.inletValue)==length(boundaryConditions.inletLink))
 	assert( length(boundaryConditions.outletValue)==length(boundaryConditions.outletLink))     
          
-    inletLink = boundaryConditions.inletLink;
-    outletLink = boundaryConditions.outletLink;
-
+    
+    [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(transportPores,boundaryConditions,network); 
+    
+    
     nLink = network.GetNumberOfLinks;
     nPore = network.GetNumberOfPores;
     fieldValue = zeros(1,nPore);
@@ -144,15 +145,46 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     inletType = boundaryConditions.inletType;
     outletType = boundaryConditions.outletType;
     
-    boundaryLinkInnerPore=FindBoundaryLinkInnerPore(transportPores,inletLink,outletLink,network);    
+    inletLink = boundaryConditions.inletLink;
+    outletLink = boundaryConditions.outletLink;   
 end
 
 %---------------------------------------------------------------------------------------------
-function boundaryLinkInnerPore=FindBoundaryLinkInnerPore(transportPores,inletLink,outletLink,network)
+function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(transportPores,boundaryConditions,network)
     % output : boundaryLinkInnerPore : donne pour chaque lien inlet et 
     %       outlet le numero du pore qui donne vers l'interieur du domaine.    
     
+    inletLink = boundaryConditions.inletLink;
+    outletLink = boundaryConditions.outletLink;
+    inletValue = boundaryConditions.inletValue;
+    outletValue = boundaryConditions.outletValue;
+    
+    if size(inletLink,1)~=1
+        inletLink=transpose(inletLink);
+    end
+    if size(outletLink,1)~=1
+        outletLink=transpose(outletLink);
+    end
+    if size(inletValue,1)~=1
+        inletValue=transpose(inletValue);
+    end
+    if size(outletValue,1)~=1
+        outletValue=transpose(outletValue);
+    end
+    
     assert(isempty(intersect(inletLink,outletLink)),'inletLink and outletLink have some link in common !');
+    
+    transportRegionBoundary = network.GetPoreRegionBoundaryLinks(transportPores);
+    
+    inletLinkToKeep=ismember(inletLink,transportRegionBoundary);
+    outletLinkToKeep=ismember(outletLink,transportRegionBoundary);
+    
+    inletLink=inletLink(inletLinkToKeep);
+    inletValue=inletValue(inletLinkToKeep);
+    outletLink=outletLink(outletLinkToKeep);
+    outletValue=outletValue(outletLinkToKeep);
+    
+    assert(~isempty(inletLink) && ~isempty(outletLink),'No inlet link or outlet link is on the transport region boundary !')
     
     boundaryLinkInnerPore=zeros(1,network.GetNumberOfLinks);
     
@@ -183,9 +215,15 @@ function boundaryLinkInnerPore=FindBoundaryLinkInnerPore(transportPores,inletLin
     
     boudaryLink_surface = boundaryLink(not(isInternal));
     innerPore = network.LinkOwners(boudaryLink_surface);
-    %assert(all(booleanTransportPores(innerPore)),'un link inlet ou outlet non situe sur la frontiere de transport pores !');
+    assert(all(booleanTransportPores(innerPore)),'un link inlet ou outlet non situe sur la frontiere de transport pores !');
     boundaryLinkInnerPore(boudaryLink_surface) = innerPore;
     
+    
+    boundaryConditions.inletLink = inletLink ;
+    boundaryConditions.outletLink = outletLink ;
+    
+    boundaryConditions.inletValue = inletValue;
+    boundaryConditions.outletValue = outletValue;
 end
 
 

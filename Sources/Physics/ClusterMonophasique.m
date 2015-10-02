@@ -349,19 +349,26 @@ classdef ClusterMonophasique < handle
                     
                     %find invaded links
                     invadedPores = composantes_connexes_du_fluide{num_composante};
-                    linkCount = zeros(1,network.GetNumberOfLinks);
-                    for iPore = invadedPores
-                        thoseLinks = network.Pores{iPore};
-                        linkCount(thoseLinks) = linkCount(thoseLinks)+1;
-                    end
                     
-                    booleanInvadedLinks = linkCount>0;
-                    interfaceLinks = find(linkCount == 1);
+%                     linkCount = zeros(1,network.GetNumberOfLinks);
+%                     for iPore = invadedPores
+%                         thoseLinks = network.Pores{iPore};
+%                         linkCount(thoseLinks) = linkCount(thoseLinks)+1;
+%                     end
+%                     
+%                     booleanInvadedLinks = linkCount>0;
+%                     interfaceLinks = find(linkCount == 1);
+                    
+                    [boundaryLinks,innerLinks]=network.GetPoreRegionBoundaryLinks(invadedPores);
+                    booleanInvadedLinks= zeros(1,network.GetNumberOfLinks);
+                    booleanInvadedLinks(boundaryLinks)=1;
+                    booleanInvadedLinks(innerLinks)=1;
+                    
                     poresFrontiereOutward = [];
                     criticalPressures = zeros(1,network.GetNumberOfLinks);
                     clusterOptions=cluster.GetClusterOptions;
                     
-                    percolatingCluster = ClusterMonophasique(invadedPores,interfaceLinks,...
+                    percolatingCluster = ClusterMonophasique(invadedPores,boundaryLinks,...
                         poresFrontiereOutward,booleanInvadedLinks,...
                         network,criticalPressures,clusterOptions);
                     poresPercolants{num_chemin} = percolatingCluster;
@@ -370,6 +377,8 @@ classdef ClusterMonophasique < handle
             end
 
         end
+        
+
         
         
         function copiedCluster = CopyCluster(cluster)
