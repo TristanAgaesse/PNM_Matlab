@@ -69,6 +69,8 @@ classdef  PoreNetwork
         function liste_pores_voisins = GetPoresVoisinsOfPore(poreNetwork,num_pore)
             %input : poreNetwork,num_pore
             %output :liste_pores_voisins
+            
+            assert(length(num_pore)==1);
             liste_liens = poreNetwork.Pores{num_pore};
             liste_pores_voisins = zeros(1,length(liste_liens));
             for i = 1:length(liste_liens)
@@ -87,12 +89,20 @@ classdef  PoreNetwork
             %input : network,num_link
             %output : indices : indices(1)=neighbourPore (-1 if
             %                   boundaryLink), indices(2)=ownerPore
+            
+            if size(num_link,1)~=1
+                assert(size(num_link,2)==1);
+                num_link=transpose(num_link);
+            end
+            
             indices=transpose(vertcat(network.LinkNeighbours(num_link),network.LinkOwners(num_link)));
         end
         
         function indices = GetLinksOfPore(poreNetwork,num_pore)
             %input : poreNetwork,num_pore
             %output : indices
+            
+            assert(length(num_pore)==1);
             indices = poreNetwork.Pores{num_pore};
         end
 
@@ -150,6 +160,12 @@ classdef  PoreNetwork
         function diameter = GetLinkDiameter(poreNetwork,iLink)
             %input : poreNetwork,iLink
             %output : diameter
+            
+            if size(iLink,1)~=1
+                assert(size(iLink,2)==1);
+                iLink=transpose(iLink);
+            end
+            
             if not(isfield(poreNetwork.GetLinkDataList,'Diameter'))
                 disp('Calcul du diam�tre des liens...');
                 tic;
@@ -169,6 +185,12 @@ classdef  PoreNetwork
         function diameter = GetPoreDiameter(poreNetwork,iPore)
             %input : poreNetwork,iPore
             %output : diameter
+            
+            if size(iPore,1)~=1
+                assert(size(iPore,2)==1);
+                iPore=transpose(iPore);
+            end
+            
             if not(isfield(poreNetwork.GetPoreDataList,'Diameter'))
             
                 if not(isfield(poreNetwork.GetPoreDataList,'Volume'))
@@ -199,6 +221,12 @@ classdef  PoreNetwork
             %internes.
             %input : poreNetwork,num_frontieres
             %output : liens_frontiere
+            
+            if size(num_frontieres,1)~=1
+                assert(size(num_frontieres,2)==1);
+                num_frontieres=transpose(num_frontieres);
+            end
+            
             faces_frontieres = cell(1,length(num_frontieres));
             indice = 1;
             for i = num_frontieres
@@ -224,6 +252,8 @@ classdef  PoreNetwork
             numFrontiere = 0;
             nBoundary = length(poreNetwork.Boundaries.Boundary); 
             
+            assert(length(numLink)==1);
+            
             start = poreNetwork.Boundaries.Boundary(nBoundary).ATTRIBUTE.StartFace;
             finish = start+poreNetwork.Boundaries.Boundary(nBoundary).ATTRIBUTE.NombreFaces-1;
             if numLink>finish
@@ -246,6 +276,11 @@ classdef  PoreNetwork
             %input : poreNetwork,linkFrontiere
             %output :pores_frontiere
             
+            if size(linkFrontiere,1)~=1
+                assert(size(linkFrontiere,2)==1);
+                linkFrontiere=transpose(linkFrontiere);
+            end
+            
             pores_frontiere = poreNetwork.LinkOwners(linkFrontiere);
 
         end
@@ -253,6 +288,12 @@ classdef  PoreNetwork
         function [boundaryLinks,innerLinks]=GetPoreRegionBoundaryLinks(network,poreList)
             %Input: network, poreList
             %Output: boundaryLinks,innerLinks
+            
+            if size(poreList,1)~=1
+                assert(size(poreList,2)==1);
+                poreList=transpose(poreList);
+            end
+            
             linkCount = zeros(1,network.GetNumberOfLinks);
             for iPore = poreList
                 thoseLinks = network.Pores{iPore};
@@ -282,21 +323,26 @@ classdef  PoreNetwork
             %Input : network,invadedPoreList
             %Output : adjacencyMatrix
                 
-                nPore = network.GetNumberOfPores;
-                
-                internalLink=network.GetLinksFrontiere(0);
-                theirPore=network.GetPoresOfLink(internalLink);
- 
-                firstIndice=theirPore(:,1);
-                secondIndice=theirPore(:,2);
-                
-                newFirstIndice=vertcat(firstIndice,secondIndice); 
-                newSecondIndice=vertcat(secondIndice,firstIndice); 
-                value = ones(length(newFirstIndice),1);
-                
-                adjacencyMatrix = sparse(newFirstIndice,newSecondIndice,value,nPore,nPore);
-                
-                adjacencyMatrix=adjacencyMatrix(invadedPoreList,invadedPoreList);
+            if size(invadedPoreList,1)~=1
+                assert(size(invadedPoreList,2)==1);
+                invadedPoreList=transpose(invadedPoreList);
+            end
+            
+            nPore = network.GetNumberOfPores;
+
+            internalLink=network.GetLinksFrontiere(0);
+            theirPore=network.GetPoresOfLink(internalLink);
+
+            firstIndice=theirPore(:,1);
+            secondIndice=theirPore(:,2);
+
+            newFirstIndice=vertcat(firstIndice,secondIndice); 
+            newSecondIndice=vertcat(secondIndice,firstIndice); 
+            value = ones(length(newFirstIndice),1);
+
+            adjacencyMatrix = sparse(newFirstIndice,newSecondIndice,value,nPore,nPore);
+
+            adjacencyMatrix=adjacencyMatrix(invadedPoreList,invadedPoreList);
         end
         
         
@@ -309,6 +355,11 @@ classdef  PoreNetwork
             option='graphconncomp';
             if ~isempty(varargin)
                 option=varargin{1};
+            end
+            
+            if size(liste_pores_envahis,1)~=1
+                assert(size(liste_pores_envahis,2)==1);
+                liste_pores_envahis=transpose(liste_pores_envahis);
             end
             
             if strcmp(option,'graphconncomp')

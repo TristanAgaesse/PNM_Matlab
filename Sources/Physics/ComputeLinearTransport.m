@@ -24,7 +24,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
 
     
     %Checking inputs
-    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,boundaryLinkInnerPore]=...
+    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore]=...
                     CheckInputs(network,transportPores,conductances,boundaryConditions);
     
     
@@ -60,7 +60,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
         
         stiffnessMatrix = FillMatrix(network,conductances,liens_internes_envahis,...
                             liens_inlet_envahis,liens_outlet_envahis,...
-                            inletType,outletType,poresPercolantsIndices,nPorePercolant);
+                            inletType,outletType,poresPercolantsIndices,nPorePercolant,boundaryLinkInnerPore);
         
         
         %Remplissage du terme de droite 
@@ -85,7 +85,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
         [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,...
                             poresPercolants,conductances,fieldVal,...
                             liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
-                            inletType,outletType,inletValue,outletValue);
+                            inletType,outletType,inletValue,outletValue,boundaryLinkInnerPore);
         
     end
     
@@ -107,7 +107,7 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,boundaryLinkInnerPore]=...
+function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore]=...
                         CheckInputs(network,transportPores,conductances,boundaryConditions)
                     
     %Check inputs and initialize algorithm
@@ -120,6 +120,12 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     assert( size(conductances,2)==network.GetNumberOfLinks,...
             'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
+    if size(transportPores,1)~=1
+        assert(size(transportPores,2)==1);
+        transportPores=transpose(transportPores);
+    end    
+        
+        
     assert( isa(boundaryConditions,'struct') );
     assert( max(boundaryConditions.inletLink)<=network.GetNumberOfLinks )
     assert( max(boundaryConditions.outletLink)<=network.GetNumberOfLinks )
@@ -204,12 +210,12 @@ function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(tr
     booleanTransportPores(transportPores)=1;
     
     linksNeighboorsElements=horzcat(booleanTransportPores(internalLinksNeighboors(:,1)),booleanTransportPores(internalLinksNeighboors(:,2)));
-    linksNeighboorsElements=sort(linksNeighboorsElements,2);
+    [linksNeighboorsElements,order]=sort(linksNeighboorsElements,2);
     
     assert(all(linksNeighboorsElements(:,2)),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     assert(all(not(linksNeighboorsElements(:,1))),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     
-    boundaryLinkInnerPore( boundaryLink(isInternal) )=internalLinksNeighboors(:,2);
+    boundaryLinkInnerPore( boundaryLink(isInternal) )=order(:,end);
 
     % 2 : boundary link qui sont sur la frontiere du reseau
     
@@ -218,6 +224,7 @@ function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(tr
     assert(all(booleanTransportPores(innerPore)),'un link inlet ou outlet non situe sur la frontiere de transport pores !');
     boundaryLinkInnerPore(boudaryLink_surface) = innerPore;
     
+    assert( all( booleanTransportPores(boundaryLinkInnerPore(boundaryLinkInnerPore>0))))
     
     boundaryConditions.inletLink = inletLink ;
     boundaryConditions.outletLink = outletLink ;
@@ -266,7 +273,7 @@ end
 
 %---------------------------------------------------------------------------------------------
 function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
-                              inletType,outletType,poresPercolantsIndices,nPorePercolant)
+                              inletType,outletType,poresPercolantsIndices,nPorePercolant,boundaryLinkInnerPore)
     %Fill sparse rigidity matrix
     
     value_diag=zeros(1,nPorePercolant);
@@ -304,7 +311,8 @@ function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_
     %Contribution des liens inlet et outlet
     if strcmp(inletType,'Dirichlet')
         for numLien = liens_inlet_envahis
-            numOwner = network.LinkOwners(numLien);
+            %numOwner = network.LinkOwners(numLien);
+            numOwner = boundaryLinkInnerPore(numLien);
             indiceOwner = poresPercolantsIndices(numOwner);
             %complements aux termes diagonaux 
             value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
@@ -313,7 +321,8 @@ function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_
 
     if strcmp(outletType,'Dirichlet')
     	for numLien = liens_outlet_envahis
-        	numOwner = network.LinkOwners(numLien);
+        	%numOwner = network.LinkOwners(numLien);
+            numOwner = boundaryLinkInnerPore(numLien);
         	indiceOwner = poresPercolantsIndices(numOwner);
         	%complements aux termes diagonaux 
             value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
@@ -388,7 +397,7 @@ end
 %---------------------------------------------------------------------------------------------
 function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,poresPercolants,conductances,fieldVal,...
                         liens_internes_envahis,liens_inlet_envahis,liens_outlet_envahis,...
-                        inletType,outletType,inletValue,outletValue)
+                        inletType,outletType,inletValue,outletValue,boundaryLinkInnerPore)
                     
     %Reassemble the solution of the differents connexes components
 
@@ -402,7 +411,8 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     %calcul des flux inlet
         
     if strcmp(inletType,'Dirichlet')
-        numOwner = network.LinkOwners(liens_inlet_envahis);
+        %numOwner = network.LinkOwners(liens_inlet_envahis);
+        numOwner = boundaryLinkInnerPore(liens_inlet_envahis);
         flux(liens_inlet_envahis) = conductances(liens_inlet_envahis).*(inletValue(liens_inlet_envahis)-fieldValue(numOwner));
 
     elseif  strcmp(inletType,'Neumann')
@@ -412,7 +422,8 @@ function [fieldValue,flux]=ReassembleComputedField(fieldValue,flux,network,pores
     %calcul des flux outlet
     
     if strcmp(outletType,'Dirichlet')
-        numOwner = network.LinkOwners(liens_outlet_envahis);
+        %numOwner = network.LinkOwners(liens_outlet_envahis);
+        numOwner = boundaryLinkInnerPore(liens_outlet_envahis);
         flux(liens_outlet_envahis) = conductances(liens_outlet_envahis).*(fieldValue(numOwner)-outletValue(liens_outlet_envahis));
 
     elseif  strcmp(outletType,'Neumann')
