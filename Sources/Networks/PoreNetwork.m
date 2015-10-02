@@ -91,7 +91,7 @@ classdef  PoreNetwork
             %                   boundaryLink), indices(2)=ownerPore
             
             if size(num_link,1)~=1
-                assert(size(num_link,2)==1);
+                assert(size(num_link,2)==1 || isempty(num_link));
                 num_link=transpose(num_link);
             end
             
@@ -162,7 +162,7 @@ classdef  PoreNetwork
             %output : diameter
             
             if size(iLink,1)~=1
-                assert(size(iLink,2)==1);
+                assert(size(iLink,2)==1 || isempty(iLink));
                 iLink=transpose(iLink);
             end
             
@@ -187,7 +187,7 @@ classdef  PoreNetwork
             %output : diameter
             
             if size(iPore,1)~=1
-                assert(size(iPore,2)==1);
+                assert(size(iPore,2)==1 || isempty(iPore));
                 iPore=transpose(iPore);
             end
             
@@ -223,7 +223,7 @@ classdef  PoreNetwork
             %output : liens_frontiere
             
             if size(num_frontieres,1)~=1
-                assert(size(num_frontieres,2)==1);
+                assert(size(num_frontieres,2)==1 );
                 num_frontieres=transpose(num_frontieres);
             end
             
@@ -277,7 +277,7 @@ classdef  PoreNetwork
             %output :pores_frontiere
             
             if size(linkFrontiere,1)~=1
-                assert(size(linkFrontiere,2)==1);
+                assert(size(linkFrontiere,2)==1 || isempty(linkFrontiere));
                 linkFrontiere=transpose(linkFrontiere);
             end
             
@@ -290,7 +290,7 @@ classdef  PoreNetwork
             %Output: boundaryLinks,innerLinks
             
             if size(poreList,1)~=1
-                assert(size(poreList,2)==1);
+                assert(size(poreList,2)==1 || isempty(poreList));
                 poreList=transpose(poreList);
             end
             
@@ -324,7 +324,7 @@ classdef  PoreNetwork
             %Output : adjacencyMatrix
                 
             if size(invadedPoreList,1)~=1
-                assert(size(invadedPoreList,2)==1);
+                assert(size(invadedPoreList,2)==1 || isempty(invadedPoreList));
                 invadedPoreList=transpose(invadedPoreList);
             end
             
