@@ -56,7 +56,8 @@ viewer.View('PoreList',cluster.GetInvadedPores)
 transportPores = 1:network.GetNumberOfPores ;
 
 dynamicViscosity = 1e-3; %viscosity water at ambiant conditions
-conductancesPermeability = LocalScaleComputeConductancesStokes(network,dynamicViscosity);
+parameters.PoreBulkProp = dynamicViscosity;
+conductancesPermeability = LocalScaleComputeConductancesStokes(network,parameters);
 
 
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
@@ -96,7 +97,8 @@ viewer.View('PoreField',pressure)
 transportPores = cluster.GetInvadedPoresComplementary ;
 
 diffusivity = 2e-5; % 02 in N2 at ambiant conditions
-conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,diffusivity);
+parameters.PoreBulkProp = diffusivity;
+conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,parameters);
 
 
 boundaryConditions.inletLink = network.GetLinksFrontiere([4,5,6]);
