@@ -1,4 +1,4 @@
-function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTransport(network,transportPores,conductances,boundaryConditions)
+function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(network,transportPores,conductances,boundaryConditions)
 %ComputeLinearTransport Resout un probleme de transport lineaire dans un
 %ensemble de pores. La physique est specifiee par des conductances et des
 %conditions limites.
@@ -16,7 +16,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
 %       	boundaryConditions.inletValue = one value for each inlet links (if Neuman, flux oriente de owner a neighbour)
 %       	boundaryConditions.outletValue = one value for each inlet links (if Neuman, flux oriente de owner a neighbour)
 %
-%Output : [ fieldValue, flux, effectiveTransportProperty ]
+%Output : [ fieldValue, flux, effectiveConductance ]
 
 
     disp('Computing linear transport ')
@@ -94,7 +94,7 @@ function [ fieldValue, flux,  effectiveTransportProperty ]  =  ComputeLinearTran
           
     
     %Compute effective transport property
-    effectiveTransportProperty = ComputeEffectiveTransportProperty(network,fieldValue,flux,transportPores,inletLink,outletLink);
+    effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,inletLink,outletLink);
     
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
@@ -113,18 +113,22 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     %Check inputs and initialize algorithm
     conductances=transpose(conductances);
     
+    nPore=network.GetNumberOfPores;
+    nLink=network.GetNumberOfLinks;
+    
     assert( isa(network,'PoreNetwork'),'LinearTransport : first input must be a PoreNetwork object')
-    assert( length(transportPores)<=network.GetNumberOfPores,...
+    assert( length(transportPores)<=nPore,...
             'LinearTransport : second input transportPores must be of length <=network.GetNumberOfPore')
     assert( ~isempty(transportPores),'LinearTransport : second input transportPores must not be empty')
-    assert( size(conductances,2)==network.GetNumberOfLinks,...
+    assert( size(conductances,2)==nLink,...
             'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
 
     if size(transportPores,1)~=1
         assert(size(transportPores,2)==1);
         transportPores=transpose(transportPores);
     end    
-        
+    transportPores=unique(transportPores);
+    assert(min(transportPores)>0 && max(transportPores)<=nPore,'Wrong pore number in transport pores')
         
     assert( isa(boundaryConditions,'struct') );
     assert( max(boundaryConditions.inletLink)<=network.GetNumberOfLinks )
@@ -249,7 +253,7 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function effectiveTransportProperty = ComputeEffectiveTransportProperty(network,fieldValue,flux,transportPores,inletLink,outletLink)
+function effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,inletLink,outletLink)
     %Compute effective transport property
     
     %very simplistic formula here, should be checked
@@ -265,7 +269,7 @@ function effectiveTransportProperty = ComputeEffectiveTransportProperty(network,
     deltaConcentration = mean(fieldValue(inletPores))-mean(fieldValue(outletPores));
     
     
-    effectiveTransportProperty = abs( totalOutletDebit/deltaConcentration );   
+    effectiveConductance = abs( totalOutletDebit/deltaConcentration );   
 end
 
 

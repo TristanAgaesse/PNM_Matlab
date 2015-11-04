@@ -101,9 +101,11 @@ classdef  PoreNetwork
         function indices = GetLinksOfPore(poreNetwork,num_pore)
             %input : poreNetwork,num_pore
             %output : indices
-            
-            assert(length(num_pore)==1);
-            indices = poreNetwork.Pores{num_pore};
+            if isempty(num_pore)
+                indices=[];
+            else
+            	indices = poreNetwork.Pores{num_pore};
+            end
         end
 
         function face = GetCommonFace(poreNetwork,pore1,pore2) 
@@ -296,7 +298,7 @@ classdef  PoreNetwork
             
             linkCount = zeros(1,network.GetNumberOfLinks);
             for iPore = poreList
-                thoseLinks = network.Pores{iPore};
+                thoseLinks = network.GetLinksOfPore(iPore); 
                 linkCount(thoseLinks) = linkCount(thoseLinks)+1;
             end
             innerLinks = find(linkCount==2);
