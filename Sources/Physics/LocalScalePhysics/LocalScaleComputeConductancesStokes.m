@@ -154,7 +154,8 @@ function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=Com
     
     allLinks=1:nLink;
     CheckLinkDiameter(network)
-    linkSurface = network.GetLinkData('Surface');
+    %linkSurface = network.GetLinkData('Surface');
+    linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
 

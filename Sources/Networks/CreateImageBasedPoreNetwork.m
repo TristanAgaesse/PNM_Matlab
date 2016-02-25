@@ -2,7 +2,9 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 %CreateImageBasedPoreNetwork 
 %Crée un reseau de pores dans Matlab a partir du resultat d'une segmentation watershed des pores d'une image 3D.
 %
-% Input : - inputContainerMap : objet de type container.Map contenant les input. 
+% Input : - inputContainerMap : objet de type container.Map contenant les
+%   input. Utiliser inputScriptImageBasedPNM pour créer inputContainerMap a
+%   partir des resultats de l'extraction python
 %
 %   Description de inputContainerMap :
 %
@@ -55,7 +57,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePropertyCenter=inputContainerMap('PorePropertyCenter');
     assert(isequal(size(porePropertyCenter),[nPore,3]),'size(PorePropertyCenter) must equal [nPore,3]')
         
-    porePhase = inputContainerMap('PorePhase');
+    porePhase = int32(inputContainerMap('PorePhase'));
     assert(size(porePhase,1)==nPore,'size(porePhase,1) must equal nPore')
     
     

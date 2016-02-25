@@ -55,6 +55,11 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             end
         end
         
+        
+        function diameter = ComputeAllLinkDiameter(network)
+            diameter = 2*network.GetLinkData('CapillaryRadius');
+        end
+        
     end
     
     methods (Static=true )
