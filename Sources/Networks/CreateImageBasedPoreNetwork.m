@@ -70,6 +70,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     internalLinkCenter=inputContainerMap('InternalLinkPropertyCenter');
     assert(isequal(size(internalLinkCenter),[nInterfaceLink,3]),'size(InternalLinkPropertyCenter) must equal [nInterfaceLink,3]')
        
+    internalLinkWidestLocation=inputContainerMap('InternalLinkPropertyWidestLocation');
+    assert(isequal(size(internalLinkWidestLocation),[nInterfaceLink,3]),'size(InternalLinkPropertyWidestLocation) must equal [nInterfaceLink,3]')
     
     boundaryLinkCenter=inputContainerMap('BoundaryLinkPropertyCenter');
     assert( iscell(boundaryLinkCenter) && length(boundaryLinkCenter)==6 , 'wrong size of BoundaryLinkPropertyCenter')
@@ -79,6 +81,9 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     assert( iscell(boundaryLinkCapillaryRadius) && length(boundaryLinkCapillaryRadius)==6 , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
     assert( size(boundaryLinkCapillaryRadius{1},1)==nPore , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
     
+    boundaryLinkWidestLocation=inputContainerMap('BoundaryLinkPropertyWidestLocation');
+    assert( iscell(boundaryLinkWidestLocation) && length(boundaryLinkWidestLocation)==6 , 'wrong size of BoundaryLinkPropertyWidestLocation')
+    assert( isequal(size(boundaryLinkWidestLocation{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyWidestLocation')
     
     otherPoreProperties=struct;
     if inputContainerMap.isKey('OtherPoreProperties')
@@ -138,7 +143,10 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     
     %Construction de la liste des liens frontiere
-    [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,internalLinkCapillaryRadius,internalLinkCenter,boundaryLinkCapillaryRadius,boundaryLinkCenter,raw_data_link,boundary_raw_data_link);
+    [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,...
+               internalLinkCapillaryRadius,internalLinkCenter,...
+               boundaryLinkCapillaryRadius,boundaryLinkCenter,...
+               raw_data_link,boundary_raw_data_link);
     
     
     %Renumerotation des liens (necessaire pour coder les liens frontieres dans PNM_Matlab)
@@ -156,7 +164,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     % Création du réseau de pores
     dimension=3;
-    poreNetwork=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,poreCenter,linkCenter,[],voxelEdgeLength,materialImage,poresImage);
+    poreNetwork=PoreNetworkImageBased(dimension,pores,owners,neighbours,boundaries,...
+        poreCenter,linkCenter,[],voxelEdgeLength,materialImage,poresImage);
     
     
     % Ajout au reseau des informations geometrique sur les pores et liens

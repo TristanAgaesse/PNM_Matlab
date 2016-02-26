@@ -25,6 +25,8 @@ inputContainerMap('OtherPoreProperties') = myStruct;
 inputContainerMap('InterfaceToPore') = interfaceToPore;
 inputContainerMap('InternalLinkCapillaryRadius') = transpose(internalLinkCapillaryRadius); %tableau contenant le rayon déduit de la distance map de chaque internal links
 inputContainerMap('InternalLinkPropertyCenter') = internalLinkBarycenters;              %tableau (nInternalLink,3) contenant le barycentre de chaque internal links
+inputContainerMap('InternalLinkPropertyWidestLocation') = internalLinkWidestLocation;              %tableau (nInternalLink,3) contenant l'endroit le plus large de chaque internal links
+
 %Other internal links properties
 myStruct=struct;
 myStruct.('GeometricSurface') = transpose(internalLinkGeometricSurface); %tableau contenant la surface chaque internal links (en nombre de voxels)
@@ -44,6 +46,13 @@ for i = 0:5
     boundaryLinkPropertyCapillaryRadius{i+1} = transpose(eval(sprintf('boundaryCapillaryRadius%d',i)));
 end
 inputContainerMap('BoundaryLinkPropertyCapillaryRadius') = boundaryLinkPropertyCapillaryRadius;  %cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les rayons capillaires des liens frontieres (tableaux (1,nPore) avec NaN si le pore i n'intersecte pas la slice)
+
+boundaryLinkPropertyWidestLocation = cell(1,6);
+for i = 0:5
+    boundaryLinkPropertyWidestLocation{i+1} = eval(sprintf('boundaryWidestLocation%d',i));
+end
+inputContainerMap('BoundaryLinkPropertyWidestLocation') = boundaryLinkPropertyWidestLocation;    %cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
+
 
 %Other internal links properties
 myStruct=struct;

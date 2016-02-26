@@ -69,7 +69,7 @@ classdef PoreNetworkEuclidien < PoreNetwork
             nBoundary = network.GetNumberOfBoundaries;
             boundaryMean = zeros(nBoundary,network.GetDimension);
             for iBoundary = 1:nBoundary
-                boundaryMean(iBoundary,:) = mean(network.GetLinkCenter(network.GetLinksFrontiere(iBoundary)));
+                boundaryMean(iBoundary,:) = mean(network.GetLinkCenter(network.GetLinksFrontiere(iBoundary)),1);
             end
 
             boundaryMean(:,1) = boundaryMean(:,1)-Xmin;
@@ -115,23 +115,7 @@ classdef PoreNetworkEuclidien < PoreNetwork
         end
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+                
         
         function ExportToBabe(network,numInlet,numOutlet)
             assert(network.GetDimension==3,'ExportToBabe requires a dimension 3 network');
