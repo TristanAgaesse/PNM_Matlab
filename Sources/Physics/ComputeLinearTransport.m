@@ -94,7 +94,7 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
           
     
     %Compute effective transport property
-    effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,inletLink,outletLink);
+    effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,inletLink,outletLink,inletValue,outletValue,inletType,outletType);
     
     
     duree = toc;minutes = floor(duree/60);secondes = duree-60*minutes;
@@ -253,11 +253,10 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,inletLink,outletLink)
+function effectiveConductance = ComputeEffectiveConductance(network,fieldValue,flux,transportPores,...
+                                        inletLink,outletLink,inletValue,outletValue,inletType,outletType)
     %Compute effective transport property
-    
-    %very simplistic formula here, should be checked
-    totalOutletDebit = sum(flux(outletLink));
+    % a very simple formula is used here
     
     
     inletPores=setdiff(network.GetPoresOfLink(inletLink),-1);
@@ -265,9 +264,34 @@ function effectiveConductance = ComputeEffectiveConductance(network,fieldValue,f
     
     outletPores=setdiff(network.GetPoresOfLink(outletLink),-1);
     outletPores=outletPores(ismember(outletPores,transportPores));
+%     
+%     properInletLinks=
+%     switch inletType
+%         case 'Dirichlet'
+%         	inletMeanField =  mean(inletValue);
+%         case 'Neumann'
+%             inletFlux = inletValue;
+%             properLinks = 
+%             inletField = fieldValue(inletPores)-conductances(properInletLinks)*inletFlux(properInletLinks);
+%             inletMeanField =  mean(inletField);
+%     end
+%     
+%     switch outletType
+%         case 'Dirichlet'
+%         	outletMeanField =  mean(outletValue);
+%         case 'Neumann'
+%             outletFlux = outletValue;
+%             properLinks = 
+%             outletField = fieldValue(outletPores)-conductances(properLinks)*outletFlux(properLinks);
+%             outletMeanField =  mean(outletField);
+%     end
+%     
+    inletMeanField = mean(fieldValue(inletPores));
+    outletMeanField = mean(fieldValue(outletPores));
     
-    deltaConcentration = mean(fieldValue(inletPores))-mean(fieldValue(outletPores));
+    deltaConcentration = inletMeanField-outletMeanField;
     
+    totalOutletDebit = sum(flux(outletLink));
     
     effectiveConductance = abs( totalOutletDebit/deltaConcentration );   
 end
