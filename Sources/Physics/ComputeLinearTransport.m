@@ -15,16 +15,17 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
 %       	boundaryConditions.outletType = 'Neumann' or 'Dirichlet'
 %       	boundaryConditions.inletValue = one value for each inlet links (if Neuman, flux oriente de owner a neighbour)
 %       	boundaryConditions.outletValue = one value for each inlet links (if Neuman, flux oriente de owner a neighbour)
+%           boundaryConditions.solver (optional) = 'mldivide','minres','pcg' or 'gmres'
 %
 %Output : [ fieldValue, flux, effectiveConductance ]
-
-
+    
+    
     disp('Computing linear transport ')
     tic;
-
+    
     
     %Checking inputs
-    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore]=...
+    [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore,solver]=...
                     CheckInputs(network,transportPores,conductances,boundaryConditions);
     
     
@@ -44,17 +45,17 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
         percolatingCluster = composantesConnexesPercolation{iComposanteConnexe};
         poresPercolants = percolatingCluster.GetInvadedPores;
         nPorePercolant = length(poresPercolants);
-
+        
         liens_envahis = percolatingCluster.GetInvadedLinks;
         interfaceLinks = percolatingCluster.GetInterfaceLinks;
         liens_internes_envahis = setdiff(liens_envahis,interfaceLinks);
         liens_inlet_envahis = intersect(interfaceLinks,inletLink);
         liens_outlet_envahis = intersect(interfaceLinks,outletLink);
-    
+        
         nPore = network.GetNumberOfPores;
         poresPercolantsIndices=zeros(1,nPore);
         poresPercolantsIndices(poresPercolants)=1:nPorePercolant;
-                
+        
         
         %Remplissage matrice
         
@@ -71,12 +72,20 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
         
         
         %Resolution du systeme lineaire
-
-        if network.GetDimension==2
+        
+        if strcmp(solver,'mldivide')
             fieldVal=mldivide(stiffnessMatrix,rigthHandSide);
-        else
+            
+        elseif strcmp(solver,'minres')
             L = ichol(stiffnessMatrix); %preconditionnement
         	fieldVal = minres(stiffnessMatrix,rigthHandSide,1e-4,100,L,L');
+            
+        elseif strcmp(solver,'gmres')
+        	fieldVal = gmres(stiffnessMatrix,rigthHandSide);       
+            
+        elseif strcmp(solver,'pcg')
+            L = ichol(stiffnessMatrix); %preconditionnement
+        	fieldVal = pcg(stiffnessMatrix,rigthHandSide,1e-4,100,L,L');            
         end
         clear stiffnessMatrix;
         
@@ -107,7 +116,7 @@ end
 
 
 %---------------------------------------------------------------------------------------------
-function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore]=...
+function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore,solver]=...
                         CheckInputs(network,transportPores,conductances,boundaryConditions)
                     
     %Check inputs and initialize algorithm
@@ -139,6 +148,18 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
 	assert( length(boundaryConditions.outletValue)==length(boundaryConditions.outletLink))     
          
     
+    if isfield(boundaryConditions,'solver')
+        solver=boundaryConditions.solver;
+        assert(strcmp(solver,'mldivide') ||strcmp(solver,'minres') ||strcmp(solver,'pcg') ||strcmp(solver,'gmres'),'Solver type not supported'); 
+    else 
+        if network.GetDimension==2
+            solver = 'mldivide';
+        else
+            solver = 'minres';
+        end
+    end
+    
+    
     [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(transportPores,boundaryConditions,network); 
     
     
@@ -156,8 +177,10 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     outletType = boundaryConditions.outletType;
     
     inletLink = boundaryConditions.inletLink;
-    outletLink = boundaryConditions.outletLink;   
+    outletLink = boundaryConditions.outletLink;
+       
 end
+
 
 %---------------------------------------------------------------------------------------------
 function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(transportPores,boundaryConditions,network)
