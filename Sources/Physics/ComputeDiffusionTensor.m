@@ -34,6 +34,7 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     transportPores = 1:network.GetNumberOfPores ;
     boundaryConditions.inletType = 'Dirichlet' ;
     boundaryConditions.outletType = 'Dirichlet' ;
+    %boundaryConditions.outletType = 'Neumann' ;
     
     [boundaryXYZ,lengthXYZ,surfaceXYZ] = network.GetCuboidDomain;
     
@@ -44,7 +45,10 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     nInletLink = length(boundaryConditions.inletLink);
     nOutletLink = length(boundaryConditions.outletLink);
     boundaryConditions.inletValue = 1*ones(1,nInletLink);
-    boundaryConditions.outletValue = 0.1*ones(1,nOutletLink);
+    boundaryConditions.outletValue = 0*ones(1,nOutletLink);
+%     allLinkSurfaces = transpose(network.GetLinkData('Surface'));
+%     surfacicFlux = 1;
+%     boundaryConditions.outletValue = surfacicFlux*allLinkSurfaces(boundaryConditions.outletLink);
     
     [ ~, ~, effConductanceX ] = ComputeLinearTransport( ...
                 network,transportPores, ...
@@ -55,7 +59,6 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     normalizedConductanceX = effConductanceX*(lengthXYZ(1)/surfaceXYZ(1));         
     
     
-    
     % Y direction
     boundaryConditions.inletLink = network.GetLinksFrontiere(boundaryXYZ{3});
     boundaryConditions.outletLink = network.GetLinksFrontiere(boundaryXYZ{4});
@@ -63,7 +66,10 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     nInletLink = length(boundaryConditions.inletLink);
     nOutletLink = length(boundaryConditions.outletLink);
     boundaryConditions.inletValue = 1*ones(1,nInletLink);
-    boundaryConditions.outletValue = 0.1*ones(1,nOutletLink);
+    boundaryConditions.outletValue = 0*ones(1,nOutletLink);
+%     allLinkSurfaces = transpose(network.GetLinkData('Surface'));
+%     surfacicFlux = 1;
+%     boundaryConditions.outletValue = surfacicFlux*allLinkSurfaces(boundaryConditions.outletLink);
     
     [ ~, ~, effConductanceY ] = ComputeLinearTransport( ...
                 network,transportPores, ...
@@ -82,7 +88,10 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
         nInletLink = length(boundaryConditions.inletLink);
         nOutletLink = length(boundaryConditions.outletLink);
         boundaryConditions.inletValue = 1*ones(1,nInletLink);
-        boundaryConditions.outletValue = 0.1*ones(1,nOutletLink);
+        boundaryConditions.outletValue = 0*ones(1,nOutletLink);
+%         allLinkSurfaces = transpose(network.GetLinkData('Surface'));
+%         surfacicFlux = 1;
+%         boundaryConditions.outletValue = surfacicFlux*allLinkSurfaces(boundaryConditions.outletLink);
         
         [ ~, ~, effConductanceZ ] = ComputeLinearTransport( ...
                     network,transportPores, ...

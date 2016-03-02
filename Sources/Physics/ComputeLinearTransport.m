@@ -266,7 +266,7 @@ function effectiveConductance = ComputeEffectiveConductance(network,inletLink,ou
         	inletMeanField =  mean(inletValue(inletLink));
         case 'Neumann'
             inletFlux = inletValue;
-            inletField = fieldValue(boundaryLinkInnerPore(inletLink))-conductances(inletLink)*inletFlux;
+            inletField = fieldValue(boundaryLinkInnerPore(inletLink))-conductances(inletLink).*inletFlux(inletLink);
             inletMeanField =  mean(inletField);
     end
     
@@ -275,7 +275,7 @@ function effectiveConductance = ComputeEffectiveConductance(network,inletLink,ou
         	outletMeanField =  mean(outletValue(outletLink));
         case 'Neumann'
             outletFlux = outletValue;
-            outletField = fieldValue(boundaryLinkInnerPore(outletLink))-conductances(outletLink)*outletFlux;
+            outletField = fieldValue(boundaryLinkInnerPore(outletLink))-conductances(outletLink).*outletFlux(outletLink);
             outletMeanField =  mean(outletField);
     end
      
