@@ -12,7 +12,7 @@ inputContainerMap('VoxelEdgeLength') = 1e-6;                 %taille d'un voxel 
 %% Proprietes des pores (pores = espaces vides séparés par des watershed lines)
 inputContainerMap('PoreImage') =  imagePores;             %image des pores labelises
 inputContainerMap('PorePropertyVolume') = transpose(poreVolumes);  %tableau nPore contenant le volume de chaque pore (en nombre de voxels)
-inputContainerMap('PorePropertyCenter') = poreCenters;             %tableau (nPore,3) contenant le barycentre de chaque pore
+inputContainerMap('PorePropertyCenterOfMass') = poreCenterOfMass;             %tableau (nPore,3) contenant le barycentre de chaque pore
 inputContainerMap('PorePhase') = transpose(porePhase);         %tableau nPore contenant la phase à laquelle appartient chaque pore
 %Other pore properties
 myStruct=struct;
@@ -24,7 +24,7 @@ inputContainerMap('OtherPoreProperties') = myStruct;
 %% Proprietes des internal links (internal link = interface entre deux pores : watershed lines)
 inputContainerMap('InterfaceToPore') = interfaceToPore;
 inputContainerMap('InternalLinkCapillaryRadius') = transpose(internalLinkCapillaryRadius); %tableau contenant le rayon déduit de la distance map de chaque internal links
-inputContainerMap('InternalLinkPropertyCenter') = internalLinkBarycenters;              %tableau (nInternalLink,3) contenant le barycentre de chaque internal links
+inputContainerMap('InternalLinkPropertyCenterOfMass') = internalLinkCenterOfMass;              %tableau (nInternalLink,3) contenant le barycentre de chaque internal links
 inputContainerMap('InternalLinkPropertyWidestLocation') = internalLinkWidestLocation;              %tableau (nInternalLink,3) contenant l'endroit le plus large de chaque internal links
 
 %Other internal links properties
@@ -35,11 +35,11 @@ inputContainerMap('OtherInternalLinkProperties') = myStruct;
 
 
 %% Proprietes des liens frontieres (liens frontieres = slices des pores sur les bords de l'image)
-boundaryLinkPropertyCenter = cell(1,6);
+boundaryLinkPropertyCenterOfMass = cell(1,6);
 for i = 0:5
-    boundaryLinkPropertyCenter{i+1} = eval(sprintf('boundaryCenters%d',i));
+    boundaryLinkPropertyCenterOfMass{i+1} = eval(sprintf('boundaryCenterOfMass%d',i));
 end
-inputContainerMap('BoundaryLinkPropertyCenter') = boundaryLinkPropertyCenter;    %cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
+inputContainerMap('BoundaryLinkPropertyCenterOfMass') = boundaryLinkPropertyCenterOfMass;    %cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
 
 boundaryLinkPropertyCapillaryRadius = cell(1,6);
 for i = 0:5

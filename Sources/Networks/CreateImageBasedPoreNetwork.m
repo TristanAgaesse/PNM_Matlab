@@ -15,18 +15,20 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
 %       Proprietes des pores (pores = espaces vides séparés par des watershed lines)
 %       - inputContainerMap('PoreImage') : image des pores labelises
 %       - inputContainerMap('PorePropertyVolume') : tableau nPore contenant le volume de chaque pore
-%       - inputContainerMap('PorePropertyCenter') : tableau (nPore,3) contenant le barycentre de chaque pore
+%       - inputContainerMap('PorePropertyCenterOfMass') : tableau (nPore,3) contenant le barycentre de chaque pore
 %       - inputContainerMap('PorePhase')          : tableau nPore contenant la phase à laquelle appartient chaque pore
 %
 %       Proprietes des internal links (internal link = interface entre deux pores : watershed lines)
 %   	- inputContainerMap('InternalLinkImage') : image des internal links labelises puis dilates d'un pixel
 %       - inputContainerMap('InterfaceToPore') 
 %       - inputContainerMap('InternalLinkCapillaryRadius') : tableau contenant le rayon déduit de la distance map de chaque internal links
-%       - inputContainerMap('InternalLinkPropertyCenter') : tableau (nInternalLink,3) contenant le barycentre de chaque internal links
+%       - inputContainerMap('InternalLinkPropertyCenterOfMass') : tableau (nInternalLink,3) contenant le barycentre de chaque internal links
+%       - inputContainerMap('InternalLinkPropertyWidestLocation') : tableau (nInternalLink,3) contenant l'endroit le plus large de chaque internal links
 %
 %       Proprietes des liens frontieres (liens frontieres = slices des pores sur les bords de l'image)
-%       - inputContainerMap('BoundaryLinkPropertyCenter') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
 %       - inputContainerMap('BoundaryLinkPropertyCapillaryRadius') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les diametres des liens frontieres (tableaux (1,nPore) avec NaN si le pore i n'intersecte pas la slice)
+%       - inputContainerMap('BoundaryLinkPropertyCenterOfMass') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant les centres des liens frontieres (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
+%       - inputContainerMap('BoundaryLinkPropertyWidestLocation') : cell (1,6) (slices dans l'ordre Xmin Xmax Ymin Ymax Zmin Zmax) contenant l'endroit le plus large de chaque lien frontiere (tableaux (nPore,3) avec NaN si le pore i n'intersecte pas la slice)
 %
 %       (Optionnel) Pour mettre d'autre infos geometriques scalaires dans le reseau :
 %       - inputContainerMap('OtherPoreProperties') : struct contenant des tableaux (1,nPore)
@@ -54,8 +56,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePropertyVolume=inputContainerMap('PorePropertyVolume');
     assert(size(porePropertyVolume,1)==nPore,'size(PorePropertyVolume,1) must equal nPore')
     
-    porePropertyCenter=inputContainerMap('PorePropertyCenter');
-    assert(isequal(size(porePropertyCenter),[nPore,3]),'size(PorePropertyCenter) must equal [nPore,3]')
+    porePropertyCenterOfMass=inputContainerMap('PorePropertyCenterOfMass');
+    assert(isequal(size(porePropertyCenterOfMass),[nPore,3]),'size(PorePropertyCenterOfMass) must equal [nPore,3]')
         
     porePhase = int32(inputContainerMap('PorePhase'));
     assert(size(porePhase,1)==nPore,'size(porePhase,1) must equal nPore')
@@ -67,15 +69,16 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     internalLinkCapillaryRadius=inputContainerMap('InternalLinkCapillaryRadius');
     nInterfaceLink=length(internalLinkCapillaryRadius);
     
-    internalLinkCenter=inputContainerMap('InternalLinkPropertyCenter');
-    assert(isequal(size(internalLinkCenter),[nInterfaceLink,3]),'size(InternalLinkPropertyCenter) must equal [nInterfaceLink,3]')
+    internalLinkCenterOfMass=inputContainerMap('InternalLinkPropertyCenterOfMass');
+    assert(isequal(size(internalLinkCenterOfMass),[nInterfaceLink,3]),'size(InternalLinkPropertyCenterOfMass) must equal [nInterfaceLink,3]')
        
     internalLinkWidestLocation=inputContainerMap('InternalLinkPropertyWidestLocation');
     assert(isequal(size(internalLinkWidestLocation),[nInterfaceLink,3]),'size(InternalLinkPropertyWidestLocation) must equal [nInterfaceLink,3]')
     
-    boundaryLinkCenter=inputContainerMap('BoundaryLinkPropertyCenter');
-    assert( iscell(boundaryLinkCenter) && length(boundaryLinkCenter)==6 , 'wrong size of BoundaryLinkPropertyCenter')
-    assert( isequal(size(boundaryLinkCenter{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyCenter')
+    
+    boundaryLinkCenterOfMass=inputContainerMap('BoundaryLinkPropertyCenterOfMass');
+    assert( iscell(boundaryLinkCenterOfMass) && length(boundaryLinkCenterOfMass)==6 , 'wrong size of BoundaryLinkPropertyCenterOfMass')
+    assert( isequal(size(boundaryLinkCenterOfMass{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyCenterOfMass')
     
     boundaryLinkCapillaryRadius=inputContainerMap('BoundaryLinkPropertyCapillaryRadius');
     assert( iscell(boundaryLinkCapillaryRadius) && length(boundaryLinkCapillaryRadius)==6 , 'wrong size of BoundaryLinkPropertyCapillaryRadius')
@@ -84,6 +87,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     boundaryLinkWidestLocation=inputContainerMap('BoundaryLinkPropertyWidestLocation');
     assert( iscell(boundaryLinkWidestLocation) && length(boundaryLinkWidestLocation)==6 , 'wrong size of BoundaryLinkPropertyWidestLocation')
     assert( isequal(size(boundaryLinkWidestLocation{1}),[nPore, 2]), 'wrong size of BoundaryLinkPropertyWidestLocation')
+    
     
     otherPoreProperties=struct;
     if inputContainerMap.isKey('OtherPoreProperties')
@@ -115,13 +119,15 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     %Rescaling des infos geometriques avec voxelEdgeLength
     poreVolume=voxelEdgeLength^3*double(porePropertyVolume);
     
-    poreCenter=voxelEdgeLength*double(porePropertyCenter);
+    poreCenterOfMass=voxelEdgeLength*double(porePropertyCenterOfMass);
     internalLinkCapillaryRadius=voxelEdgeLength*double(internalLinkCapillaryRadius);
-    internalLinkCenter=voxelEdgeLength*double(internalLinkCenter);
+    internalLinkCenterOfMass=voxelEdgeLength*double(internalLinkCenterOfMass);
+    internalLinkWidestLocation=voxelEdgeLength*double(internalLinkWidestLocation);
     
     for iBoundary=1:6
-        boundaryLinkCenter{iBoundary}=voxelEdgeLength*double(boundaryLinkCenter{iBoundary});
         boundaryLinkCapillaryRadius{iBoundary}=voxelEdgeLength*double(boundaryLinkCapillaryRadius{iBoundary});
+        boundaryLinkCenterOfMass{iBoundary}=voxelEdgeLength*double(boundaryLinkCenterOfMass{iBoundary});
+        boundaryLinkWidestLocation{iBoundary}=voxelEdgeLength*double(boundaryLinkWidestLocation{iBoundary});
     end
     
     %Construction de la liste des liens internes
@@ -141,11 +147,12 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     end
     
     
+    poreCenter = poreCenterOfMass;
     
     %Construction de la liste des liens frontiere
     [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,...
-               internalLinkCapillaryRadius,internalLinkCenter,...
-               boundaryLinkCapillaryRadius,boundaryLinkCenter,...
+               internalLinkCapillaryRadius,internalLinkCenterOfMass,internalLinkWidestLocation,...
+               boundaryLinkCapillaryRadius,boundaryLinkCenterOfMass,boundaryLinkWidestLocation,...
                raw_data_link,boundary_raw_data_link);
     
     
@@ -200,34 +207,41 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     %% Utilities : fonctions utilisees  
        
-    function [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,internalLinkCapillaryRadius,internalLinkCenter,boundaryLinkCapillaryRadius,boundaryLinkCenter,raw_data_link,boundary_raw_data_link)
+    function [linksOwners,linksNeighbours,linkCapillaryRadius,linkCenter,raw_data_link,infos_liens_frontieres]=AddBoundaryLinks(linksOwners,linksNeighbours,poresImage,internalLinkCapillaryRadius,internalLinkCenterOfMass,internalLinkWidestLocation,boundaryLinkCapillaryRadius,boundaryLinkCenterOfMass,boundaryLinkWidestLocation,raw_data_link,boundary_raw_data_link)
                                                                                                                         
         linkCapillaryRadius=internalLinkCapillaryRadius;
-        linkCenter=internalLinkCenter;
+        
+        linkCenter=(internalLinkCenterOfMass+internalLinkWidestLocation)./2; 
         
         iLinkShift=length(linksOwners);
         infos_liens_frontieres=cell(1,6);
 
+        boundaryLinkCenter=cell(1,6);
         for iFrontiere=1:6
-
             if iFrontiere==1
                 frontiere=poresImage(1,:,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*ones(nPore,1),boundaryLinkCenter{iFrontiere});
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*ones(nPore,1),center);
             elseif iFrontiere==2
                 frontiere=poresImage(end,:,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*imageSize(1)*ones(nPore,1),boundaryLinkCenter{iFrontiere});
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(voxelEdgeLength*imageSize(1)*ones(nPore,1),center);
             elseif iFrontiere==3
                 frontiere=poresImage(:,1,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),voxelEdgeLength*ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(center(:,1),voxelEdgeLength*ones(nPore,1),center(:,2));
             elseif iFrontiere==4
                 frontiere=poresImage(:,end,:);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere}(:,1),voxelEdgeLength*imageSize(2)*ones(nPore,1),boundaryLinkCenter{iFrontiere}(:,2));
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(center(:,1),voxelEdgeLength*imageSize(2)*ones(nPore,1),center(:,2));
             elseif iFrontiere==5
                 frontiere=poresImage(:,:,1);  
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},voxelEdgeLength*ones(nPore,1));
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(center,voxelEdgeLength*ones(nPore,1));
             elseif iFrontiere==6
                 frontiere=poresImage(:,:,end);
-                boundaryLinkCenter{iFrontiere}=horzcat(boundaryLinkCenter{iFrontiere},voxelEdgeLength*imageSize(3)*ones(nPore,1));
+                center=(boundaryLinkCenterOfMass{iFrontiere}+boundaryLinkWidestLocation{iFrontiere})./2;
+                boundaryLinkCenter{iFrontiere}=horzcat(center,voxelEdgeLength*imageSize(3)*ones(nPore,1));
             end
 
             poreList=unique(frontiere);

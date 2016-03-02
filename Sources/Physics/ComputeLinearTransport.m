@@ -246,7 +246,8 @@ function CheckComputation(fieldValue,flux,inletLink,outletLink)
     totalOutletDebit = sum(flux(outletLink));
     
     if(abs(totalOutletDebit)>0)
-        assert(abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit)<1e-1,'Non conservation de la matière !');
+        fluxRelativeError = abs(totalInletDebit-totalOutletDebit)/abs(totalOutletDebit);
+        assert(fluxRelativeError<3e-1,'Non conservation de la matière !');
     end
 
 end 
