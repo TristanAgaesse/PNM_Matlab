@@ -36,6 +36,10 @@ classdef PoreNetworkImageBased < PoreNetworkEuclidien
             imageSize=size(network.MaterialImage);
         end
         
+        function voxelEdgeLength = GetVoxelEdgeLength(network)
+            voxelEdgeLength = network.VoxelEdgeLength;
+        end
+        
         function linearIndices=GetVoxelOfPore(network,iPore)
 %             numLabel = network.PoreVoxelLabelIndices(iPore);
 %             vRange=network.PoreVoxelEnds(numLabel)+1:network.PoreVoxelEnds(numLabel+1);

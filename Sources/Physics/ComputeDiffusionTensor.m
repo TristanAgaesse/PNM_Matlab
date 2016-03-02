@@ -20,6 +20,12 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     parameters.LinkBulkProp = 0;
     parameters.GeometricModel.Link = 'None';
     
+    
+    linkSurface_voxelUnit = double(network.GetLinkData('RawData_GeometricSurface'));
+    linkSurface = linkSurface_voxelUnit*(network.GetVoxelEdgeLength)^2;
+    network.AddNewLinkData(linkSurface,'Surface');
+    
+    
     conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,parameters);
     
     
