@@ -59,7 +59,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePropertyCenterOfMass=inputContainerMap('PorePropertyCenterOfMass');
     assert(isequal(size(porePropertyCenterOfMass),[nPore,3]),'size(PorePropertyCenterOfMass) must equal [nPore,3]')
         
-    porePhase = int32(inputContainerMap('PorePhase'));
+    porePhase = double(inputContainerMap('PorePhase'));
     assert(size(porePhase,1)==nPore,'size(porePhase,1) must equal nPore')
     
     

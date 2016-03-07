@@ -5,7 +5,11 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
 %   
 %   Output : diffusion tensor normalized by the network dimensions
 %   
-    
+% Example :
+%phaseConductances=zeros(1,256);
+%phaseConductances(1)=1;
+%phaseConductances(256)=10;
+%diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     
     %Computes conductances for diffusion
     
@@ -28,6 +32,7 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     
     conductancesDiffusion = LocalScaleComputeConductancesDiffusion(network,parameters);
     
+    boundaryConditions.solver='mldivide';
     
     %Perform diffusion simulations
     
