@@ -58,6 +58,11 @@ function conductances = LocalScaleComputeConductancesDiffusion(network,parameter
     conductances(internalLinks) = 1./(in_resistanceP1+in_resistanceP2+in_resistanceLink);
     conductances(boundaryLinks) = 1./(bound_resistanceP1+bound_resistanceP2+bound_resistanceLink);
     
+    
+    if sum(isinf(conductances))~=0
+        disp('Infinite conductance ! we put them to 0')
+        conductances(isinf(conductances))=0;
+    end
 end
 
 %conductances(internalLinks)=diffusivity*linkSurface(internalLinks)./(distance1(internalLinks)+distance2);
