@@ -13,10 +13,10 @@ function [ poreSizeDistribution, linkSizeDistribution,pd ] = GetSizeDistribution
         %edges=linspace(min(poreDiameter),max(poreDiameter),20);
         %poreDiameterDistribution = discretize(poreDiameter,edges);
         
-        pd=fitdist(poreDiameter,'Weibull');
-        hold on
-        x=linspace(0,max(poreDiameter));
-        plot(x,pdf(pd,x))
+%         pd=fitdist(poreDiameter,'Weibull');
+%         hold on
+%         x=linspace(0,max(poreDiameter));
+%         plot(x,pdf(pd,x))
     end
     figure
     
