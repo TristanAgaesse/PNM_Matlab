@@ -26,15 +26,17 @@
 %       outputInformation : information to analyse the degradation process 
 
 %---------------------------------------------------------------------------------------------    
-    
+
 
 disp('Running condensation');
 tic;
-CheckInputs(network, options)
+Condensation_CheckInputs(network, options)
 
 %Compute temperature field
 
-[temperature,heatTransferCoefficient] = ComputeTemperatureField(network,options.TemperatureInlet,options.TemperatureOutlet,options.TemperatureInletLinks,options.TemperatureOutletLinks) ;
+[temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,...
+        options.TemperatureInlet,options.TemperatureOutlet,...
+        options.TemperatureInletLinks,options.TemperatureOutletLinks) ;
 
 outputInformation.TemperatureField = temperature;
 outputInformation.HeatTransferCoefficient = heatTransferCoefficient;
@@ -42,42 +44,27 @@ outputInformation.HeatTransferCoefficient = heatTransferCoefficient;
 
 
 %Compute equilibrum vapor pressure field
-
-equilibriumVaporPressure = ComputeEquilibriumVaporPressure(temperature);
-
+equilibriumVaporPressure = Condensation_ComputeEquilibriumVaporPressure(temperature);
 outputInformation.EquilibriumVaporPressure = equilibriumVaporPressure;
 
 
-
-%Compute partial pressure field
-gasTransportPores = 1:network.GetNumberOfPores;
-
-inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
-outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
+%Nucleation step
+nPore = network.GetNumberOfPores;
 
 diffusivity = 2e-5; % 02 in N2 at ambiant conditions TODO : check value for water vapor
-diffusionConductances = LocalScaleComputeConductancesDiffusion(network,diffusivity);  %TODO : change this to multicomponents diffusion conductance
+diffusionParams=struct;
+diffusionParams.GeometricModel.Pore = 'Cylinder' ;
+diffusionParams.GeometricModel.Link = 'None' ;% 'SurfaceResistance_RealSurface'
+diffusionParams.PoreBulkProp = diffusivity*ones(nPore,1);
+diffusionParams.LinkBulkProp =0; % scalar or array(nLink,1)
 
-partialVaporPressure = ComputePartialVaporPressure(network,gasTransportPores,diffusionConductances,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
-
-outputInformation.PartialVaporPressure{1} = partialVaporPressure;
-
+diffusionConductances = LocalScaleComputeConductancesDiffusion(network,diffusionParams);  
+%TODO : change this to multicomponents diffusion conductance
 
 
-%invade the pore which has the max partial pressure if > equilibrium
-%partial pressure
-
-condensationRatio = partialVaporPressure ./ equilibriumVaporPressure ;
-[maxRatio,indexMaxRatio] = max(condensationRatio);
-
-if maxRatio>1
-    firstInvadedPore=indexMaxRatio;
-else
-    return
-end
-
-cluster = ClusterMonophasique.InitialiseCondensationCluster(network,options.ClusterOptions,firstInvadedPore,options.LiquidWaterOutletLinks);
-
+[ nucleationClusters, nucleationInfos ] = Condensation_Nucleation( network, ...
+                            equilibriumVaporPressure,options,diffusionConductances );
+outputInformation.PartialVaporPressure{1} = nucleationInfos.PartialVaporPressure{1};
 outputInformation.InvadedPore{1}=firstInvadedPore;
 
 
@@ -93,19 +80,25 @@ while not(outlet_reached) %&& iteration<nPoreAccessible
 
     %Update partial pressure field
 
-    partialVaporPressure = ComputePartialVaporPressure(network,cluster.GetInvadedPoresComplementary,diffusionConductances,inletVaporPressure,outletVaporPressure,options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+    partialVaporPressure = Condensation_ComputePartialVaporPressure(network,cluster.GetInvadedPoresComplementary,...
+        diffusionConductances,inletVaporPressure,outletVaporPressure,...
+        options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
 
-    outputInformation.PartialVaporPressure{end+1}= partialVaporPressure;
+    outputInformation.PartialVaporPressure{end+1} = partialVaporPressure;
 
 
     %new invasion : des pores condensables proches d'une zone envahie, 
     %choisir celui qui peut être envahi par IP (Pc la plus faible)  
-    [~,indexMinPressureLink] = FindNextInvadedLink(cluster,partialVaporPressure,equilibriumVaporPressure);
+    [~,indexMinPressureLink] = Condensation_FindNextInvadedLink(cluster,partialVaporPressure,equilibriumVaporPressure);
 
     if indexMinPressureLink>0
         invadedPore = cluster.GetOutwardPore(indexMinPressureLink);
         outputInformation.InvadedPore{end+1} = invadedPore;
 
+        %TODO : Gérer l'évolution du cluster
+        
+            %TODO : envahir les pores actifs des autres clusters en fonction du temps et des débits
+        
         interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);
         cluster.UpdateCriticalPressure(interfaceChangeInformation,[],options.LiquidWaterOutletLinks);
 

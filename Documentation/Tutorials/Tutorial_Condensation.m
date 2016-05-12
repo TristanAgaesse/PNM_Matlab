@@ -6,8 +6,8 @@ network.AddNewLinkData(contactAngle,'ContactAngle')
 
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
-options.TemperatureInlet = 273+80;  % GDL/MPL interface temperature
-options.TemperatureOutlet = 273+75; % rib temperature
+options.TemperatureInlet = 90;  % GDL/MPL interface temperature
+options.TemperatureOutlet = 70; % rib temperature
 
 options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]); %channel
 
@@ -16,7 +16,7 @@ options.AirPressure = 1.5e5 ;
 options.VaporInletLinks = network.GetLinksFrontiere([1 2 3]);  % GDL/MPL interface
 options.VaporOutletLinks = network.GetLinksFrontiere([4 6]);   % Channel
 options.RelativeHumidityInlet = 0.95;
-options.RelativeHumidityOutlet = 0.8;
+options.RelativeHumidityOutlet = 0.80;
 
 clusterOptions.Coalescence = 'none' ;
 clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder';
@@ -24,11 +24,17 @@ clusterOptions.SurfaceTension = 60e-3;
 options.ClusterOptions = clusterOptions;
 
 
-[cluster,outputInformation] = ComputeCondensation( network, options ) ;
+%[cluster,outputInformation] = ComputeCondensation( network, options ) ;
+Condensation_main
 
-
+figure
 viewer.View('PoreField',outputInformation.TemperatureField)
+title('Temperature field')
 
+figure
 viewer.View('PoreField',outputInformation.PartialVaporPressure{1})
+title('Partial vapor pressure')
 
+figure
 viewer.View('PoreList',cluster.GetInvadedPores)
+title('Invaded pores')

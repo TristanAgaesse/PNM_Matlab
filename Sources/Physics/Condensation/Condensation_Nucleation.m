@@ -1,0 +1,74 @@
+function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(network,...
+                                        equilibriumVaporPressure,options,diffusionConductances)
+%CONDENSATION_NUCLEATION Nucleation step of the condensation algorithm.
+%   Condensation occurs when RH>1 in at least one pore. In that case, the 
+%   nucleation pores are found with the following algorithm.
+%   The first condensation pore is the one with the maximum RH. We invade 
+%   this pore and impose RH=1 at his links. Then we update the RH field,
+%   solving the vapor diffusion equation with these new boundary
+%   conditions. If somes pores have RH>1, we invade the pores with the
+%   maximum RH, then update RH and so on. The nucleation ends when RH<1 in 
+%   all remaining pores. 
+    
+    superSaturation = 1; % critical value of RH for condensation
+    
+    gasTransportPores = 1:network.GetNumberOfPores;
+    
+    %TODO : Check this formula
+    inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
+    outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
+    
+    nucleation = true;
+    invadedPore = false(nPore,1);
+    
+    while nucleation
+    
+        partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
+                gasTransportPores,diffusionConductances,...
+                inletVaporPressure,outletVaporPressure,options.VaporInletLinks,...
+                options.VaporOutletLinks,options.AirPressure,temperature);
+
+        nucleationInfos.PartialVaporPressure{1} = partialVaporPressure;
+
+
+
+        condensationRatio = partialVaporPressure ./ equilibriumVaporPressure ;
+        [maxRatio,indexMaxRatio] = max(condensationRatio);
+
+        if maxRatio>superSaturation
+            nucleation = true;
+            invadedPore(indexMaxRatio)=true;
+        else
+            nucleation = false;
+        end
+
+        %invade the pore which has the max partial pressure if > equilibrium
+        %partial pressure
+
+        
+
+                
+        %TODO : update boundary conditions for diffusion
+        gasTransportPores = 1:network.GetNumberOfPores;
+    
+        inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
+        outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
+    
+                
+                
+    end
+
+    %Define nucleationClusters from invadedPore
+    conComp = FindComposantesConnexes(network,find(invadedPore));
+    
+    nCluster = length(conComp);
+    nucleationClusters = cell(nCluster,1);
+    for i=1:nCluster
+        clusterPores=conComp{i};
+        nucleationClusters{i} = ClusterMonophasique.InitialiseCondensationCluster(network,...
+                options.ClusterOptions,...
+                clusterPores,options.LiquidWaterOutletLinks);
+    end
+    
+end
+

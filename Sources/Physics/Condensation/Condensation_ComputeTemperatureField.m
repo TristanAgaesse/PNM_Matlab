@@ -3,7 +3,17 @@ function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatur
     %temperature inlet and temperature outlet
 
     heatDiffusivity = 1; % TODO : check value
-    conductancesHeat = LocalScaleComputeConductancesDiffusion(network,heatDiffusivity);
+    
+    
+    parameters.GeometricModel.Pore = 'Cylinder' ;
+    parameters.GeometricModel.Link = 'None' ;% 'SurfaceResistance_RealSurface'
+    nPore = network.GetNumberOfPores;
+    parameters.PoreBulkProp = heatDiffusivity*ones(nPore,1);
+    parameters.LinkBulkProp =0; % scalar or array(nLink,1)
+    
+    
+    
+    conductancesHeat = LocalScaleComputeConductancesDiffusion(network,parameters);
     
     boundaryConditions=struct;
     boundaryConditions.inletLink = temperatureInletLinks;

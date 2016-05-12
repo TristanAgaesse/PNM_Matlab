@@ -348,11 +348,12 @@ classdef  PoreNetwork
         end
         
         
-        function output = FindComposantesConnexes(network,liste_pores_envahis,varargin)
+        function conComp = FindComposantesConnexes(network,liste_pores_envahis,varargin)
             %Retourne les composantes connexes des zones envahies par une
             %phase. 
             %input : poreNetwork,liste_pores_envahis
-            %output : output
+            %output : conComp : cell, conComp{i}=liste des pores 
+            %               de la composante i
             
             option='graphconncomp';
             if ~isempty(varargin)
@@ -371,9 +372,9 @@ classdef  PoreNetwork
                 
                 [labels,nConnectedComponents] = graph_conn_comp(adjacencyMatrix);
                 
-                output = cell(1,nConnectedComponents);
+                conComp = cell(1,nConnectedComponents);
                 for num_composante = 1:nConnectedComponents
-                    output{num_composante} = liste_pores_envahis(labels == num_composante);
+                    conComp{num_composante} = liste_pores_envahis(labels == num_composante);
                 end
                 
                 
@@ -414,9 +415,9 @@ classdef  PoreNetwork
                     num_composante = num_composante+1;
                 end
 
-                output = cell(1,max(pores_envahis_explores));
+                conComp = cell(1,max(pores_envahis_explores));
                 for num_composante = 1:max(pores_envahis_explores)
-                    output{num_composante} = liste_pores_envahis(pores_envahis_explores == num_composante);
+                    conComp{num_composante} = liste_pores_envahis(pores_envahis_explores == num_composante);
                 end
             
             end
