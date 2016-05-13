@@ -1,7 +1,7 @@
 function [condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(...
                 network,nucleationClusters, options, diffusionConductances)
 %CONDENSATION_DIFFUSIONCONTROLEDCONDENSATION Deuxieme partie de l'algorithme 
-% de condensation de Benjamen Straubhaar et Marc Prat. 
+% de condensation de Benjamin Straubhaar et Marc Prat. 
 %   
 %   Lors de cette seconde etape, la condensation se poursuit sur les 
 %   bords des clusters d'eau nuclees car de la vapeur d'eau arrive par 
@@ -15,7 +15,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
 
 
     %Begin invasion loop
-    %nPoreAccessible=FindNumberOfAccessiblePores(network,1:network.);
+    %nPoreAccessible=FindNumberOfAccessiblePores(network,1:nPore);
     outlet_reached = false;
     outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     iteration = 0;
