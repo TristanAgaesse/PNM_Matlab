@@ -10,6 +10,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
 %   maximum RH, then update RH and so on. The nucleation ends when RH<1 in 
 %   all remaining pores. 
     
+    %% Initialisation of the algorithm
     superSaturation = 1; % critical value of RH for condensation
     
     gasTransportPores = 1:network.GetNumberOfPores;
@@ -22,7 +23,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     invadedPore = false(nPore,1);
     
     while nucleation
-    
+        %% Compute relative humidity in each gaz pore
         partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
                 inletVaporPressure,outletVaporPressure,options.VaporInletLinks,...
@@ -42,13 +43,13 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
             nucleation = false;
         end
 
-        %invade the pore which has the max partial pressure if > equilibrium
+        %% invade the pore which has the max partial pressure if > equilibrium
         %partial pressure
 
         
 
                 
-        %TODO : update boundary conditions for diffusion
+        %% TODO : update boundary conditions for diffusion
         gasTransportPores = 1:network.GetNumberOfPores;
     
         inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
@@ -58,7 +59,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
                 
     end
 
-    %Define nucleationClusters from invadedPore
+    %% Define nucleationClusters from invadedPore
     conComp = FindComposantesConnexes(network,find(invadedPore));
     
     nCluster = length(conComp);
