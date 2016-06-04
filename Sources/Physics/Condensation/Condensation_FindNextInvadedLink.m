@@ -1,7 +1,8 @@
 function [minPressure,indexMinPressureLink] = Condensation_FindNextInvadedLink(cluster,partialVaporPressure,equilibriumVaporPressure)
     %new invasion : des pores condensables proches d'une zone envahie, 
     %choisir celui qui peut être envahi par IP (Pc la plus faible)  
-
+    
+    %TODO : add invasion time
     
     %List of condensable pores next to cluster
     poresCondensables = partialVaporPressure>equilibriumVaporPressure ;

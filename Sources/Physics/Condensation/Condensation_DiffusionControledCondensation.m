@@ -23,12 +23,17 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     while not(outlet_reached) %&& iteration<nPoreAccessible
         iteration = iteration+1;
 
-        %Update partial pressure field
+        %Update partial pressure field ??? Plutot calculer diffusion flux ?
+        [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
+                vaporOutletLinks] = GetBoundaryConditionsDiffusion(network,options,invadedPore);
 
+        gasTransportPores = cluster.GetInvadedPoresComplementary; %TODO:check redondance with BC above
+            
         partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
-            cluster.GetInvadedPoresComplementary,...
-            diffusionConductances,inletVaporPressure,outletVaporPressure,...
-            options.VaporInletLinks,options.VaporOutletLinks,options.AirPressure,temperature);
+                gasTransportPores,diffusionConductances,...
+                inletVaporPressure,outletVaporPressure,vaporInletLinks,...
+                vaporOutletLinks,options.AirPressure,temperature);
+            
 
         outputInformation.PartialVaporPressure{end+1} = partialVaporPressure;
 
@@ -43,7 +48,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
             outputInformation.InvadedPore{end+1} = invadedPore;
 
             %TODO : Gérer l'évolution du cluster
-
+            %Condensation_UpdateClustersCinetic
                 %TODO : envahir les pores actifs des autres clusters en fonction du temps et des débits
 
             interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);

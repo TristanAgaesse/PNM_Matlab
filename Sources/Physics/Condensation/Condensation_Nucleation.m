@@ -12,22 +12,22 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     
     %% Initialisation of the algorithm
     superSaturation = 1; % critical value of RH for condensation
-    
-    gasTransportPores = 1:network.GetNumberOfPores;
-    
-    %TODO : Check this formula
-    inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
-    outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
-    
+
     nucleation = true;
     invadedPore = false(nPore,1);
     
     while nucleation
         %% Compute relative humidity in each gaz pore
+        
+        %boundary conditions for diffusion
+        [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
+                vaporOutletLinks] = GetBoundaryConditionsDiffusion(network,options,invadedPore);
+
+        
         partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
-                inletVaporPressure,outletVaporPressure,options.VaporInletLinks,...
-                options.VaporOutletLinks,options.AirPressure,temperature);
+                inletVaporPressure,outletVaporPressure,vaporInletLinks,...
+                vaporOutletLinks,options.AirPressure,temperature);
 
         nucleationInfos.PartialVaporPressure{1} = partialVaporPressure;
 
@@ -49,11 +49,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         
 
                 
-        %% TODO : update boundary conditions for diffusion
-        gasTransportPores = 1:network.GetNumberOfPores;
-    
-        inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure;
-        outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure;
+        
     
                 
                 
