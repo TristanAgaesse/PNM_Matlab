@@ -319,6 +319,29 @@ classdef  PoreNetwork
             cluster=voidCluster.GetComplementaryCluster;
         end
         
+        function linkData = InterpolatePoreDataToLink(network,poreData)
+            %Returns a linkData obtained by interpolation of a poreData
+            % For innerLinks, linkData = mean of poreData on the 2
+            % neighboor pores. For boundaryLinks, linkData= poreData on the
+            % 1 inner neighboor pore.
+            %Input : network,poreData
+            %Output : linkData       
+            
+            nPore = network.GetNumberOfPores;
+            nLink = network.GetNumberOfLinks;
+            assert(length(poreData)==nPore,'poreData must have a length network.GetNumberOfPores')
+            linkData = zeros(nLink,1);
+            
+            innerLinks = network.GetLinksFrontiere(0);
+            neighboorPores = network.GetPoresOfLink(innerLinks);
+            linkData(innerLinks) = 0.5*(poreData(neighboorPores(:,1))+poreData(neighboorPores(:,2)));
+            
+            boundaryLinks = network.GetLinksFrontiere(1:network.GetNumberOfBoundaries);
+            neighboorPores = network.GetPoresOfLink(boundaryLinks);
+            linkData(boundaryLinks) = poreData(neighboorPores(:,2));
+        end
+        
+        
         function adjacencyMatrix = CreateAdjacencyMatrix(network,invadedPoreList)
             %Returns the adjacency matrix of the sub-network given by a
             %list of invaded pores.

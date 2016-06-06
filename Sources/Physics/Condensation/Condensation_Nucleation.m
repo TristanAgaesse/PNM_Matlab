@@ -1,5 +1,5 @@
 function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(network,...
-                                        equilibriumVaporPressure,options,diffusionConductances)
+                                        equilibriumVaporPressure,options,diffusionConductances,temperature)
 %CONDENSATION_NUCLEATION Nucleation step of the condensation algorithm.
 %   Condensation occurs when RH>1 in at least one pore. In that case, the 
 %   nucleation pores are found with the following algorithm.
@@ -12,8 +12,9 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     
     %% Initialisation of the algorithm
     superSaturation = 1; % critical value of RH for condensation
-
+    
     nucleation = true;
+    nPore = network.GetNumberOfPores;
     invadedPore = false(nPore,1);
     
     while nucleation
@@ -21,38 +22,34 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         
         %boundary conditions for diffusion
         [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
-                vaporOutletLinks] = GetBoundaryConditionsDiffusion(network,options,invadedPore);
-
+                vaporOutletLinks] = Condensation_GetBoundaryConditionsForDiffusion(network,...
+                                        options,invadedPore,equilibriumVaporPressure);
+        
         
         partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
-
+        
         nucleationInfos.PartialVaporPressure{1} = partialVaporPressure;
-
-
-
+        
+        
+        
         condensationRatio = partialVaporPressure ./ equilibriumVaporPressure ;
+        
+        %% invade the pore which has the max partial pressure if > equilibrium
+        
         [maxRatio,indexMaxRatio] = max(condensationRatio);
-
+        
         if maxRatio>superSaturation
             nucleation = true;
             invadedPore(indexMaxRatio)=true;
         else
             nucleation = false;
         end
-
-        %% invade the pore which has the max partial pressure if > equilibrium
+        
         %partial pressure
-
         
-
-                
-        
-    
-                
-                
     end
 
     %% Define nucleationClusters from invadedPore

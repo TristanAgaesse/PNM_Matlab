@@ -74,7 +74,7 @@ outputInformation.EquilibriumVaporPressure = equilibriumVaporPressure;
 
 %% Nucleation step
 [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation( network, ...
-                            equilibriumVaporPressure,options,diffusionConductances );
+                            equilibriumVaporPressure,options,diffusionConductances,temperature );
 outputInformation.PartialVaporPressure{1} = nucleationInfos.PartialVaporPressure{1};
 outputInformation.InvadedPore{1} = firstInvadedPore;
 
