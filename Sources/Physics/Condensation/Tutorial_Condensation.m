@@ -6,8 +6,8 @@ network.AddNewLinkData(contactAngle,'ContactAngle')
 
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
-options.TemperatureInlet = 90;  % GDL/MPL interface temperature
-options.TemperatureOutlet = 70; % rib temperature
+options.TemperatureInlet = 90+273;  % GDL/MPL interface temperature
+options.TemperatureOutlet = 70+273; % rib temperature
 
 options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]); %channel
 

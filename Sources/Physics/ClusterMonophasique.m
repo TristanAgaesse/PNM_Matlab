@@ -378,8 +378,6 @@ classdef ClusterMonophasique < handle
 
         end
         
-
-        
         
         function copiedCluster = CopyCluster(cluster)
             %CopyCluster : fait une copie du cluster (utile car cluster est
@@ -451,33 +449,40 @@ classdef ClusterMonophasique < handle
                     [linksToInitialise{iporeOutwardUnique}{2},linkInlet(iInletLink)]; %numeros des liens associe a ce pore
             end
             
-            
             cluster.UpdateCriticalPressure(linksToInitialise,linkInlet,linkOutlet);
             
         end
         
-
         
-        function cluster = InitialiseCondensationCluster(network,clusterOptions,firstInvadedPore,outletLink)
+        
+        function cluster = InitialiseCondensationCluster(network,clusterOptions,firstInvadedPores,outletLink)
             %input: network,clusterOptions,firstInvadedPore,inletLink,outletLink
             %output : cluster paramétré de façon à commencer
-            %       une condensation depuis firstInvadedPore
+            %       une condensation depuis firstInvadedPores
             
             %listes qui reperent les pores et les liens envahis
             nPore = network.GetNumberOfPores;
             invadedPores = zeros(1,nPore);
-            invadedPores(firstInvadedPore)=1;
+            invadedPores(firstInvadedPores)=1;
             
             nLink = network.GetNumberOfLinks;
             booleanInvadedLinks = zeros(1,nLink);
             
-            %listes qui rep�rent la position de la frontiere
-            interfaceLinks = network.GetLinksOfPore(firstInvadedPore);
-            interfacePoreOutward = network.GetPoresVoisinsOfPore(firstInvadedPore);   
+            %listes qui reperent la position de la frontiere
+            interfaceLinks = network.GetPoreRegionBoundaryLinks(firstInvadedPores);
+            allInterfacePore = network.GetPoresOfLink(interfaceLinks);
+            
+            interfacePoreOutward = zeros(1,length(interfaceLinks)); %si exterieur : 0 pour outlet, -1 pour wall
+            foo1=not(ismember(allInterfacePore(:,1),firstInvadedPores));
+            foo2=not(ismember(allInterfacePore(:,2),firstInvadedPores));
+            assert(all((foo1+foo2)==1),'un link frontiere a 0 ou 2 pores voisins dans le cluster !')
+            interfacePoreOutward(foo2) = allInterfacePore(foo2,2);
+            interfacePoreOutward(foo1) = allInterfacePore(foo1,1);
+            interfacePoreOutward(allInterfacePore(foo1,1)==-1)=-1;
+            interfacePoreOutward(ismember(interfaceLinks,outletLink)) = 0;
             
             criticalPressures = zeros(1,network.GetNumberOfLinks);
             
-           
             cluster = ClusterMonophasique(invadedPores,interfaceLinks,...
                 interfacePoreOutward,booleanInvadedLinks,...
                 network,criticalPressures,clusterOptions);
@@ -503,9 +508,6 @@ classdef ClusterMonophasique < handle
             cluster.UpdateCriticalPressure(linksToInitialise,[],outletLink);
             
         end
-        
-        
-        
         
         
     end

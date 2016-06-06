@@ -4,28 +4,29 @@ function [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLin
     
     gasTransportPores = find(not(invadedPore));
     
-    inletVaporPressure = options.RelativeHumidityInlet*options.AirPressure; %TODO : Check this formula    
-    vaporInletLinks=options.VaporInletLinks;
+    equilibriumVaporPressureLinks = network.InterpolatePoreDataToLink(equilibriumVaporPressure);  
+    
+    vaporInletLinks = options.VaporInletLinks;
+    inletVaporPressure = options.RelativeHumidityInlet*equilibriumVaporPressureLinks(vaporInletLinks); 
     
     %     Attention, fonction utilisée dans 2 contextes : nucléation et
     %     diffusionCondensation
     
     
     %Impose RH=1 on the invaded pores boundary links
-    vaporOutletLinks=options.VaporOutletLinks;
-    vaporOutletPores = network.GetPoresOfLink(vaporOutletLinks);
-    vaporOutletPores = vaporOutletPores(:,2); % Take the neighboor pore inside the domain
-    assert(length(vaporOutletPores)==length(vaporOutletLinks));
-    outletVaporPressure = options.RelativeHumidityOutlet*options.AirPressure*equilibriumVaporPressure(vaporOutletPores);
+    vaporOutletLinks = options.VaporOutletLinks;
+    outletPores = network.GetPoresOfLink(vaporOutletLinks);
+    outletLinksToKeep = not(invadedPore(outletPores(:,2))); % remove outlet pores wich are invaded with water
+    vaporOutletLinks = vaporOutletLinks(outletLinksToKeep);
+    outletVaporPressure = options.RelativeHumidityOutlet*equilibriumVaporPressureLinks(vaporOutletLinks(outletLinksToKeep));
     
     [boundaryLinks,~] = network.GetPoreRegionBoundaryLinks(find(invadedPore));
-    boundaryPores = network.GetPoresOfLink(boundaryLinks);
-    boundaryPores = boundaryPores(:,2); % Take one of the 2 neighboor pores
-    RH=1;
-    boundaryVaporPressure = RH*options.AirPressure*equilibriumVaporPressure(boundaryPores);
+    boundaryLinks = setdiff(boundaryLinks,network.GetLinksFrontiere(1:network.GetNumberOfBoundaries));
+    RH = 1;
+    boundaryVaporPressure = RH*equilibriumVaporPressureLinks(boundaryLinks);
     
     vaporOutletLinks = [vaporOutletLinks,boundaryLinks];
-    outletVaporPressure = [outletVaporPressure,boundaryVaporPressure];
+    outletVaporPressure = [outletVaporPressure;boundaryVaporPressure];
     
     
     

@@ -5,7 +5,7 @@ function equilibriumVaporPressure = Condensation_ComputeEquilibriumVaporPressure
     A = 5.40221;
     B = 1838.675;
     C = -31.737;
-    equilibriumVaporPressure = Patm*10.^(A-B./(temperature+C+273)) ;
+    equilibriumVaporPressure = Patm*10.^(A-B./(temperature+C)) ;
     
     
     %Rankine formula : http://fr.wikipedia.org/wiki/Pression_de_vapeur_saturante

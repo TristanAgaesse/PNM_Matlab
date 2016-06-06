@@ -3,12 +3,12 @@ function partialVaporPressure = Condensation_ComputePartialVaporPressure(network
     
     %Convert inletVaporPressure,outletVaporPressure to concentration
     R = 8.314 ;
-    airConcentration = airPressure./(R*temperature);
+    pressureToConcentrationRatioPore = 1./(R*temperature);
     
-    linkData = network.InterpolatePoreDataToLink(poreData)
+    pressureToConcentrationRatioLink = network.InterpolatePoreDataToLink(pressureToConcentrationRatioPore);
     
-    inletConcentration = inletVaporPressure*airConcentration(vaporInletLinks) ;       % Approximate air concentration on inner links
-    outletConcentration = outletVaporPressure*airConcentration(vaporOutletLinks);
+    inletConcentration = inletVaporPressure.*pressureToConcentrationRatioLink(vaporInletLinks) ;   
+    outletConcentration = outletVaporPressure.*pressureToConcentrationRatioLink(vaporOutletLinks);
     
     %Compute diffusion of vapor
     boundaryConditions=struct;
@@ -24,6 +24,6 @@ function partialVaporPressure = Condensation_ComputePartialVaporPressure(network
     
     %Convert back concentrations to vapor pressure
     
-    partialVaporPressure = waterConcentration./airConcentration ;
+    partialVaporPressure = waterConcentration./pressureToConcentrationRatioPore ;
     
 end

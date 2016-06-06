@@ -11,12 +11,12 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
 %   all remaining pores. 
     
     %% Initialisation of the algorithm
-    superSaturation = 1; % critical value of RH for condensation
+    superSaturation = 1.1; % critical value of RH for condensation
     
     nucleation = true;
     nPore = network.GetNumberOfPores;
     invadedPore = false(nPore,1);
-    
+    ratio=[];
     while nucleation
         %% Compute relative humidity in each gaz pore
         
@@ -40,6 +40,8 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         %% invade the pore which has the max partial pressure if > equilibrium
         
         [maxRatio,indexMaxRatio] = max(condensationRatio);
+        disp(maxRatio)
+        ratio=[ratio,maxRatio];
         
         if maxRatio>superSaturation
             nucleation = true;
