@@ -27,7 +27,6 @@ classdef Viewer
             faces=viewer.NetworkGeometry.Faces.Face;
             boundaries=viewer.NetworkGeometry.Boundaries.Boundary;
             edges=viewer.NetworkGeometry.Edges;
-            
             nFace=length(faces);
             nCell=length(cells_to_vertices);
             nEdge=length(edges(:,1));
@@ -91,40 +90,17 @@ classdef Viewer
             if strcmp('PoreField',options)
                 champ_cellules=varargin{1};
                 assert(length(champ_cellules)==length(cells_to_vertices),'L''input doit donner un scalaire par cell');
-                inf=min(champ_cellules(champ_cellules~=0));
-                sup=max(champ_cellules(champ_cellules~=0));
-                delta=sup-inf;
-                if abs(delta/mean(champ_cellules(champ_cellules~=0)))<1e-5;
-                    delta=1;
-                end
+                
                 colormap(jet);
-                color_foo=zeros(1,length(champ_cellules));
-                for i = 1:length(champ_cellules)
-                    if champ_cellules(i)~=0
-                        %foo=1-(champ_cellules(i)-inf)/(sup-inf);
-                        foo=(champ_cellules(i)-inf)/delta;
-                        color_foo(i)=foo;
-                    else
-                        color_foo(i)=1;
-                    end
-                end
-%                                 color_foo=imadjust ([color_foo',color_foo',color_foo']); %augmentation du contraste
-%                                 color_foo=color_foo(:,1);
-                colors=cell(1,length(champ_cellules));
-                for i = 1:length(champ_cellules)
-                    if champ_cellules(i)~=0
-                        colors{i}=color_foo(i);
-                        %colors{i}=64*color_foo(i);
-                    else
-                        colors{i}=[1,1,1];
-                    end
-                end
+                colors=GetCustomColorField(champ_cellules);
+                
                 for i = 1:length(champ_cellules)
                     if dimension==2
                         patch(vertices(cells_to_vertices{i},1),vertices(cells_to_vertices{i},2),colors{i});
                     elseif dimension==3
                         patch(vertices(cells_to_vertices{i},1),vertices(cells_to_vertices{i},2),vertices(cells_to_vertices{i},3),colors{i});            
                     end
+                    hold on
                 end
             end
             
@@ -250,6 +226,205 @@ classdef Viewer
         end
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        function ViewNetwork(viewer,options,varargin)
+            dimension=viewer.NetworkGeometry.ATTRIBUTE.Dimension;
+            vertices=viewer.NetworkGeometry.Vertices;
+            cells_to_vertices=viewer.NetworkGeometry.CellsToVertices;
+            faces=viewer.NetworkGeometry.Faces.Face;
+            boundaries=viewer.NetworkGeometry.Boundaries.Boundary;
+            edges=viewer.NetworkGeometry.Edges;
+            
+            nFace=length(faces);
+            nCell=length(cells_to_vertices);
+            nEdge=length(edges(:,1));
+            
+            if dimension==2
+                colors=cell(1,nCell);
+                for iCell=1:nCell
+                    if isempty(varargin)
+                        colors{iCell}=iCell;
+                    else
+                        colors{iCell}=varargin{iCell};
+                    end
+                end
+                for iCell = 1:nCell
+                    patch(vertices(cells_to_vertices{iCell},1),vertices(cells_to_vertices{iCell},2),colors{iCell});
+                end
+            elseif dimension==3
+                colors=cell(1,nFace);
+                for iLink=1:nFace
+                    if isempty(varargin)
+                        colors{iLink}=iLink;
+                    else
+                        colors{iLink}=varargin{iLink};
+                    end
+                end
+                for iLink=1:nFace
+                    patch(vertices(faces{iLink},1),vertices(faces{iLink},2),vertices(faces{iLink},3),colors{iLink});            
+                end
+            end
+        end
+        
+        function ViewPoreList(viewer,options,varargin)
+            
+            dimension=viewer.NetworkGeometry.ATTRIBUTE.Dimension;
+            vertices=viewer.NetworkGeometry.Vertices;
+            cells_to_vertices=viewer.NetworkGeometry.CellsToVertices;
+            faces=viewer.NetworkGeometry.Faces.Face;
+            boundaries=viewer.NetworkGeometry.Boundaries.Boundary;
+            edges=viewer.NetworkGeometry.Edges;
+            nFace=length(faces);
+            nCell=length(cells_to_vertices);
+            nEdge=length(edges(:,1));
+            
+            liste_cellules=varargin{1};
+            
+            for i = 1:length(liste_cellules)
+                foo=i/length(liste_cellules);
+
+                if length(varargin)>1
+                    if strcmp('blue',varargin{2})
+                        color='blue';
+                    elseif strcmp('gris',varargin{2})
+                        color=[foo,foo,foo];
+                    elseif strcmp('white',varargin{2})
+                        color=[1 1 1];
+                    end
+                else
+                    color='blue';
+                end
+
+                if dimension==2
+                    patch(vertices(cells_to_vertices{liste_cellules(i)},1),vertices(cells_to_vertices{liste_cellules(i)},2),color);
+                elseif dimension==3
+                    patch(vertices(cells_to_vertices{liste_cellules(i)},1),vertices(cells_to_vertices{liste_cellules(i)},2),vertices(cells_to_vertices{liste_cellules(i)},3),color);            
+                end
+            end
+        
+        end
+        
+        function ViewPoreData(viewer,poreData,colorOption)
+            
+            dimension=viewer.NetworkGeometry.ATTRIBUTE.Dimension;
+            vertices=viewer.NetworkGeometry.Vertices;
+            cells_to_vertices=viewer.NetworkGeometry.CellsToVertices;
+            nPore = length(cells_to_vertices);
+            assert(length(poreData)==nPore,'L''input doit donner un scalaire par cell');
+
+            colormap(jet);
+            if length(colorOption)==2
+                caxis(colorOption)
+                colors=cell(1,nPore);
+                for i=1:nPore
+                    colors{i}=poreData(i);
+                end
+            elseif strcmp(colorOption, 'MapTo01')
+                colors=GetCustomColorField(poreData);
+                caxis auto
+            end    
+
+            for i = 1:length(poreData)
+                if dimension==2
+                    patch(vertices(cells_to_vertices{i},1),vertices(cells_to_vertices{i},2),colors{i});
+                elseif dimension==3
+                    patch(vertices(cells_to_vertices{i},1),vertices(cells_to_vertices{i},2),vertices(cells_to_vertices{i},3),colors{i});            
+                end
+                hold on
+            end
+        end
+        
+        function ViewLinkField(viewer,options,varargin)
+            
+            dimension=viewer.NetworkGeometry.ATTRIBUTE.Dimension;
+            vertices=viewer.NetworkGeometry.Vertices;
+            cells_to_vertices=viewer.NetworkGeometry.CellsToVertices;
+            faces=viewer.NetworkGeometry.Faces.Face;
+            boundaries=viewer.NetworkGeometry.Boundaries.Boundary;
+            edges=viewer.NetworkGeometry.Edges;
+            nFace=length(faces);
+            nCell=length(cells_to_vertices);
+            nEdge=length(edges(:,1));
+            
+            champ_cellules=varargin{1};
+            assert(length(champ_cellules)==nEdge,'varargin{1} doit être une liste de taille nLink')
+
+            inf=min(champ_cellules);
+            sup=max(champ_cellules);
+            if sup==inf
+               delta=1;
+            else
+                delta=sup-inf;
+            end
+
+            colormap(jet(128));
+            map=colormap;
+            color_foo=zeros(1,length(champ_cellules));
+            for i = 1:length(champ_cellules)
+                foo=(champ_cellules(i)-inf)/(delta);
+                color_foo(i)=foo;
+            end
+            colors=cell(1,length(champ_cellules));
+            for i = 1:length(champ_cellules)
+%                     if ceil(128*color_foo(i))>0
+%                         colors{i}=map(ceil(128*color_foo(i)),:);
+%                     else
+%                         colors{i}=[1,1,1];
+%                     end
+                colors{i}=map(floor(127*color_foo(i))+1,:);
+            end
+
+            for iEdge = 1:nEdge
+                if dimension==2
+                    p=patch(vertices(edges(iEdge,:),1),vertices(edges(iEdge,:),2),floor(128*color_foo(i))+1);
+                    set(p,'EdgeColor',colors{iEdge},'LineWidth',floor(4*color_foo(i))+1);
+                elseif dimension==3
+                    p=patch(vertices(edges(iEdge,:),1),vertices(edges(iEdge,:),2),vertices(edges(iEdge,:),3),colors{iEdge});
+                end
+            end
+        end
+        
+        
+       
+        
+        function colors=GetCustomColorField(champ_cellules)
+            
+            inf=min(champ_cellules(champ_cellules~=0));
+            sup=max(champ_cellules(champ_cellules~=0));
+            delta=sup-inf;
+            if abs(delta/mean(champ_cellules(champ_cellules~=0)))<1e-5;
+                delta=1;
+            end
+            color_foo=zeros(1,length(champ_cellules));
+            for i = 1:length(champ_cellules)
+                if champ_cellules(i)~=0
+                    %foo=1-(champ_cellules(i)-inf)/(sup-inf);
+                    foo=(champ_cellules(i)-inf)/delta;
+                    color_foo(i)=foo;
+                else
+                    color_foo(i)=1;
+                end
+            end
+%               color_foo=imadjust ([color_foo',color_foo',color_foo']); %augmentation du contraste
+%               color_foo=color_foo(:,1);
+            colors=cell(1,length(champ_cellules));
+            for i = 1:length(champ_cellules)
+                if champ_cellules(i)~=0
+                    colors{i}=color_foo(i);
+                    %colors{i}=64*color_foo(i);
+                else
+                    colors{i}=[1,1,1];
+                end
+            end
+        end
+            
     end
     
 end

@@ -16,9 +16,13 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     nucleation = true;
     nPore = network.GetNumberOfPores;
     invadedPore = false(nPore,1);
-    ratio=[];
+    step = 0;
+    nucleationInfos.PartialVaporPressure={};
+    nucleationInfos.MaxRH={};
+    nucleationInfos.InvadedPore={};
     while nucleation
         %% Compute relative humidity in each gaz pore
+        step = step+1;
         
         %boundary conditions for diffusion
         [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
@@ -31,7 +35,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
         
-        nucleationInfos.PartialVaporPressure{1} = partialVaporPressure;
+        nucleationInfos.PartialVaporPressure{step} = partialVaporPressure;
         
         
         
@@ -39,13 +43,15 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         
         %% invade the pore which has the max partial pressure if > equilibrium
         
-        [maxRatio,indexMaxRatio] = max(condensationRatio);
-        disp(maxRatio)
-        ratio=[ratio,maxRatio];
+        [maxRH,indexMaxRH] = max(condensationRatio);
         
-        if maxRatio>superSaturation
+        
+        
+        if maxRH>superSaturation
             nucleation = true;
-            invadedPore(indexMaxRatio)=true;
+            invadedPore(indexMaxRH)=true;
+            nucleationInfos.MaxRH{step} = maxRH;
+            nucleationInfos.InvadedPore{step}=indexMaxRH;
         else
             nucleation = false;
         end
@@ -53,7 +59,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         %partial pressure
         
     end
-
+        
     %% Define nucleationClusters from invadedPore
     conComp = FindComposantesConnexes(network,find(invadedPore));
     
@@ -66,5 +72,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
                 clusterPores,options.LiquidWaterOutletLinks);
     end
     
+    nucleationInfos.MaxRH = cell2mat(nucleationInfos.MaxRH);
+    nucleationInfos.InvadedPore = cell2mat(nucleationInfos.InvadedPore);
 end
 
