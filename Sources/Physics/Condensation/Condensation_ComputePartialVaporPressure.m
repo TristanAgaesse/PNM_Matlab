@@ -1,4 +1,6 @@
-function partialVaporPressure = Condensation_ComputePartialVaporPressure(network,gasTransportPores,diffusionConductances,inletVaporPressure,outletVaporPressure,vaporInletLinks,vaporOutletLinks,airPressure,temperature)
+function [partialVaporPressure,diffusionFlux,effectiveDiffusion ] = Condensation_ComputePartialVaporPressure(network,...
+                                    gasTransportPores,diffusionConductances,inletVaporPressure,outletVaporPressure,...
+                                    vaporInletLinks,vaporOutletLinks,airPressure,temperature)
     
     
     %Convert inletVaporPressure,outletVaporPressure to concentration
@@ -19,7 +21,7 @@ function partialVaporPressure = Condensation_ComputePartialVaporPressure(network
     boundaryConditions.inletValue = inletConcentration;
     boundaryConditions.outletValue = outletConcentration;
     
-    waterConcentration = ComputeLinearTransport(network,gasTransportPores,diffusionConductances,boundaryConditions);
+    [waterConcentration,diffusionFlux,effectiveDiffusion ] = ComputeLinearTransport(network,gasTransportPores,diffusionConductances,boundaryConditions);
     
     
     %Convert back concentrations to vapor pressure
