@@ -28,10 +28,11 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         condensationClusters{iCluster} = cluster;
         allInvadedPore(cluster.GetInvadedPores) = 1;
     end
+    poreSaturation=allInvadedPore;
     
     outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     
-    
+    poreVolume = network.GetPoreData('Volume');
     
     %% Begin invasion loop
     iteration = 0;
@@ -62,34 +63,32 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
             cluster = condensationClusters{iCluster};
             totalFlux(iCluster) = diffusionFlux(cluster.GetInterfaceLinks);
         end
-            
+        assert(all(totalFlux>0),'Evaporation at one cluster !') 
+        
         %% Find next invasion time and link
         
         %Trouver quel pore est en train d'etre envahi pour chaque cluster
         poreBeingInvaded = zeros(1,nCluster);    
         for iCluster=1:nCluster
             cluster = condensationClusters{iCluster};
-            poreBeingInvaded(iCluster) = cluster.GetMinimalPressureLink;
+            poreBeingInvaded(iCluster) = cluster.GetOutwardPore(cluster.GetMinimalPressureLink);
         end    
-            
-            
+        
+        
         %Trouver le temps d'envahissement de ce pore pour chaque cluster
+        clusterInvasionTime = zeros(1,nCluster); 
         for iCluster=1:nCluster
             cluster = condensationClusters{iCluster};
-            currentSaturation
-            invasionTime
-            
-            poreBeingInvaded(iCluster) = cluster.GetMinimalPressureLink;
-        end     
-            
-            
+            currentSaturation = poreSaturation(poreBeingInvaded(iCluster));
+            volume=poreVolume(poreBeingInvaded(iCluster));
+            clusterInvasionTime(iCluster) = volume*(1-currentSaturation)/totalFlux(iCluster);
+        end  
+        
+        assert(all(clusterInvasionTime>0),'Negative invasion time at one cluster !')    
+        
         %% Updater chaque cluster : envahissement T=min(Tcluster)
             
-            
-            
-            
-        [~,indexMinPressureLink] = Condensation_FindNextInvadedLink(cluster,...
-                            partialVaporPressure,equilibriumVaporPressure);
+        [invasionTime,numCluster]=min(clusterInvasionTime);    
         
         if indexMinPressureLink>0
             invadedPore = cluster.GetOutwardPore(indexMinPressureLink);
