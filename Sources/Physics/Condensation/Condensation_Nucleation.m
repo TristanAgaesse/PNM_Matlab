@@ -20,6 +20,8 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     nucleationInfos.PartialVaporPressure={};
     nucleationInfos.MaxRH={};
     nucleationInfos.InvadedPore={};
+    nucleationInfos.EffectiveDiffusion={};
+    
     while nucleation
         %% Compute relative humidity in each gaz pore
         step = step+1;
@@ -30,13 +32,13 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
                                         options,invadedPore,equilibriumVaporPressure);
         
         
-        partialVaporPressure = Condensation_ComputePartialVaporPressure(network,...
+        [partialVaporPressure,~,effDiffusion] = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
         
         nucleationInfos.PartialVaporPressure{step} = partialVaporPressure;
-        
+        nucleationInfos.EffectiveDiffusion{step} = effDiffusion;
         
         
         condensationRatio = partialVaporPressure ./ equilibriumVaporPressure ;
@@ -74,5 +76,6 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
     
     nucleationInfos.MaxRH = cell2mat(nucleationInfos.MaxRH);
     nucleationInfos.InvadedPore = cell2mat(nucleationInfos.InvadedPore);
+    nucleationInfos.EffectiveDiffusion = cell2mat(nucleationInfos.EffectiveDiffusion);
 end
 

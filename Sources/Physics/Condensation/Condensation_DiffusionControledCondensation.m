@@ -30,6 +30,8 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     end
     poreSaturation=allInvadedPore;
     
+    outletLink = % TODO ; check outlet in cluster options
+    
     outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     
     poreVolume = network.GetPoreData('Volume');
@@ -37,7 +39,8 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     %% Begin invasion loop
     iteration = 0;
     outlet_reached = false;
-    while not(outlet_reached) %%&& iteration<nPoreAccessible
+    invasionTime = 0;
+    while invasionTime<100 %%&& iteration<nPoreAccessible
         iteration = iteration+1;
         
         %% Compute water flux on the boundary of each cluster
@@ -65,20 +68,29 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         end
         assert(all(totalFlux>0),'Evaporation at one cluster !') 
         
+        
         %% Find next invasion time and link
         
         %Trouver quel pore est en train d'etre envahi pour chaque cluster
         poreBeingInvaded = zeros(1,nCluster);    
         for iCluster=1:nCluster
             cluster = condensationClusters{iCluster};
-            poreBeingInvaded(iCluster) = cluster.GetOutwardPore(cluster.GetMinimalPressureLink);
+            indexInvadedLink = cluster.GetMinimalPressureLink;
+            invadedPore = cluster.GetOutwardPore(indexInvadedLink);
+            while invadedPore<=0 %Check for outlet link invasion
+                disp('Outlet link invaded')
+                assert(ismember(cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink),outletLink))
+                cluster.InvadeOutletLink(indexInvadedLink);
+                indexInvadedLink = cluster.GetMinimalPressureLink;
+                invadedPore = cluster.GetOutwardPore(indexInvadedLink);
+            end
+            poreBeingInvaded(iCluster) = invadedPore;
         end    
         
         
         %Trouver le temps d'envahissement de ce pore pour chaque cluster
         clusterInvasionTime = zeros(1,nCluster); 
         for iCluster=1:nCluster
-            cluster = condensationClusters{iCluster};
             currentSaturation = poreSaturation(poreBeingInvaded(iCluster));
             volume=poreVolume(poreBeingInvaded(iCluster));
             clusterInvasionTime(iCluster) = volume*(1-currentSaturation)/totalFlux(iCluster);
@@ -86,29 +98,40 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         
         assert(all(clusterInvasionTime>0),'Negative invasion time at one cluster !')    
         
+        
         %% Updater chaque cluster : envahissement T=min(Tcluster)
-            
+        
         [invasionTime,numCluster]=min(clusterInvasionTime);    
         
         if indexMinPressureLink>0
-            invadedPore = cluster.GetOutwardPore(indexMinPressureLink);
-            outputInformation.InvadedPore{end+1} = invadedPore;
             
-            %TODO : Gérer l'évolution du cluster
-            %Condensation_UpdateClustersCinetic
-                %TODO : envahir les pores actifs des autres clusters en fonction du temps et des débits
-                %TODO : update allInvadedPore
-            interfaceChangeInformation=cluster.InvadeNewPore(indexMinPressureLink);
+            %Mettre a jour le cluster envahi
+            cluster = condensationClusters{iCluster};
+            relativeIndexPore = cluster.GetMinimalPressureLink;
+            
+%             %verifier si outlet_reached
+%             if ismember(poreBeingInvaded(numCluster),outletPores)
+%                 outlet_reached = true;
+%                 breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),...
+%                                               options.LiquidWaterOutletLinks);
+%                 cluster.InvadeOutletLink(breakthroughLinks);
+%             end
+            
+            interfaceChangeInformation=cluster.InvadeNewPore(relativeIndexPore);
             cluster.UpdateCriticalPressure(interfaceChangeInformation,[],options.LiquidWaterOutletLinks);
+            poreSaturation(poreBeingInvaded(numCluster)) = 1;
+            outputInformation.InvadedPore{end+1} = poreBeingInvaded(numCluster);
             
-            
-            %verifier si outlet_reached
-            if ismember(invadedPore,outletPores)
-                outlet_reached = true;
-                breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),...
-                                              options.LiquidWaterOutletLinks);
-                cluster.InvadeOutletLink(breakthroughLinks);
+            %Mettre a jour les autres cluster
+            for iCluster=setdiff(1:nCluster,numCluster) 
+                currentSaturation = poreSaturation(poreBeingInvaded(iCluster));
+                volume=poreVolume(poreBeingInvaded(iCluster));
+                saturationIncrease = totalFlux(iCluster)*invasionTime/volume;                
+                poreSaturation(poreBeingInvaded(iCluster)) = currentSaturation+saturationIncrease;
+                assert(poreSaturation(poreBeingInvaded(iCluster))<1)
             end
+            
+
         else
             %no new pore condensable near cluster
             return

@@ -65,6 +65,10 @@ plot(maxRHEvolution);
 xlabel('Nucleation Step');
 ylabel('max RH in the network');
 title('Max RH evolution during nucleation')
-% figure
-% viewer.View('PoreList',cluster.GetInvadedPores)
-% title('Invaded pores')
+
+figure
+effDiff=outputInformation.NucleationInfos.EffectiveDiffusion;
+plot(effDiff);
+xlabel('Nucleation Step');
+ylabel('Effective diffusion conductivity');
+title('Effective diffusion conductivity evolution during nucleation')
