@@ -19,6 +19,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     condensationInfos.PartialVaporPressure={};
     condensationInfos.EffectiveDiffusion={};
     condensationInfos.InvadedPore={};
+    condensationInfos.InvasionTime={};
     
     nPore = network.GetNumberOfPores;
     allInvadedPore = zeros(1,nPore);
@@ -31,9 +32,8 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     end
     poreSaturation=allInvadedPore;
     
-    outletLink = options.LiquidWaterOutletLinks;% TODO ; check outlet in cluster options
-    
-    outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
+    outletLink = options.LiquidWaterOutletLinks;
+    %outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     
     poreVolume = network.GetPoreData('Volume');
     
@@ -41,7 +41,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     iteration = 0;
     outlet_reached = false;
     invasionTime = 0;
-    while invasionTime<100 && iteration<100
+    while invasionTime<100 && iteration<150
         iteration = iteration+1;
         
         %% Compute water flux on the boundary of each cluster
@@ -104,7 +104,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         %% Updater chaque cluster : envahissement T=min(Tcluster)
         
         [invasionTime,numCluster]=min(clusterInvasionTime);    
-        
+        condensationInfos.InvasionTime{iteration}=invasionTime;
             
         %Mettre a jour le cluster envahi
         cluster = condensationClusters{iCluster};
@@ -133,6 +133,10 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         end
             
     end
+    
+    condensationInfos.EffectiveDiffusion=cell2mat(condensationInfos.EffectiveDiffusion);
+    condensationInfos.InvadedPore=cell2mat(condensationInfos.InvadedPore);
+    condensationInfos.InvasionTime=cell2mat(condensationInfos.InvasionTime);    
     
 end
 

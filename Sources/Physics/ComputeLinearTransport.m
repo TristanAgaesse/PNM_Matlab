@@ -45,6 +45,7 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
         percolatingCluster = composantesConnexesPercolation{iComposanteConnexe};
         poresPercolants = percolatingCluster.GetInvadedPores;
         nPorePercolant = length(poresPercolants);
+        assert(nPorePercolant>0)
         
         liens_envahis = percolatingCluster.GetInvadedLinks;
         interfaceLinks = percolatingCluster.GetInterfaceLinks;

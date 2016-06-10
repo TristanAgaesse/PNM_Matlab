@@ -29,7 +29,8 @@ options.ClusterOptions = clusterOptions;
 
 %[cluster,outputInformation] = ComputeCondensation( network, options ) ;
 Condensation_main
-% 
+
+%% Plots Nucleation 
 % figure
 % minTemp=60;
 % maxTemp=100;
@@ -75,3 +76,24 @@ Condensation_main
 % xlabel('Nucleation Step');
 % ylabel('Effective diffusion conductivity');
 % title('Effective diffusion conductivity evolution during nucleation')
+
+
+%% Plots DiffusionControledCondensation 
+figure
+time=condensationInfos.InvasionTime;
+plot(time);
+xlabel('Nucleation Step');
+ylabel('Invasion Time (s)');
+title('Time between two invasions during capillarity controled condensation')
+
+
+figure
+invadedPores = zeros(1,nPore);
+nInvaded = length(condensationInfos.InvadedPore);
+invadedPores(condensationInfos.InvadedPore)=2+(1:nInvaded)/nInvaded;
+invadedPores(outputInformation.NucleationInfos.InvadedPore)=1;
+viewer.ViewPoreData(invadedPores,[0,3])
+title('Relative humidity nucleation end')
+
+
+
