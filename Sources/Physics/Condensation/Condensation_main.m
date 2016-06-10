@@ -80,8 +80,8 @@ outputInformation.NucleationInfos = nucleationInfos;
 
 %% DiffusionControledCondensation
 
-% [condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(network,...
-%                     nucleationClusters, options, diffusionConductances);
+[condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(network,...
+                     nucleationClusters, options, diffusionConductances,equilibriumVaporPressure,temperature);
 
                 
 %% Conclusion de l'algorithme                

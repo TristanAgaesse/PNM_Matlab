@@ -1,5 +1,8 @@
 [ network,viewer ]=CreateNetwork('GDL_2D');
 
+poreVolume = network.ComputeAllPoreVolume;
+network.AddNewPoreData(poreVolume,'Volume');
+
 contactAngle=pi*110/180*ones(network.GetNumberOfLinks,1);
 network.AddNewLinkData(contactAngle,'ContactAngle')
 
@@ -26,49 +29,49 @@ options.ClusterOptions = clusterOptions;
 
 %[cluster,outputInformation] = ComputeCondensation( network, options ) ;
 Condensation_main
-
-figure
-minTemp=60;
-maxTemp=100;
-temperature = outputInformation.TemperatureField-273;
-viewer.ViewPoreData(temperature,[minTemp,maxTemp]);
-%viewer.View('PoreField',outputInformation.TemperatureField)
-title('Temperature field')
-
-figure
-minVP=1e4;
-maxVP=1e5;
-equilibriumVP = outputInformation.EquilibriumVaporPressure;
-viewer.ViewPoreData(equilibriumVP,[minVP,maxVP]);
-title('Equilibrium Vapor Pressure')
-
-figure
-VPbegin = outputInformation.NucleationInfos.PartialVaporPressure{1};
-viewer.ViewPoreData(VPbegin,[minVP,maxVP])
-title('Partial vapor pressure begining')
-
-figure
-minRH=0;
-maxRH=1.5;
-RHFieldBegin=outputInformation.NucleationInfos.PartialVaporPressure{1}./outputInformation.EquilibriumVaporPressure;
-viewer.ViewPoreData(RHFieldBegin,[minRH,maxRH])
-title('Relative humidity begining')
-
-figure
-RHFieldEnd=outputInformation.NucleationInfos.PartialVaporPressure{end}./outputInformation.EquilibriumVaporPressure;
-viewer.ViewPoreData(RHFieldEnd,[minRH,maxRH])
-title('Relative humidity nucleation end')
-
-figure
-maxRHEvolution=outputInformation.NucleationInfos.MaxRH;
-plot(maxRHEvolution);
-xlabel('Nucleation Step');
-ylabel('max RH in the network');
-title('Max RH evolution during nucleation')
-
-figure
-effDiff=outputInformation.NucleationInfos.EffectiveDiffusion;
-plot(effDiff);
-xlabel('Nucleation Step');
-ylabel('Effective diffusion conductivity');
-title('Effective diffusion conductivity evolution during nucleation')
+% 
+% figure
+% minTemp=60;
+% maxTemp=100;
+% temperature = outputInformation.TemperatureField-273;
+% viewer.ViewPoreData(temperature,[minTemp,maxTemp]);
+% %viewer.View('PoreField',outputInformation.TemperatureField)
+% title('Temperature field')
+% 
+% figure
+% minVP=1e4;
+% maxVP=1e5;
+% equilibriumVP = outputInformation.EquilibriumVaporPressure;
+% viewer.ViewPoreData(equilibriumVP,[minVP,maxVP]);
+% title('Equilibrium Vapor Pressure')
+% 
+% figure
+% VPbegin = outputInformation.NucleationInfos.PartialVaporPressure{1};
+% viewer.ViewPoreData(VPbegin,[minVP,maxVP])
+% title('Partial vapor pressure begining')
+% 
+% figure
+% minRH=0;
+% maxRH=1.5;
+% RHFieldBegin=outputInformation.NucleationInfos.PartialVaporPressure{1}./outputInformation.EquilibriumVaporPressure;
+% viewer.ViewPoreData(RHFieldBegin,[minRH,maxRH])
+% title('Relative humidity begining')
+% 
+% figure
+% RHFieldEnd=outputInformation.NucleationInfos.PartialVaporPressure{end}./outputInformation.EquilibriumVaporPressure;
+% viewer.ViewPoreData(RHFieldEnd,[minRH,maxRH])
+% title('Relative humidity nucleation end')
+% 
+% figure
+% maxRHEvolution=outputInformation.NucleationInfos.MaxRH;
+% plot(maxRHEvolution);
+% xlabel('Nucleation Step');
+% ylabel('max RH in the network');
+% title('Max RH evolution during nucleation')
+% 
+% figure
+% effDiff=outputInformation.NucleationInfos.EffectiveDiffusion;
+% plot(effDiff);
+% xlabel('Nucleation Step');
+% ylabel('Effective diffusion conductivity');
+% title('Effective diffusion conductivity evolution during nucleation')

@@ -55,9 +55,10 @@ function [cluster,breakthroughPressure,invasionPressureList]  =  ComputeInvasion
         
         if invadedPore<=0 && strcmp(stopCondition,'Breakthrough')
             %Stop if breakthrough 
-            assert(ismember(cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink),outletLink))
+            linkAbsoluteIndex=cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink);
+            assert(ismember(linkAbsoluteIndex,outletLink))
             outlet_reached = true;
-            cluster.InvadeOutletLink(indexInvadedLink);
+            cluster.InvadeOutletLink(linkAbsoluteIndex);
         
         else
             assert(invadedPore >0)

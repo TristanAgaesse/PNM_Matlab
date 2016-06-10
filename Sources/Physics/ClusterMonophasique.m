@@ -122,12 +122,13 @@ classdef ClusterMonophasique < handle
         
         function InvadeOutletLink(cluster,invadedOutletLink)
             %Gere l'envahissement d'un lien situe à l'outlet
-            %input: cluster, invadedOutletLink
+            %input: - cluster 
+            %       - invadedOutletLink (link index in network.Links) 
                         
             cluster.BooleanInvadedLinks(invadedOutletLink) = 1*ones(1,length(invadedOutletLink));
             
-            [cluster.InterfaceLinks,index] = setdiff(cluster.InterfaceLinks,invadedOutletLink);
-            
+            [newInterface,index] = setdiff(cluster.InterfaceLinks,invadedOutletLink);
+            cluster.InterfaceLinks = newInterface;
             cluster.InterfacePoresOutward = cluster.InterfacePoresOutward(index);
         end
 

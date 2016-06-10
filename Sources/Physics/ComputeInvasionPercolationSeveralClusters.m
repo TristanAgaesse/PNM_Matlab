@@ -70,9 +70,10 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
 
             if invadedPore<=0 && strcmp(stopCondition,'Breakthrough')
                 %Stop if breakthrough 
-                assert(ismember(cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink),clustersOutletLink{iCluster}))
+                linkAbsoluteIndex=cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink);
+                assert(ismember(linkAbsoluteIndex,clustersOutletLink{iCluster}))
                 outlet_reached = true;
-                cluster.InvadeOutletLink(indexInvadedLink);
+                cluster.InvadeOutletLink(linkAbsoluteIndex);
 
             else
                 assert(invadedPore >0)

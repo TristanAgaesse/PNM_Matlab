@@ -1,5 +1,5 @@
 function [condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(...
-                network,nucleationClusters,options,diffusionConductances)
+                network,nucleationClusters,options,diffusionConductances,equilibriumVaporPressure,temperature)
 %CONDENSATION_DIFFUSIONCONTROLEDCONDENSATION Deuxieme partie de l'algorithme 
 % de condensation de Marc Prat. 
 %   
@@ -16,8 +16,9 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     
     %% Initialise algorithm
     %nPoreAccessible=FindNumberOfAccessiblePores(network,1:nPore);
-    outputInformation.PartialVaporPressure={};
-    outputInformation.EffectiveDiffusion={};
+    condensationInfos.PartialVaporPressure={};
+    condensationInfos.EffectiveDiffusion={};
+    condensationInfos.InvadedPore={};
     
     nPore = network.GetNumberOfPores;
     allInvadedPore = zeros(1,nPore);
@@ -30,7 +31,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     end
     poreSaturation=allInvadedPore;
     
-    outletLink = % TODO ; check outlet in cluster options
+    outletLink = options.LiquidWaterOutletLinks;% TODO ; check outlet in cluster options
     
     outletPores = network.GetPoresFrontiere(options.LiquidWaterOutletLinks);
     
@@ -40,14 +41,14 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     iteration = 0;
     outlet_reached = false;
     invasionTime = 0;
-    while invasionTime<100 %%&& iteration<nPoreAccessible
+    while invasionTime<100 && iteration<100
         iteration = iteration+1;
         
         %% Compute water flux on the boundary of each cluster
         
         % Compute water vapor diffusion in the GDL
         [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
-                vaporOutletLinks] = GetBoundaryConditionsDiffusion(network,options,allInvadedPore);
+                vaporOutletLinks] = Condensation_GetBoundaryConditionsForDiffusion(network,options,allInvadedPore,equilibriumVaporPressure);
         
         gasTransportPores = cluster.GetInvadedPoresComplementary; %TODO:check redondance with BC above
         
@@ -56,15 +57,15 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
         
-        outputInformation.EffectiveDiffusion{end+1} = effectiveDiffusion;
-        outputInformation.PartialVaporPressure{end+1} = partialVaporPressure;
+        condensationInfos.EffectiveDiffusion{end+1} = effectiveDiffusion;
+        condensationInfos.PartialVaporPressure{end+1} = partialVaporPressure;
         
         % sum the diffusion flux on the boundary of each cluster
         nCluster = length(condensationClusters);
         totalFlux = zeros(1,nCluster);
         for iCluster=1:nCluster
             cluster = condensationClusters{iCluster};
-            totalFlux(iCluster) = diffusionFlux(cluster.GetInterfaceLinks);
+            totalFlux(iCluster) = sum(diffusionFlux(cluster.GetInterfaceLinks));
         end
         assert(all(totalFlux>0),'Evaporation at one cluster !') 
         
@@ -79,8 +80,9 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
             invadedPore = cluster.GetOutwardPore(indexInvadedLink);
             while invadedPore<=0 %Check for outlet link invasion
                 disp('Outlet link invaded')
-                assert(ismember(cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink),outletLink))
-                cluster.InvadeOutletLink(indexInvadedLink);
+                linkAbsoluteIndex = cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink);
+                assert(ismember(linkAbsoluteIndex,outletLink))
+                cluster.InvadeOutletLink(linkAbsoluteIndex);
                 indexInvadedLink = cluster.GetMinimalPressureLink;
                 invadedPore = cluster.GetOutwardPore(indexInvadedLink);
             end
@@ -103,12 +105,11 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         
         [invasionTime,numCluster]=min(clusterInvasionTime);    
         
-        if indexMinPressureLink>0
             
-            %Mettre a jour le cluster envahi
-            cluster = condensationClusters{iCluster};
-            relativeIndexPore = cluster.GetMinimalPressureLink;
-            
+        %Mettre a jour le cluster envahi
+        cluster = condensationClusters{iCluster};
+        relativeIndexPore = cluster.GetMinimalPressureLink;
+
 %             %verifier si outlet_reached
 %             if ismember(poreBeingInvaded(numCluster),outletPores)
 %                 outlet_reached = true;
@@ -116,26 +117,21 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
 %                                               options.LiquidWaterOutletLinks);
 %                 cluster.InvadeOutletLink(breakthroughLinks);
 %             end
-            
-            interfaceChangeInformation=cluster.InvadeNewPore(relativeIndexPore);
-            cluster.UpdateCriticalPressure(interfaceChangeInformation,[],options.LiquidWaterOutletLinks);
-            poreSaturation(poreBeingInvaded(numCluster)) = 1;
-            outputInformation.InvadedPore{end+1} = poreBeingInvaded(numCluster);
-            
-            %Mettre a jour les autres cluster
-            for iCluster=setdiff(1:nCluster,numCluster) 
-                currentSaturation = poreSaturation(poreBeingInvaded(iCluster));
-                volume=poreVolume(poreBeingInvaded(iCluster));
-                saturationIncrease = totalFlux(iCluster)*invasionTime/volume;                
-                poreSaturation(poreBeingInvaded(iCluster)) = currentSaturation+saturationIncrease;
-                assert(poreSaturation(poreBeingInvaded(iCluster))<1)
-            end
-            
 
-        else
-            %no new pore condensable near cluster
-            return
+        interfaceChangeInformation = cluster.InvadeNewPore(relativeIndexPore);
+        cluster.UpdateCriticalPressure(interfaceChangeInformation,[],options.LiquidWaterOutletLinks);
+        poreSaturation(poreBeingInvaded(numCluster)) = 1;
+        condensationInfos.InvadedPore{end+1} = poreBeingInvaded(numCluster);
+
+        %Mettre a jour les autres cluster
+        for iCluster = setdiff(1:nCluster,numCluster) 
+            currentSaturation = poreSaturation(poreBeingInvaded(iCluster));
+            volume = poreVolume(poreBeingInvaded(iCluster));
+            saturationIncrease = totalFlux(iCluster)*invasionTime/volume;                
+            poreSaturation(poreBeingInvaded(iCluster)) = currentSaturation+saturationIncrease;
+            assert(poreSaturation(poreBeingInvaded(iCluster))<1)
         end
+            
     end
     
 end
