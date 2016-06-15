@@ -1,5 +1,4 @@
 function [l ,c] = graph_conn_comp(sA)
-% 
 %  Computing connected components of an undirected graph - assuming sA is symmetric
 % 
 %  Usage:
@@ -12,8 +11,10 @@ function [l ,c] = graph_conn_comp(sA)
 %   l - components labels
 %   c - number of connected components
 % 
+%   This function requires compiling a C++ function. Use the script
+%   Install_PNM_Matlab.
 % 
-%  Compile using:
+%  Otherwise, compile using:
 %  >> mex -O -largeArrayDims graph_conn_comp_mex.cpp
 % 
 % 
