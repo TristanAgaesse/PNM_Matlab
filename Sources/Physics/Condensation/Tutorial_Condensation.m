@@ -6,7 +6,7 @@ network.AddNewPoreData(poreVolume,'Volume');
 contactAngle=pi*110/180*ones(network.GetNumberOfLinks,1);
 network.AddNewLinkData(contactAngle,'ContactAngle')
 
-
+options.TemperatureTransportPores = 1:network.GetNumberOfPores ;
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
 options.TemperatureInlet = 90+273;  % GDL/MPL interface temperature
@@ -16,6 +16,7 @@ options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]); %channel
 
 options.AirPressure = 1.5e5 ;
 
+options.VaporTransportPores = 1:network.GetNumberOfPores;
 options.VaporInletLinks = network.GetLinksFrontiere([1 2 3]);  % GDL/MPL interface
 options.VaporOutletLinks = network.GetLinksFrontiere([4 6]);   % Channel
 options.RelativeHumidityInlet = 0.95;
@@ -93,7 +94,7 @@ nInvaded = length(condensationInfos.InvadedPore);
 invadedPores(condensationInfos.InvadedPore)=2+(1:nInvaded)/nInvaded;
 invadedPores(outputInformation.NucleationInfos.InvadedPore)=1;
 viewer.ViewPoreData(invadedPores,[0,3])
-title('Relative humidity nucleation end')
+title('Invaded Pores - color is function of invasion order')
 
 
 

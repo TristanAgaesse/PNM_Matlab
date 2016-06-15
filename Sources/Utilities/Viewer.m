@@ -92,7 +92,7 @@ classdef Viewer
                 assert(length(champ_cellules)==length(cells_to_vertices),'L''input doit donner un scalaire par cell');
                 
                 colormap(jet);
-                colors=GetCustomColorField(champ_cellules);
+                colors=viewer.GetCustomColorField(champ_cellules);
                 
                 for i = 1:length(champ_cellules)
                     if dimension==2
@@ -394,7 +394,7 @@ classdef Viewer
         
        
         
-        function colors=GetCustomColorField(champ_cellules)
+        function colors=GetCustomColorField(viewer,champ_cellules)
             
             inf=min(champ_cellules(champ_cellules~=0));
             sup=max(champ_cellules(champ_cellules~=0));

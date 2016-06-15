@@ -2,7 +2,8 @@ function [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLin
           vaporOutletLinks] = Condensation_GetBoundaryConditionsForDiffusion(network,...
                               options,invadedPore,equilibriumVaporPressure)
     
-    gasTransportPores = find(not(invadedPore));
+                          
+    gasTransportPores = intersect(options.VaporTransportPores, find(not(invadedPore)));
     
     equilibriumVaporPressureLinks = network.InterpolatePoreDataToLink(equilibriumVaporPressure);  
     
@@ -27,7 +28,6 @@ function [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLin
     
     vaporOutletLinks = [vaporOutletLinks,boundaryLinks];
     outletVaporPressure = [outletVaporPressure;boundaryVaporPressure];
-    
     
     
 end

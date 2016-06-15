@@ -264,8 +264,8 @@ function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(tr
     assert(all(linksNeighboorsElements(:,2)),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     assert(all(not(linksNeighboorsElements(:,1))),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     
-    boundaryLinkInnerPore( boundaryLink(isInternal) )=order(:,end);
-
+    boundaryLinkInnerPore( boundaryLink(isInternal) )=internalLinksNeighboors(order==2);
+    
     % 2 : boundary link qui sont sur la frontiere du reseau
     
     boudaryLink_surface = boundaryLink(not(isInternal));
@@ -417,6 +417,8 @@ function matrice = FillMatrix(network,conductances,liens_internes_envahis,liens_
             numOwner = boundaryLinkInnerPore(numLien);
         	indiceOwner = poresPercolantsIndices(numOwner);
         	%complements aux termes diagonaux 
+            assert(numLien>0)
+            assert(indiceOwner>0)
             value_diag(indiceOwner)=value_diag(indiceOwner)+conductances(numLien);
     	end
     end

@@ -388,7 +388,18 @@ classdef  PoreNetwork
                 liste_pores_envahis=transpose(liste_pores_envahis);
             end
             
-            if strcmp(option,'graphconncomp')
+            if not(verLessThan('matlab','R2015b')) 
+                adjacencyMatrix = network.CreateAdjacencyMatrix(liste_pores_envahis);
+                myGraph=graph(adjacencyMatrix);
+                bins = conncomp(myGraph);
+                nConnectedComponents=max(bins);
+                conComp = cell(1,nConnectedComponents);
+                for iComponent = 1:nConnectedComponents
+                    conComp{iComponent} = liste_pores_envahis(bins == iComponent);
+                end
+                
+                
+            elseif strcmp(option,'graphconncomp')
                 %Uses a free C++ implementation of the Matlab function
                 %graphconncomp
                 adjacencyMatrix = network.CreateAdjacencyMatrix(liste_pores_envahis);
@@ -396,8 +407,8 @@ classdef  PoreNetwork
                 [labels,nConnectedComponents] = graph_conn_comp(adjacencyMatrix);
                 
                 conComp = cell(1,nConnectedComponents);
-                for num_composante = 1:nConnectedComponents
-                    conComp{num_composante} = liste_pores_envahis(labels == num_composante);
+                for iComponent = 1:nConnectedComponents
+                    conComp{iComponent} = liste_pores_envahis(labels == iComponent);
                 end
                 
                 
@@ -406,7 +417,7 @@ classdef  PoreNetwork
                 %impl�mentation avec pile LIFO contenant les pores � explorer :  
                 %on d�pile un pore et on empile ses voisins non encore explor�s.
                 
-                num_composante = 1;
+                iComponent = 1;
                 pores_envahis_explores = zeros(1,length(liste_pores_envahis));
                 %pores_envahis_explores(i) = 0 si liste_pores_envahis(i) n'est
                 %pas encore explor�,  = num_composante sinon
@@ -432,15 +443,15 @@ classdef  PoreNetwork
                             for i = 1:length(ref_voisins_envahis_non_explores)
                                 stack_pores_a_explorer.push(ref_voisins_envahis_non_explores(i));
                             end
-                            pores_envahis_explores(ref_pore) = num_composante;
+                            pores_envahis_explores(ref_pore) = iComponent;
                         end
                     end
-                    num_composante = num_composante+1;
+                    iComponent = iComponent+1;
                 end
 
                 conComp = cell(1,max(pores_envahis_explores));
-                for num_composante = 1:max(pores_envahis_explores)
-                    conComp{num_composante} = liste_pores_envahis(pores_envahis_explores == num_composante);
+                for iComponent = 1:max(pores_envahis_explores)
+                    conComp{iComponent} = liste_pores_envahis(pores_envahis_explores == iComponent);
                 end
             
             end

@@ -41,7 +41,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     iteration = 0;
     outlet_reached = false;
     invasionTime = 0;
-    while invasionTime<100 && iteration<150
+    while invasionTime<100 && iteration<100
         iteration = iteration+1;
         
         %% Compute water flux on the boundary of each cluster

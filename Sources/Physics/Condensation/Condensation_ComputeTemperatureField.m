@@ -1,4 +1,4 @@
-function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,temperatureInlet,temperatureOutlet,temperatureInletLinks,temperatureOutletLinks) 
+function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,temperatureInlet,temperatureOutlet,temperatureInletLinks,temperatureOutletLinks,temperatureTransportPores) 
     %Temperature field resulting from a temperature difference between 
     %temperature inlet and temperature outlet
 
@@ -23,9 +23,9 @@ function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatur
     boundaryConditions.inletValue = temperatureInlet*ones(1,length(boundaryConditions.inletLink));
     boundaryConditions.outletValue = temperatureOutlet*ones(1,length(boundaryConditions.outletLink));
 
-    transportPores = 1:network.GetNumberOfPores ;
+    
 
-    [ temperature, ~,heatTransferCoefficient ]=ComputeLinearTransport(network,transportPores,conductancesHeat,boundaryConditions);
+    [ temperature, ~,heatTransferCoefficient ]=ComputeLinearTransport(network,temperatureTransportPores,conductancesHeat,boundaryConditions);
 
 
 end

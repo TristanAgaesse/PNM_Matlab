@@ -63,7 +63,7 @@ diffusionConductances = LocalScaleComputeConductancesDiffusion(network,diffusion
 %Temperature field
 [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,...
         options.TemperatureInlet,options.TemperatureOutlet,...
-        options.TemperatureInletLinks,options.TemperatureOutletLinks) ;
+        options.TemperatureInletLinks,options.TemperatureOutletLinks,options.TemperatureTransportPores) ;
 outputInformation.TemperatureField = temperature;
 outputInformation.HeatTransferCoefficient = heatTransferCoefficient;
 
@@ -73,13 +73,14 @@ outputInformation.EquilibriumVaporPressure = equilibriumVaporPressure;
 
 
 %% Nucleation step
+disp('Nucleation')
 [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation( network, ...
                             equilibriumVaporPressure,options,diffusionConductances,temperature );
 outputInformation.NucleationInfos = nucleationInfos;
 
 
 %% DiffusionControledCondensation
-
+disp('DiffusionControledCondensation')
 [condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(network,...
                      nucleationClusters, options, diffusionConductances,equilibriumVaporPressure,temperature);
 
