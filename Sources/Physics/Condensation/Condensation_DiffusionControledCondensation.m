@@ -37,6 +37,11 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     
     poreVolume = network.GetPoreData('Volume');
     
+    if nCluster==0
+       return 
+    end
+    
+    
     %% Begin invasion loop
     iteration = 0;
     outlet_reached = false;
@@ -50,7 +55,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks] = Condensation_GetBoundaryConditionsForDiffusion(network,options,allInvadedPore,equilibriumVaporPressure);
         
-        gasTransportPores = cluster.GetInvadedPoresComplementary; %TODO:check redondance with BC above
+        %gasTransportPores = cluster.GetInvadedPoresComplementary; %TODO:check redondance with BC above
         
         [partialVaporPressure,diffusionFlux,effectiveDiffusion ] = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
