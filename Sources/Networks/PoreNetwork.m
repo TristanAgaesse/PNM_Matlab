@@ -388,7 +388,7 @@ classdef  PoreNetwork
                 liste_pores_envahis=transpose(liste_pores_envahis);
             end
             
-            if not(verLessThan('matlab','R2015b')) 
+            if not(verLessThan('matlab','8.5')) 
                 adjacencyMatrix = network.CreateAdjacencyMatrix(liste_pores_envahis);
                 myGraph=graph(adjacencyMatrix);
                 bins = conncomp(myGraph);
