@@ -10,7 +10,7 @@ options.TemperatureTransportPores = 1:network.GetNumberOfPores ;
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
 options.TemperatureInlet = 90+273;  % GDL/MPL interface temperature
-options.TemperatureOutlet = 70+273; % rib temperature
+options.TemperatureOutlet = 50+273; % rib temperature
 
 options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]); %channel
 
@@ -20,7 +20,7 @@ options.VaporTransportPores = 1:network.GetNumberOfPores;
 options.VaporInletLinks = network.GetLinksFrontiere([1 2 3]);  % GDL/MPL interface
 options.VaporOutletLinks = network.GetLinksFrontiere([4 6]);   % Channel
 options.RelativeHumidityInlet = 0.95;
-options.RelativeHumidityOutlet = 0.80;
+options.RelativeHumidityOutlet = 0.90;
 
 clusterOptions.Coalescence = 'none' ;
 clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder';
