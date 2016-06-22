@@ -149,7 +149,7 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
             allInvadedPore(iPore) = 1;
             condensationInfos.InvadedPore{end+1} = iPore;
             
-            cluster = condensationClusters{iCluster};
+            cluster = condensationClusters{iCriticalCluster};
             relativeIndexPore = cluster.GetMinimalPressureLink;
             assert(iPore==cluster.GetOutwardPore(relativeIndexPore))
             interfaceChangeInformation = cluster.InvadeNewPore(relativeIndexPore);
