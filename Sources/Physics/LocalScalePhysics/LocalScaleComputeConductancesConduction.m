@@ -18,7 +18,7 @@ function conductances = LocalScaleComputeConductancesConduction(network,paramete
     %    parameters.LinkBulkProp = 1;
     %    conductances = LocalScaleComputeConductancesConduction(network,parameters) 
     %     
-
+    
     
     %Get geometric data from the network
     
@@ -38,7 +38,11 @@ function conductances = LocalScaleComputeConductancesConduction(network,paramete
         case 'Cylinder'
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_Cylinder(...
                                                     network,poreBulkProp,internalLinks,boundaryLinks);
-
+            
+        case 'ConstricivityEquation'
+        	[in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_ConstrictivityEquation(...
+                                                    network,poreBulkProp,internalLinks,boundaryLinks);
+                                                
     end
     
     
@@ -162,22 +166,79 @@ function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=Com
     linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
-
+    
     a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
     distance1=FastNorm(a,dimension);
-
+    
     b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
     distance2=FastNorm(b,dimension);
-
+    
         %Internal links
     in_resistance1 = distance1(internalLinks)./(poreBulkProp(network.LinkOwners(internalLinks)).*linkSurface(internalLinks));
     in_resistance2 = distance2./(poreBulkProp(network.LinkNeighbours(internalLinks)).*linkSurface(internalLinks));
-
+    
         %Boundary links
     bound_resistance1 = distance1(boundaryLinks)./(poreBulkProp(network.LinkOwners(boundaryLinks)).*linkSurface(boundaryLinks));
     bound_resistance2 = 0;
-            
+    
 end
+
+
+function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=ComputeResistancePore_ConstrictivityEquation(...
+                                                    network,poreBulkProp,internalLinks,boundaryLinks)
+    
+    % Effective conductance formula based on the article
+    % "Quantitative relationship between microstructure and effective
+    % transport properties based on virtual materials testing", 
+    % G.Gaiselmann, M.Neumann, V.Schmidt. DOI: 10.1002/aic.14416
+    
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    
+    dimension = network.Dimension;
+    
+    allLinks=1:nLink;
+    CheckLinkDiameter(network)
+    %linkSurface = network.GetLinkData('Surface');
+    linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
+    
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
+    
+    [~,porePhase]=unique(poreBulkProp);
+    nPhase = max(porePhase);
+    phaseVolume=zeros(1,nPhase);
+    for i=1:nPhase
+        phaseVolume(i)=sum(poreVolume(porePhase==i));
+    end
+    totalVolume = prod(network.GetImageSize)*(network.GetVoxelEdgeLength)^3;
+    globalPorosity = phaseVolume/totalVolume;
+    
+    
+    % Effective geometric parameters of the pore-link-pore
+    porosity = globalPorosity(porePhase);
+    tortuosity = 1;
+    constrictivity = (linkDiameter/poreDiameter).^2
+    S = linkSurface;
+    L = distance1;
+    
+    conductance = S./L.*2.03*porosity.^1.57.*constrictivity.^0.72./tortuosity.^2;
+    
+        %Internal links
+    in_resistance1 = distance1(internalLinks)./(poreBulkProp(network.LinkOwners(internalLinks)).*linkSurface(internalLinks));
+    in_resistance2 = distance2./(poreBulkProp(network.LinkNeighbours(internalLinks)).*linkSurface(internalLinks));
+    
+        %Boundary links
+    bound_resistance1 = distance1(boundaryLinks)./(poreBulkProp(network.LinkOwners(boundaryLinks)).*linkSurface(boundaryLinks));
+    bound_resistance2 = 0;
+    
+end                                                
 
 
 function [in_resistanceLink,bound_resistanceLink]=ComputeResistanceLink_SurfaceResistance_RealSurface(...
