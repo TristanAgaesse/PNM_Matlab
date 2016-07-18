@@ -22,8 +22,7 @@ function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatur
     boundaryConditions.outletType = 'Dirichlet' ;
     boundaryConditions.inletValue = temperatureInlet*ones(1,length(boundaryConditions.inletLink));
     boundaryConditions.outletValue = temperatureOutlet*ones(1,length(boundaryConditions.outletLink));
-
-    
+    boundaryConditions.solver='mldivide';
 
     [ temperature, ~,heatTransferCoefficient ]=ComputeLinearTransport(network,temperatureTransportPores,conductancesHeat,boundaryConditions);
 
