@@ -101,7 +101,7 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
     
     %Check computation
     CheckComputation(fieldValue,flux,inletLink,outletLink)
-          
+    
     
     %Compute effective transport property
     effectiveConductance = ComputeEffectiveConductance(network,inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore,effectiveConductanceFormula);
@@ -114,12 +114,10 @@ end
 
 
 
-
-
 %---------------------------------------------------------------------------------------------
 function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,fieldValue,flux,conductances,transportPores,boundaryLinkInnerPore,solver,effectiveConductanceFormula]=...
                         CheckInputs(network,transportPores,conductances,boundaryConditions)
-                    
+    
     %Check inputs and initialize algorithm
     conductances=transpose(conductances);
     
@@ -132,14 +130,14 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     assert( ~isempty(transportPores),'LinearTransport : second input transportPores must not be empty')
     assert( size(conductances,2)==nLink,...
             'LinearTransport : third input conductance must be of length network.GetNumberOfLinks')
-
+    
     if size(transportPores,1)~=1
         assert(size(transportPores,2)==1);
         transportPores=transpose(transportPores);
     end    
     transportPores=unique(transportPores);
     assert(min(transportPores)>0 && max(transportPores)<=nPore,'Wrong pore number in transport pores')
-        
+    
     assert( isa(boundaryConditions,'struct') );
     assert( max(boundaryConditions.inletLink)<=network.GetNumberOfLinks )
     assert( max(boundaryConditions.outletLink)<=network.GetNumberOfLinks )
@@ -147,7 +145,7 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     assert( strcmp(boundaryConditions.outletType,'Neumann') || strcmp(boundaryConditions.outletType,'Dirichlet'))
 	assert( length(boundaryConditions.inletValue)==length(boundaryConditions.inletLink))
 	assert( length(boundaryConditions.outletValue)==length(boundaryConditions.outletLink))     
-         
+    
     
     if isfield(boundaryConditions,'solver')
         solver=boundaryConditions.solver;
@@ -168,18 +166,18 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
     nPore = network.GetNumberOfPores;
     fieldValue = zeros(1,nPore);
     flux = zeros(1,nLink);               %flux oriente de owner a neighbour   
-
+    
     inletValue=zeros(1,network.GetNumberOfLinks);
     inletValue(boundaryConditions.inletLink)=boundaryConditions.inletValue;
     outletValue=zeros(1,network.GetNumberOfLinks);
     outletValue(boundaryConditions.outletLink)=boundaryConditions.outletValue;
-
+    
     inletType = boundaryConditions.inletType;
     outletType = boundaryConditions.outletType;
     
     inletLink = boundaryConditions.inletLink;
     outletLink = boundaryConditions.outletLink;
-      
+    
     
     defaultFormulaType='fluxOverPotential';
     defaultFormulaDirection='None';
@@ -200,7 +198,7 @@ function [inletLink,outletLink,inletValue,outletValue,inletType,outletType,field
         effectiveConductanceFormula.Type=defaultFormulaType;
         effectiveConductanceFormula.Direction=defaultFormulaDirection;
     end
-
+    
 end
 
 
@@ -253,7 +251,7 @@ function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(tr
     % 1 : boundary link qui sont internes au reseau 
     
     isInternal = ismember(boundaryLink,network.GetLinksFrontiere(0));
-    internalLinksNeighboors= linksNeighboors(isInternal,:);
+    internalLinksNeighboors = linksNeighboors(isInternal,:);
     
     booleanTransportPores=zeros(network.GetNumberOfPores,1);
     booleanTransportPores(transportPores)=1;
@@ -264,7 +262,13 @@ function [boundaryLinkInnerPore,boundaryConditions]=FindBoundaryLinkInnerPore(tr
     assert(all(linksNeighboorsElements(:,2)),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     assert(all(not(linksNeighboorsElements(:,1))),'un link inlet ou outlet non situe sur la frontiere de transport pores !')
     
-    boundaryLinkInnerPore( boundaryLink(isInternal) )=internalLinksNeighboors(order==2);
+    innerNeighboor=zeros(1,size(internalLinksNeighboors,1));
+    foo=order(:,1)==2;
+    innerNeighboor(foo)=internalLinksNeighboors(foo,1);
+    foo=order(:,2)==2;
+    innerNeighboor(foo)=internalLinksNeighboors(foo,2);
+    
+    boundaryLinkInnerPore( boundaryLink(isInternal) )=innerNeighboor; %internalLinksNeighboors(order==2);
     
     % 2 : boundary link qui sont sur la frontiere du reseau
     
