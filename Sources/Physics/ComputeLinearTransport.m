@@ -31,7 +31,7 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
     
     %Decompose transportPores into percolation paths = connexes components
     cluster = network.CreateVoidCluster;
-    cluster.InvadedPores = transportPores;
+    cluster.InvadedPores = [transportPores,zeros(1,network.GetNumberOfPores-length(transportPores))];
     cluster.SetClusterOptions(struct);
     composantesConnexesPercolation = cluster.FindPercolationPath(inletLink,outletLink);
     

@@ -119,6 +119,7 @@ disp(network.GetLinkDataList)
 %fonctionnalites du viewer sont moins etendues en 3D qu'en 2D et le rendu est moins bon.
 %Cela est du aux limitations des outils de visualisation de Matlab. 
 
+figure
 viewer.View('Network')
 
 

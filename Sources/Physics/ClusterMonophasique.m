@@ -355,8 +355,10 @@ classdef ClusterMonophasique < handle
             %input : cluster,linkInlet,linkOutlet,poreNetwork
             %output: poresPercolants
             invadedPoresList = cluster.GetInvadedPores;
-            pores_outlet = cluster.Network.GetPoresFrontiere(linkOutlet);
-            pores_inlet = cluster.Network.GetPoresFrontiere(linkInlet);
+            pores_outlet = cluster.Network.GetPoresOfLink(linkOutlet);
+            pores_outlet = pores_outlet(:);
+            pores_inlet = cluster.Network.GetPoresOfLink(linkInlet);
+            pores_inlet= pores_inlet(:);
             
             pore_envahis_outlet = intersect(invadedPoresList,pores_outlet);
             pore_envahis_inlet = intersect(invadedPoresList,pores_inlet);
@@ -367,35 +369,31 @@ classdef ClusterMonophasique < handle
             poresPercolants = {};
             composantes_connexes_du_fluide = network.FindComposantesConnexes(invadedPoresList);
             for num_composante = 1:length(composantes_connexes_du_fluide)
+                %find invaded links
                 if ~isempty(intersect(composantes_connexes_du_fluide{num_composante},pore_envahis_outlet)) ...
-                        && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
-                    
-                    %find invaded links
+                    && ~isempty(find(ismember(composantes_connexes_du_fluide{num_composante},pore_envahis_inlet),1))
+                
                     invadedPores = composantes_connexes_du_fluide{num_composante};
-                    
-%                     linkCount = zeros(1,network.GetNumberOfLinks);
-%                     for iPore = invadedPores
-%                         thoseLinks = network.Pores{iPore};
-%                         linkCount(thoseLinks) = linkCount(thoseLinks)+1;
-%                     end
-%                     
-%                     booleanInvadedLinks = linkCount>0;
-%                     interfaceLinks = find(linkCount == 1);
-                    
+
                     [boundaryLinks,innerLinks]=network.GetPoreRegionBoundaryLinks(invadedPores);
                     booleanInvadedLinks= zeros(1,network.GetNumberOfLinks);
                     booleanInvadedLinks(boundaryLinks)=1;
                     booleanInvadedLinks(innerLinks)=1;
-                    
-                    poresFrontiereOutward = [];
-                    criticalPressures = zeros(1,network.GetNumberOfLinks);
-                    clusterOptions=cluster.GetClusterOptions;
-                    
-                    percolatingCluster = ClusterMonophasique(invadedPores,boundaryLinks,...
-                        poresFrontiereOutward,booleanInvadedLinks,...
-                        network,criticalPressures,clusterOptions);
-                    poresPercolants{num_chemin} = percolatingCluster;
-                    num_chemin = num_chemin+1;
+
+                    if any(booleanInvadedLinks(linkInlet)) && any(booleanInvadedLinks(linkOutlet))
+
+
+
+                        poresFrontiereOutward = [];
+                        criticalPressures = zeros(1,network.GetNumberOfLinks);
+                        clusterOptions=cluster.GetClusterOptions;
+
+                        percolatingCluster = ClusterMonophasique(invadedPores,boundaryLinks,...
+                            poresFrontiereOutward,booleanInvadedLinks,...
+                            network,criticalPressures,clusterOptions);
+                        poresPercolants{num_chemin} = percolatingCluster;
+                        num_chemin = num_chemin+1;
+                    end
                 end
             end
 

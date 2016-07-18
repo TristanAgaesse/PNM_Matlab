@@ -378,7 +378,7 @@ classdef  PoreNetwork
             %output : conComp : cell, conComp{i}=liste des pores 
             %               de la composante i
             
-            option='graphconncomp';
+            option='HomeMadeTarjan';
             if ~isempty(varargin)
                 option=varargin{1};
             end

@@ -69,6 +69,7 @@ network=networkBuilder.BuildNetwork();
 network.ExportToParaview('tutorialMacroscopicGeometry_octahedron.vtk')
 
 viewer=Viewer(network.PrivateInternalOutputStruct);
+figure
 viewer.View('Network')
 
 
