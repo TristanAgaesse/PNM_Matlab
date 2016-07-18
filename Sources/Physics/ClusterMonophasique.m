@@ -74,8 +74,8 @@ classdef ClusterMonophasique < handle
             
             %envahir le pore associe
             time  =  length(find(cluster.InvadedPores))+1;
-            
-            if time<length(cluster.InvadedPores)+1
+            nPore=cluster.Network.GetNumberOfPores;
+            if time<nPore+1
                 newInvadedPore  =  cluster.InterfacePoresOutward(indexInvadedLink);
                 if newInvadedPore<=0
                     disp('Erreur : Impossible d''envahir l''exterieur du domaine !')
@@ -116,6 +116,8 @@ classdef ClusterMonophasique < handle
                     interfaceChangeInformation{iPore}{2} = cluster.InterfaceLinks(...
                                 cluster.InterfacePoresOutward==unique_new_pore_outward(iPore)); %loop over interface pores outward
                 end
+            else    
+                disp('Error : all pore allready invaded')
             end
         end
         
