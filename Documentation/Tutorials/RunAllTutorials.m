@@ -1,8 +1,10 @@
 
 %Run all tutorials. Usefull to check PNM_Matlab for debugging
 
-Tutorial_BasicPhysics
-Tutorial_GeometryDefinition
 Tutorial_PremiersPas
-Tutorial_WettabilityAndClusterShape
+Tutorial_BasicPhysics
+Tutorial_InjectionsMultiples
+Tutorial_Condensation
+%Tutorial_GeometryDefinition
+%Tutorial_WettabilityAndClusterShape
 

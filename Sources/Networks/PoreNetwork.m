@@ -120,6 +120,10 @@ classdef  PoreNetwork
         %Data lists handling
         
         function data = GetPoreData(network,dataName)
+            % Returns a pore data array stored in the network under a given
+            % name
+            %Input : network, dataName
+            %Output : data array
             data = network.GetPoreDataList.(dataName);
         end
         
@@ -140,6 +144,10 @@ classdef  PoreNetwork
         end        
 
         function data = GetLinkData(network,dataName)
+            % Returns a link data array stored in the network under a given
+            % name
+            %Input : network, dataName
+            %Output : data array
             data = network.GetLinkDataList.(dataName);
         end
         

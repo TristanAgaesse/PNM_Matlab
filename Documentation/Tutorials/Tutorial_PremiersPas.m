@@ -58,13 +58,14 @@ methods(network)
 %%
 %On voit que la méthode View peut prendre plusieurs options. Pour voir le 
 %réseau (avec une couleur différente pour chaque cellule), tapez 
- viewer.View('Network') 
+figure;%cree une nouvelle figure
+viewer.View('Network') 
 
 
 %%
 %Pour afficher les liens situés sur les frontières, qui vont être utiles 
 %pour définir des conditions limites.
- figure; %cree une nouvelle figure
+ figure; 
  viewer.View('Boundaries') 
 
 

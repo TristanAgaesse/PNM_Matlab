@@ -5,11 +5,10 @@
 
 %Commencons par contruire un reseau de pores.
 [ network,viewer ]=CreateNetwork('GDL_2D');
-viewer.View('Network')
 
 
 %Definissons les lois d'invasion et la mouillabilite
-clusterOptions.Coalescence = 'None';
+clusterOptions.Coalescence = 'none';
 clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder';
 clusterOptions.SurfaceTension = 72e-3 ; 
 
@@ -38,8 +37,12 @@ end
 
 %Compute number of breakthrough points
 
-nBreakthrough = length(clusters);
+nCluster = length(clusters);
 
-
-viewer.View('PoreList',clusters{1}.GetInvadedPores)
-
+figure
+clusterPores=zeros(1,network.GetNumberOfPores);
+for iCluster=1:nCluster
+    clusterPores(clusters{iCluster}.GetInvadedPores)=iCluster;
+end
+colorScale=[0,nCluster];
+viewer.ViewPoreData(clusterPores,colorScale)

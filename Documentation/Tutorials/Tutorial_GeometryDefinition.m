@@ -10,16 +10,19 @@
 %Exemple avec un reseau regulier : creons un reseau a partir du fichier
 %1block3D_Structured et visualisons le avec paraview.
 
+folderName=fileparts(which('Tutorial_GeometryDefinition.m'));
 
 myGeometry=MacroscopicGeometry();
-myGeometry.LoadGeometry('1block3D_Structured');
+filename=strcat(folderName,'/1block3D_Structured');
+myGeometry.LoadGeometry(filename);
 
 disp(myGeometry)
 
 networkBuilder=NetworkBuilder(myGeometry);
 
 network=networkBuilder.BuildNetwork();
-network.ExportToParaview('tutorialMacroscopicGeometry_StructuredNetwork')
+filename=strcat(folderName,'/tutorialMacroscopicGeometry_StructuredNetwork');
+network.ExportToParaview(filename)
 
 clear myGeometry
 
@@ -66,7 +69,8 @@ networkBuilder=NetworkBuilder(myGeometry);
 network=networkBuilder.BuildNetwork();
 
 %Visualiser le reseau dans Matlab avec un viewer et exportons vers paraview.
-network.ExportToParaview('tutorialMacroscopicGeometry_octahedron.vtk')
+filename=strcat(folderName,'/tutorialMacroscopicGeometry_octahedron');
+network.ExportToParaview(filename)
 
 viewer=Viewer(network.PrivateInternalOutputStruct);
 figure
@@ -75,8 +79,8 @@ viewer.View('Network')
 
 %Il est possible de creer un fichier contenant les parametres de la
 %geometrie macroscopique. 
-
-myGeometry.WriteGeometryFile('Octahedron3D.txt');
+filename=strcat(folderName,'/Octahedron3D.txt');
+myGeometry.WriteGeometryFile(filename);
 
 
 

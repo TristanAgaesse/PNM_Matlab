@@ -4,8 +4,11 @@
 %Compute. Pour voir la liste des physiques disponibles, taper Compute+autocomplétion.
 
 %Commencons par contruire un reseau de pores.
-[ network,viewer ]=CreateNetwork('3block2D');
+folderName=fileparts(which('Tutorial_BasicPhysics.m'));
+geometryFile = strcat(folderName,'/3block2D');
+[ network,viewer ]=CreateNetwork(geometryFile);
 
+figure,
 viewer.View('Network')
 
 figure;colorbar;

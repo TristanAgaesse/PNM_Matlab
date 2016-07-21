@@ -92,7 +92,7 @@ function [clusters,invadedPores] = ComputeInvasionPercolationSeveralClusters( ne
                     %verifier si outlet_reached
                     if ismember(invadedPore,outletPores)
                         outlet_reached = true;
-                        breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),outletLink);
+                        breakthroughLinks = intersect(cluster.Network.GetLinksOfPore(invadedPore),clustersOutletLink{iCluster});
                         cluster.InvadeOutletLink(breakthroughLinks);
                     end
                 end
