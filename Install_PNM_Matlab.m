@@ -1,6 +1,8 @@
 %Install_PNM_Matlab
 
 %Script to execute the first time you use PNM_Matlab on your computer
+% useless is you are using a Matlab version more recent than 2015b. 
+
 disp('Compiling some functions')
 %Compile the mex file (C++ function) graph_conn_comp_mex.cpp
 cd Sources/ExternalLibrairies/graph_conn_comp

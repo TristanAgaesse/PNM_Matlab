@@ -3,6 +3,8 @@ classdef MacroscopicGeometry < handle
     %   Detailed explanation goes here
     
     properties
+        % Look at function MacroscopicGeometry.LoadGeometry for 
+        % data structures of properties
         Dimension
         Vertices
         Blocks

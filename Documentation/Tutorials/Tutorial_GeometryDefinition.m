@@ -88,4 +88,24 @@ myGeometry.WriteGeometryFile(filename);
 %exotiques, les reseaux reguliers doivent etre dans un pave aligne avec les axes
 
 
+%Ajoutons de l'anisotropie a une geometrie existante
 
+myGeometry=MacroscopicGeometry();
+filename=strcat(folderName,'/GDL_2D');
+myGeometry.LoadGeometry(filename);
+
+anisotropyBand=struct;
+anisotropyBand.Direction='y';
+ymin = -1;ymax = 2 ;
+anisotropyBand.Location = [ymin,ymax];
+anisotropyBand.Intensity= 5 ;
+
+myGeometry.AddAnisotropyBand(anisotropyBand)
+
+networkBuilder=NetworkBuilder(myGeometry);
+
+network=networkBuilder.BuildNetwork();
+
+viewer=Viewer(network.PrivateInternalOutputStruct);
+figure
+viewer.View('Network')
