@@ -20,7 +20,7 @@ function [partialVaporPressure,diffusionFlux,effectiveDiffusion ] = Condensation
     boundaryConditions.outletType = 'Dirichlet' ;
     boundaryConditions.inletValue = inletConcentration;
     boundaryConditions.outletValue = outletConcentration;
-    boundaryConditions.solver='minres';
+    boundaryConditions.solver='mldivide';
     
     [waterConcentration,diffusionFlux,effectiveDiffusion ] = ComputeLinearTransport(network,gasTransportPores,diffusionConductances,boundaryConditions);
     
