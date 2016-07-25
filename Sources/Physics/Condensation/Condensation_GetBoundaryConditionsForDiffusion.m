@@ -5,7 +5,7 @@ function [gasTransportPores,inletVaporPressure,outletVaporPressure,vaporInletLin
     
     gasTransportPores = intersect(options.VaporTransportPores, find(not(invadedPore)));
     
-    equilibriumVaporPressureLinks = network.InterpolatePoreDataToLink(equilibriumVaporPressure);  
+    equilibriumVaporPressureLinks = network.InterpolatePoreDataToLinkInAPoreRegion(equilibriumVaporPressure,gasTransportPores);
     
     vaporInletLinks = options.VaporInletLinks;
     inletVaporPressure = options.RelativeHumidityInlet*equilibriumVaporPressureLinks(vaporInletLinks); 

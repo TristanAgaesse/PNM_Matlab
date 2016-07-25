@@ -349,6 +349,35 @@ classdef  PoreNetwork
             linkData(boundaryLinks) = poreData(neighboorPores(:,2));
         end
         
+        function linkData = InterpolatePoreDataToLinkInAPoreRegion(network,poreData,poreRegion)
+            %Returns a linkData obtained by interpolation of a poreData
+            % For innerLinks, linkData = mean of poreData on the 2
+            % neighboor pores. For boundaryLinks, linkData= poreData on the
+            % 1 inner neighboor pore.
+            %Input : network,poreData
+            %Output : linkData       
+            
+            nPore = network.GetNumberOfPores;
+            nLink = network.GetNumberOfLinks;
+            assert(length(poreData)==nPore,'poreData must have a length network.GetNumberOfPores')
+            linkData = zeros(nLink,1);
+            
+            [boundaryLinks,innerLinks]=network.GetPoreRegionBoundaryLinks(poreRegion);
+            %innerLinks = network.GetLinksFrontiere(0);
+            %boundaryLinks = network.GetLinksFrontiere(1:network.GetNumberOfBoundaries);
+            
+            neighboorPores = network.GetPoresOfLink(innerLinks);
+            linkData(innerLinks) = 0.5*(poreData(neighboorPores(:,1))+poreData(neighboorPores(:,2)));
+            
+            neighboorPores = network.GetPoresOfLink(boundaryLinks);
+            foo= ismember(neighboorPores,poreRegion);
+            ind1 = foo(:,1)==1;
+            ind2 = foo(:,2)==1;
+            linkData(boundaryLinks(ind1)) = poreData(neighboorPores(ind1,1));
+            linkData(boundaryLinks(ind2)) = poreData(neighboorPores(ind2,2));
+        end
+        
+        
         
         function adjacencyMatrix = CreateAdjacencyMatrix(network,invadedPoreList)
             %Returns the adjacency matrix of the sub-network given by a

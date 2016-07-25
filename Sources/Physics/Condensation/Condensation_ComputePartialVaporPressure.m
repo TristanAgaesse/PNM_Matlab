@@ -7,7 +7,7 @@ function [partialVaporPressure,diffusionFlux,effectiveDiffusion ] = Condensation
     R = 8.314 ;
     pressureToConcentrationRatioPore = 1./(R*temperature);
     
-    pressureToConcentrationRatioLink = network.InterpolatePoreDataToLink(pressureToConcentrationRatioPore);
+    pressureToConcentrationRatioLink = network.InterpolatePoreDataToLinkInAPoreRegion(pressureToConcentrationRatioPore,gasTransportPores);
     
     inletConcentration = inletVaporPressure.*pressureToConcentrationRatioLink(vaporInletLinks) ;   
     outletConcentration = outletVaporPressure.*pressureToConcentrationRatioLink(vaporOutletLinks);
