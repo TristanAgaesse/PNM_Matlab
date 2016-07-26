@@ -50,10 +50,12 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         
         [maxRH,indexMaxRH] = max(condensationRatio);
         
-        
+        gasTransportPoresBoolean=zeros(1,nPore);
+        gasTransportPoresBoolean(gasTransportPores)=1;
         
         if maxRH>superSaturation
             nucleation = true;
+            assert(gasTransportPoresBoolean(indexMaxRH)==1);
             invadedPore(indexMaxRH)=true;
             nucleationInfos.MaxRH{step} = maxRH;
             nucleationInfos.InvadedPore{step}=indexMaxRH;
@@ -64,7 +66,7 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
         %partial pressure
         
     end
-        
+    
     %% Define nucleationClusters from invadedPore
     conComp = FindComposantesConnexes(network,find(invadedPore));
     

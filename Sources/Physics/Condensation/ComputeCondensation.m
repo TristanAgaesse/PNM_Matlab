@@ -27,10 +27,12 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 %     options.TemperatureOutletLinks : links outlet for heat
 %     options.TemperatureInlet : temperature inlet (in K)
 %     options.TemperatureOutlet : temperature outlet (in K)
+%     options.TemperaturePoreHeatConductivity 
 %     options.LiquidWaterOutletLinks : links outlet for water
 %     options.AirPressure : uniform pressure imposed to air
 %     options.VaporInletLinks
 %     options.VaporOutletLinks
+%     options.VaporPoreDiffusivity
 %     options.RelativeHumidityInlet
 %     options.RelativeHumidityOutlet
 %     options.ClusterOptions : options for the beheavior of liquid phase (see ClusterMonophasique)
@@ -51,11 +53,11 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
     nPore = network.GetNumberOfPores;
 
     % Parametrisation of diffusion in the network 
-    diffusivity = 2e-5; % 02 in N2 at ambiant conditions TODO : check value for water vapor
+    
     diffusionParams=struct;
     diffusionParams.GeometricModel.Pore = 'Cylinder' ;
     diffusionParams.GeometricModel.Link = 'None' ;% 'SurfaceResistance_RealSurface'
-    diffusionParams.PoreBulkProp = diffusivity*ones(nPore,1);
+    diffusionParams.PoreBulkProp = options.VaporPoreDiffusivity ; %diffusivity = 2e-5; % 02 in N2 at ambiant conditions;diffusivity*ones(nPore,1);
     diffusionParams.LinkBulkProp =0; % scalar or array(nLink,1)
     diffusionConductances = LocalScaleComputeConductancesDiffusion(network,diffusionParams);  
         % change this to multicomponents diffusion conductance ?
@@ -66,7 +68,7 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
     %Temperature field
     [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,...
             options.TemperatureInlet,options.TemperatureOutlet,...
-            options.TemperatureInletLinks,options.TemperatureOutletLinks,options.TemperatureTransportPores) ;
+            options.TemperatureInletLinks,options.TemperatureOutletLinks,options.TemperatureTransportPores,options.TemperaturePoreHeatConductivity) ;
     condensationInfos.TemperatureField = temperature;
     condensationInfos.HeatTransferCoefficient = heatTransferCoefficient;
 

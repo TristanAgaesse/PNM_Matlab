@@ -86,12 +86,14 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         %% Find next invasion time and link
         
         %Trouver quel pore est en train d'etre envahi pour chaque cluster
-        poreBeingInvaded = zeros(1,nCluster);    
+        poreBeingInvaded = zeros(1,nCluster); 
+        gasTransportPoresBoolean=zeros(1,nPore);
+        gasTransportPoresBoolean(gasTransportPores)=1;
         for iCluster=1:nCluster
             cluster = condensationClusters{iCluster};
             indexInvadedLink = cluster.GetMinimalPressureLink;
             invadedPore = cluster.GetOutwardPore(indexInvadedLink);
-            while invadedPore<=0 %Check for outlet link invasion
+            while invadedPore<=0 || gasTransportPoresBoolean(invadedPore)==0 %Check for outlet link invasion
                 disp('Outlet link invaded')
                 linkAbsoluteIndex = cluster.GetInterfaceLinkAbsoluteNumber(indexInvadedLink);
                 assert(ismember(linkAbsoluteIndex,outletLink))

@@ -14,11 +14,14 @@ contactAngle=pi*110/180*ones(network.GetNumberOfLinks,1);
 network.AddNewLinkData(contactAngle,'ContactAngle')
 
 % Set-up the options for condensation algorithm
+nPore=network.GetNumberOfPores;
+
 options.TemperatureTransportPores = 1:network.GetNumberOfPores ;
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
 options.TemperatureInlet = 90+273;                                  % GDL/MPL interface temperature
 options.TemperatureOutlet = 50+273;                                 % rib temperature
+options.TemperaturePoreHeatConductivity=1*ones(nPore,1);
 
 options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]);  % channel
 
@@ -29,6 +32,7 @@ options.VaporInletLinks = network.GetLinksFrontiere([1 2 3]);       % GDL/MPL in
 options.VaporOutletLinks = network.GetLinksFrontiere([4 6]);        % Channel
 options.RelativeHumidityInlet = 0.95;
 options.RelativeHumidityOutlet = 0.90;
+options.VaporPoreDiffusivity = 2e-5*ones(nPore,1); % 02 in N2 at ambiant conditions
 
 clusterOptions.Coalescence = 'none' ;
 clusterOptions.CapillaryPressureLaw = 'LaplaceCylinder';

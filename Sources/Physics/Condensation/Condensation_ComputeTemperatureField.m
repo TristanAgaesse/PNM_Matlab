@@ -1,14 +1,15 @@
-function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,temperatureInlet,temperatureOutlet,temperatureInletLinks,temperatureOutletLinks,temperatureTransportPores) 
+function  [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,temperatureInlet,temperatureOutlet,temperatureInletLinks,temperatureOutletLinks,temperatureTransportPores,poreHeatConductivity) 
     %Temperature field resulting from a temperature difference between 
     %temperature inlet and temperature outlet
 
-    heatDiffusivity = 1; % TODO : check value
+    
     
     
     parameters.GeometricModel.Pore = 'Cylinder' ;
     parameters.GeometricModel.Link = 'None' ;% 'SurfaceResistance_RealSurface'
     nPore = network.GetNumberOfPores;
-    parameters.PoreBulkProp = heatDiffusivity*ones(nPore,1);
+    assert(length(poreHeatConductivity)==nPore);
+    parameters.PoreBulkProp = poreHeatConductivity; %  heatDiffusivity = 1;  poreHeatDiffusivityheatDiffusivity*ones(nPore,1);
     parameters.LinkBulkProp =0; % scalar or array(nLink,1)
     
     
