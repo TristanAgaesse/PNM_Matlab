@@ -20,6 +20,9 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
     condensationInfos.EffectiveDiffusion={};
     condensationInfos.InvadedPore={};
     condensationInfos.InvasionTime={};
+    condensationInfos.WaterConcentration={};
+    condensationInfos.WaterDiffusionFlux={};
+    
     
     nPore = network.GetNumberOfPores;
     allInvadedPore = zeros(1,nPore);
@@ -57,13 +60,15 @@ function [condensationClusters, condensationInfos] = Condensation_DiffusionContr
         
         %gasTransportPores = cluster.GetInvadedPoresComplementary; %TODO:check redondance with BC above
         
-        [partialVaporPressure,diffusionFlux,effectiveDiffusion ] = Condensation_ComputePartialVaporPressure(network,...
+        [partialVaporPressure,waterConcentration,diffusionFlux,effectiveDiffusion ] = Condensation_ComputePartialVaporPressure(network,...
                 gasTransportPores,diffusionConductances,...
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
         
         condensationInfos.EffectiveDiffusion{end+1} = effectiveDiffusion;
         condensationInfos.PartialVaporPressure{end+1} = partialVaporPressure;
+        condensationInfos.WaterConcentration{end+1}=waterConcentration;
+        condensationInfos.WaterDiffusionFlux{end+1}=diffusionFlux;
         
         % sum the diffusion flux on the boundary of each cluster
         nCluster = length(condensationClusters);

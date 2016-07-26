@@ -20,7 +20,7 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 %   capillaires : les liens ayant la pression capillaire critique la plus
 %   faible sont envahis en premier. Plus de détails dans la fonction 
 %   DiffusionControledCondensation.
-%
+%   
 %Input : network, options
 %     network : pore network on which the algorithm is run
 %     options.TemperatureInletLinks : links inlet for heat
@@ -34,11 +34,11 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 %     options.RelativeHumidityInlet
 %     options.RelativeHumidityOutlet
 %     options.ClusterOptions : options for the beheavior of liquid phase (see ClusterMonophasique)
-%                                  
+%     
 %Output : [cluster,outputInformation]
 %     cluster : liquid water cluster resulting from condensation
 %     outputInformation : information to analyse the degradation process 
-%
+%   
 %Example :
 %
 %---------------------------------------------------------------------------------------------    
