@@ -18,7 +18,13 @@ function [ fieldValue, flux,  effectiveConductance ]  =  ComputeLinearTransport(
 %           boundaryConditions.solver (optional) = 'mldivide','minres','pcg' or 'gmres'
 %
 %Output : [ fieldValue, flux, effectiveConductance ]
-    
+
+%Remark : source terms are currently not implemented. To add support for
+%   source terms, the procedure is the following. 
+%   1) add a source term array (one scalar per pore) to ComputeLinearTransport inputs .
+%   2) update the function FillRigthHandSide : add the sources here
+%   3) if necessary, make the function ComputeEffectiveConductance optional
+%
     
     disp('Computing linear transport ')
     tic;

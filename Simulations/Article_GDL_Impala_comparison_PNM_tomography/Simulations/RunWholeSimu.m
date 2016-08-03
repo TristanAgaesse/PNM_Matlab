@@ -1,13 +1,13 @@
-%Network creation
+
 tic
-%load pnm extraction results
-InputScriptImageBasedPNM
+
+%% Network creation
+%fileName = 'pnm_extraction_results.mat'
 voxelLength=2.2e-6;
-inputContainerMap('VoxelEdgeLength')=voxelLength;
-network = CreateImageBasedPoreNetwork(inputContainerMap);
+network=CreateNetworkImageFromPythonData(fileName,voxelEdgeLength);
 
 
-%Simulations
+%% Simulations
 
 linkDiameter=2*network.GetLinkDataList.('CapillaryRadius');
 %linkDiameter=sqrt(voxelLength^2*double(network.GetLinkData('RawData_GeometricSurface'))./pi);
