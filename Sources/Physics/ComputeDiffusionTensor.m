@@ -13,7 +13,7 @@ function diffusionTensor = ComputeDiffusionTensor( network, phaseConductances)
     
     %Computes conductances for diffusion
     
-    parameters.GeometricModel.Pore = 'Cylinder';
+    parameters.GeometricModel.Pore = 'PolynomialProfileDegree1';%'Cylinder' '2Cubes' 'PolynomialProfileDegree1'
     if isfield(network.GetPoreDataList,'Phase')
         phaseCode=network.GetPoreData('Phase');
     else

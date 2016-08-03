@@ -89,7 +89,7 @@ function [geometricModel,poreBulkProp,linkBulkProp] = ReadCheckInputs(network,pa
     % authorized values
     valid_Parameter                     = {'GeometricModel','PoreBulkProp','LinkBulkProp'};
     valid_Parameter_GeometricModel      = {'Pore','Link'};
-    valid_Parameter_GeometricModel_Pore = {'Cylinder'};
+    valid_Parameter_GeometricModel_Pore = {'Cylinder','2Cubes'};
     valid_Parameter_GeometricModel_Link = {'None','SurfaceResistance_RealSurface'};
     
     
@@ -277,20 +277,20 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
     distance2=FastNorm(b,dimension);
     
         %Internal links
-    lPore = distance1(internalLinks)./(1+linkRadius(internalLinks)/poreRadius(network.LinkOwners(internalLinks)));
+    lPore = distance1(internalLinks)./(1+linkRadius(internalLinks)./poreRadius(network.LinkOwners(internalLinks)));
     lLink = distance1(internalLinks)-lPore;
     resistanceCubePore = lPore./(poreRadius(network.LinkOwners(internalLinks)).^2);     
     resistanceCubeLink = lLink./(linkRadius(internalLinks).^2); 
     in_resistanceP1 = (resistanceCubePore+resistanceCubeLink)./poreBulkProp(network.LinkOwners(internalLinks));
     
-    lPore = distance2(internalLinks)./(1+linkRadius(internalLinks)/poreRadius(network.LinkNeighbours(internalLinks)));
-    lLink = distance2(internalLinks)-lPore;
+    lPore = distance2./(1+linkRadius(internalLinks)./poreRadius(network.LinkNeighbours(internalLinks)));
+    lLink = distance2-lPore;
     resistanceCubePore = lPore./(poreRadius(network.LinkNeighbours(internalLinks)).^2);     
     resistanceCubeLink = lLink./(linkRadius(internalLinks).^2); 
     in_resistanceP2 = (resistanceCubePore+resistanceCubeLink)./poreBulkProp(network.LinkNeighbours(internalLinks));
 
         %Boundary links
-    lPore = distance1(boundaryLinks)./(1+linkRadius(boundaryLinks)/poreRadius(network.LinkOwners(boundaryLinks)));
+    lPore = distance1(boundaryLinks)./(1+linkRadius(boundaryLinks)./poreRadius(network.LinkOwners(boundaryLinks)));
     lLink = distance1(boundaryLinks)-lPore;
     resistanceCubePore = lPore./(poreRadius(network.LinkOwners(boundaryLinks)).^2);     
     resistanceCubeLink = lLink./(linkRadius(boundaryLinks).^2); 
