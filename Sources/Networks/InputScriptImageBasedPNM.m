@@ -14,6 +14,7 @@ inputContainerMap('PoreImage') =  imagePores;             %image des pores label
 inputContainerMap('PorePropertyVolume') = transpose(poreVolumes);  %tableau nPore contenant le volume de chaque pore (en nombre de voxels)
 inputContainerMap('PorePropertyCenterOfMass') = poreCenterOfMass;             %tableau (nPore,3) contenant le barycentre de chaque pore
 inputContainerMap('PorePhase') = transpose(porePhase);         %tableau nPore contenant la phase à laquelle appartient chaque pore
+inputContainerMap('PoreInscribedSphereRadius') = transpose(poreInscribedSphereRadius);
 %Other pore properties
 myStruct=struct;
 myStruct.('NeighborPhases') = poresNeighborPhases;

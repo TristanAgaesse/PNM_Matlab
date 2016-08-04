@@ -62,6 +62,8 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     porePhase = double(inputContainerMap('PorePhase'));
     assert(size(porePhase,1)==nPore,'size(porePhase,1) must equal nPore')
     
+    porePropertyInscribedSphereRadius = double(inputContainerMap('PoreInscribedSphereRadius'));
+    assert(size(porePropertyInscribedSphereRadius,1)==nPore,'size(PropertyInscribedSphereRadius,1) must equal nPore')
     
     interfaceToPore=inputContainerMap('InterfaceToPore');
        
@@ -118,6 +120,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     
     %Rescaling des infos geometriques avec voxelEdgeLength
     poreVolume=voxelEdgeLength^3*double(porePropertyVolume);
+    poreInscribedSphereRadius = voxelEdgeLength*porePropertyInscribedSphereRadius;
     
     poreCenterOfMass=voxelEdgeLength*double(porePropertyCenterOfMass);
     internalLinkCapillaryRadius=voxelEdgeLength*double(internalLinkCapillaryRadius);
@@ -178,6 +181,7 @@ function poreNetwork = CreateImageBasedPoreNetwork(inputContainerMap)
     % Ajout au reseau des informations geometrique sur les pores et liens
     poreNetwork.AddNewPoreData(porePhase,'Phase')
     poreNetwork.AddNewPoreData(poreVolume,'Volume')
+    poreNetwork.AddNewPoreData(poreInscribedSphereRadius,'InscribedSphereRadius')
     
     poreDiameter=(6*poreVolume/pi).^(1/3);
     poreNetwork.AddNewPoreData(poreDiameter,'Diameter')

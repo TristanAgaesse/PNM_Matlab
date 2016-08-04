@@ -1,7 +1,8 @@
 function conductances = LocalScaleComputeConductancesDiffusion(network,parameters)
     % input : - network, 
     %         - parameters : struct with the following optional fields
-    %            parameters.GeometricModel.Pore = 'Cylinder' or '2Cubes'
+    %            parameters.GeometricModel.Pore = 'Cylinder' or '2Cubes' or
+    %               'PolynomialProfileDegree1' or 'VolumeConservation_LinearProfile'
     %            parameters.GeometricModel.Link = 'None' or 'SurfaceResistance_RealSurface'
     %            parameters.PoreBulkProp : bulk diffusivity - scalar or array(nPore,1)
     %            parameters.LinkBulkProp : bulk diffusivity - scalar or array(nLink,1)
@@ -45,7 +46,16 @@ function conductances = LocalScaleComputeConductancesDiffusion(network,parameter
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_PolynomialProfileDegree1(...
                                                     network,poreBulkConductivity,internalLinks,boundaryLinks);
             
+        case 'VolumeConservation_LinearProfile'
+            [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_VolumeConservation_LinearProfile(...
+                                                    network,poreBulkConductivity,internalLinks,boundaryLinks);
             
+        case 'ConstantProfilePoreRadius'
+            [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_ConstantProfilePore(...
+                                                            network,poreBulkConductivity,internalLinks,boundaryLinks)    ;
+        case 'VolumeConservation_ConstantProfile'
+            [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_VolumeConservation_ConstantProfile(...
+                                                            network,poreBulkConductivity,internalLinks,boundaryLinks);
     end
     
     
@@ -93,7 +103,8 @@ function [geometricModel,poreBulkProp,linkBulkProp] = ReadCheckInputs(network,pa
     % authorized values
     valid_Parameter                     = {'GeometricModel','PoreBulkProp','LinkBulkProp'};
     valid_Parameter_GeometricModel      = {'Pore','Link'};
-    valid_Parameter_GeometricModel_Pore = {'Cylinder','2Cubes','PolynomialProfileDegree1'};
+    valid_Parameter_GeometricModel_Pore = {'Cylinder','2Cubes','PolynomialProfileDegree1','VolumeConservation_LinearProfile',...
+        'ConstantProfilePoreRadius','VolumeConservation_ConstantProfile'};
     valid_Parameter_GeometricModel_Link = {'None','SurfaceResistance_RealSurface'};
     
     
@@ -189,6 +200,67 @@ function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=Com
     bound_resistance1 = distance1(boundaryLinks)./(poreBulkProp(network.LinkOwners(boundaryLinks)).*linkSurface(boundaryLinks));
     bound_resistance2 = 0;
     
+    
+end
+
+function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=ComputeResistancePore_ConstantProfilePore(...
+                                                            network,poreBulkProp,internalLinks,boundaryLinks)
+    
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    
+    dimension = network.Dimension;
+    
+    
+    allLinks=1:nLink;
+    CheckLinkDiameter(network)
+    %linkSurface = network.GetLinkData('Surface');
+    %poreSurface = pi*(network.GetPoreData('Volume').^(1/3)/2).^2;
+    poreVolume=network.GetPoreData('Volume');
+    poreDiameter =poreVolume.^(1/3);
+    poreSurface = poreDiameter.^2;
+    %linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
+    
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
+%     %Compute volume scaling factor for each pore
+%     poreVolumeApproximation = zeros(nPore,1);
+%     
+%     for iPore=1:nPore
+%         
+%         poreLinks = network.GetLinksOfPore(iPore);
+%         nPoreLinks=length(poreLinks);
+%         if nPoreLinks==0
+%             poreVolumeApproximation(iPore)=poreVolume(iPore);
+%         else
+%             thisPoreDiameter = poreDiameter(iPore);
+%             foo=linkCenter(poreLinks,:)-poreCenter(iPore*ones(1,nPoreLinks),:);
+%             L = FastNorm(foo,dimension);
+%             poreVolumeApproximation(iPore)=sum(L)*thisPoreDiameter^2-thisPoreDiameter^3*(nPoreLinks-1);%    pi*(thisPoreRadius^3).*(sum(L.*(1+beta+beta.^2)/(thisPoreRadius*3))-nPoreLinks*(2/3)+4/3);
+%         end
+%     end
+%         
+%     scaleFactor = (poreVolumeApproximation./poreVolume).^3;
+%     scaleFactor(scaleFactor<0)=1;
+%     scaleFactor(scaleFactor>1)=1;
+%     %assert(all(scaleFactor>0) && all(scaleFactor<=1))
+    scaleFactor=ones(nPore,1);
+    
+        %Internal links
+    in_resistance1 = distance1(internalLinks)./(poreBulkProp(network.LinkOwners(internalLinks)).*poreSurface(network.LinkOwners(internalLinks)).*scaleFactor(network.LinkOwners(internalLinks)));%linkSurface(internalLinks));
+    in_resistance2 = distance2./(poreBulkProp(network.LinkNeighbours(internalLinks)).*poreSurface(network.LinkNeighbours(internalLinks)).*scaleFactor(network.LinkNeighbours(internalLinks)));%linkSurface(internalLinks));
+    
+        %Boundary links
+    bound_resistance1 = distance1(boundaryLinks)./(poreBulkProp(network.LinkOwners(boundaryLinks)).*poreSurface(network.LinkOwners(boundaryLinks)).*scaleFactor(network.LinkOwners(boundaryLinks)));%linkSurface(boundaryLinks));
+    bound_resistance2 = 0;
+    
+    
 end
 
 function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_2Cubes(...
@@ -206,6 +278,7 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
     %linkRadius = (network.GetLinkData('Surface')/pi).^(1/2); 
     %poreRadius = (network.GetPoreData('Volume').^(1/3))/2;
     poreRadius = network.GetPoreData('Diameter')/2;
+    %poreRadius = network.GetPoreData('InscribedSphereRadius');
     %linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
@@ -296,16 +369,160 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
 end                                                
 
 
+function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_VolumeConservation_LinearProfile(...
+                                                    network,poreBulkProp,internalLinks,boundaryLinks)
+    
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    
+    dimension = network.Dimension;
+    
+    
+    allLinks=1:nLink;
+    CheckLinkDiameter(network)
+    linkRadius = network.GetLinkData('CapillaryRadius');
+    poreRadius = network.GetPoreData('InscribedSphereRadius');
+    poreVolume = network.GetPoreData('Volume');
+    
+    %assert(all(4*pi/3*poreRadius.^3<=poreVolume))
+    
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
+    
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
+    %Compute volume scaling factor for each pore
+    scaleFactor = zeros(nPore,1);
+    for iPore=1:nPore
+        
+        poreLinks = network.GetLinksOfPore(iPore);
+        nPoreLinks=length(poreLinks);
+        if nPoreLinks==0
+            scaleFactor(iPore)=1;
+        else
+            thisPoreRadius = poreRadius(iPore);
+            beta = linkRadius(poreLinks)/thisPoreRadius;
+            foo=linkCenter(poreLinks,:)-poreCenter(iPore*ones(1,nPoreLinks),:);
+            L = FastNorm(foo,dimension);
+            %volume is a2*R^2-a3*R^3
+            a2=pi*sum(L.*(1+beta+beta.^2))/3;
+            a3=pi*(nPoreLinks*(2/3)-4/3);
+            maxAccessibleVolume=(a2^3/a3^2)*(4/9-8/27);
+            if not(maxAccessibleVolume>=poreVolume(iPore))
+                scaleFactor(iPore)=1;
+            else
+                %find a conductance typical length which conserves pore volume 
+                p=[a3, -a2, 0 , poreVolume(iPore)];
+                r = roots(p);
+                r = r(isreal(r));
+
+                scaleFactor(iPore)=min(r(r>0))/poreRadius(iPore);
+            end
+        end
+    end
+    scaleFactor( scaleFactor>1)=1;
+    %scaleFactor = (poreVolumeApproximation./poreVolume).^3;
+   % assert(all(scaleFactor>0) && all(scaleFactor<=1))
+    
+        %Internal links
+    effectiveSurface = pi*linkRadius(internalLinks).*poreRadius(network.LinkOwners(internalLinks)) ;
+    poreList=network.LinkOwners(internalLinks);
+    in_resistanceP1 = distance1(internalLinks)./(poreBulkProp(poreList).*effectiveSurface.*scaleFactor(poreList).^2);
+    
+    effectiveSurface = pi*linkRadius(internalLinks).*poreRadius(network.LinkNeighbours(internalLinks)) ;
+    poreList=network.LinkNeighbours(internalLinks);
+    in_resistanceP2 = distance2./(poreBulkProp(poreList).*effectiveSurface.*scaleFactor(poreList).^2);
+    
+        %Boundary links
+    effectiveSurface =  pi*linkRadius(boundaryLinks).*poreRadius(network.LinkOwners(boundaryLinks));
+    poreList=network.LinkOwners(boundaryLinks);
+    bound_resistanceP1 = distance1(boundaryLinks)./(poreBulkProp(poreList).*effectiveSurface.*scaleFactor(poreList).^2);
+    bound_resistanceP2 = 0;                                            
+    
+end
+
+function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=ComputeResistancePore_VolumeConservation_ConstantProfile(...
+                                                            network,poreBulkProp,internalLinks,boundaryLinks)
+    
+    nLink = network.GetNumberOfLinks;
+    nPore = network.GetNumberOfPores;
+    
+    dimension = network.Dimension;
+    
+    
+    allLinks=1:nLink;
+    CheckLinkDiameter(network)
+    %linkSurface = network.GetLinkData('Surface');
+    %poreSurface = pi*(network.GetPoreData('Volume').^(1/3)/2).^2;
+    poreVolume=network.GetPoreData('Volume');
+    poreDiameter =poreVolume.^(1/3);
+    poreSurface = poreDiameter.^2;
+    %linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
+    poreCenter=network.GetPoreCenter(1:nPore);
+    linkCenter=network.GetLinkCenter(1:nLink);
+    
+    a=poreCenter(network.LinkOwners(allLinks),:)-linkCenter(allLinks,:);
+    distance1=FastNorm(a,dimension);
+    
+    b=poreCenter(network.LinkNeighbours(internalLinks),:)-linkCenter(internalLinks,:);
+    distance2=FastNorm(b,dimension);
+    
+    
+    scaleFactor=zeros(nPore,1);
+    
+    for iPore=1:nPore
+        
+        poreLinks = network.GetLinksOfPore(iPore);
+        nPoreLinks=length(poreLinks);
+        if nPoreLinks==0
+            scaleFactor(iPore)=1;
+        else
+            foo=linkCenter(poreLinks,:)-poreCenter(iPore*ones(1,nPoreLinks),:);
+            L = FastNorm(foo,dimension);
+            %volume is a2*R^2-a3*R^3
+            a2=pi*sum(L);
+            a3=pi*(nPoreLinks*(2/3)-4/3);
+            maxVolume=(a2^3/a3^2)*(4/9-8/27);
+            if not(maxVolume>=poreVolume(iPore))
+                scaleFactor(iPore)=1;
+            else
+                p=[a3, -a2, 0 , poreVolume(iPore)];
+                r = roots(p);
+                r = r(isreal(r));
+                foo=min(r(r>0));
+                if ~isempty(foo)
+                    scaleFactor(iPore)=min(r(r>0))/(poreDiameter(iPore)/2);
+                else
+                    scaleFactor(iPore)=1;
+                end
+            end
+        end
+    end
+    scaleFactor( scaleFactor>1)=1;
+    
+        %Internal links
+    in_resistance1 = distance1(internalLinks)./(poreBulkProp(network.LinkOwners(internalLinks)).*poreSurface(network.LinkOwners(internalLinks)).*scaleFactor(network.LinkOwners(internalLinks)).^2);%linkSurface(internalLinks));
+    in_resistance2 = distance2./(poreBulkProp(network.LinkNeighbours(internalLinks)).*poreSurface(network.LinkNeighbours(internalLinks)).*scaleFactor(network.LinkNeighbours(internalLinks)).^2);%linkSurface(internalLinks));
+    
+        %Boundary links
+    bound_resistance1 = distance1(boundaryLinks)./(poreBulkProp(network.LinkOwners(boundaryLinks)).*poreSurface(network.LinkOwners(boundaryLinks)).*scaleFactor(network.LinkOwners(boundaryLinks)).^2);%linkSurface(boundaryLinks));
+    bound_resistance2 = 0;
+    
+end
+
 function [in_resistanceLink,bound_resistanceLink]=ComputeResistanceLink_SurfaceResistance_RealSurface(...
                                                     network,linkBulkProp,internalLinks,boundaryLinks)
     
-    
 	linkSurface = network.GetLinkData('RealSurface');    
-     
+    
 	in_resistanceLink=linkBulkProp(internalLinks)./linkSurface(internalLinks);
-     
+    
 	bound_resistanceLink=zeros(1,length(boundaryLinks)); %Here I chose to put no surface resistance on boundary links
-                                                
+    
 end
 
 
