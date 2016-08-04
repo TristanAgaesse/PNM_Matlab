@@ -36,24 +36,28 @@ function conductances = LocalScaleComputeConductancesDiffusion(network,parameter
     
     switch geometricModel.Pore
         
-        case 'Cylinder'
+        case 'Cylinder' % constant profile with surface adjusted to link surface
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_Cylinder(...
                                                     network,poreBulkConductivity,internalLinks,boundaryLinks);
-        case '2Cubes'
+                                                
+        case 'ConstantProfilePoreRadius' % constant profile with surface adjusted to pore volume
+            [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_ConstantProfilePore(...
+                                                            network,poreBulkConductivity,internalLinks,boundaryLinks)    ;                                        
+                                                
+        case '2Cubes'  % square profil: two cubes
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_2Cubes(...
                                                     network,poreBulkConductivity,internalLinks,boundaryLinks);
-        case 'PolynomialProfileDegree1'
+                                                
+        case 'PolynomialProfileDegree1' %linear profile between link and pore radius
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_PolynomialProfileDegree1(...
                                                     network,poreBulkConductivity,internalLinks,boundaryLinks);
             
-        case 'VolumeConservation_LinearProfile'
+        case 'VolumeConservation_LinearProfile'  %linear profile with scaling to have volume conservation
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_VolumeConservation_LinearProfile(...
                                                     network,poreBulkConductivity,internalLinks,boundaryLinks);
             
-        case 'ConstantProfilePoreRadius'
-            [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_ConstantProfilePore(...
-                                                            network,poreBulkConductivity,internalLinks,boundaryLinks)    ;
-        case 'VolumeConservation_ConstantProfile'
+        
+        case 'VolumeConservation_ConstantProfile' %constant profile with scaling to have volume conservation
             [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]=ComputeResistancePore_VolumeConservation_ConstantProfile(...
                                                             network,poreBulkConductivity,internalLinks,boundaryLinks);
     end
@@ -61,10 +65,10 @@ function conductances = LocalScaleComputeConductancesDiffusion(network,parameter
     
     switch geometricModel.Link
         
-        case 'None'
+        case 'None'     %no surface resistance at link crossing
             in_resistanceLink = 0;
             bound_resistanceLink = 0;    
-        case 'SurfaceResistance_RealSurface'
+        case 'SurfaceResistance_RealSurface' %surface resistance at link crossing proportional to link surface
             [in_resistanceLink,bound_resistanceLink]=ComputeResistanceLink_SurfaceResistance_RealSurface(...
                                                     network,linkBulkConductivity,internalLinks,boundaryLinks);
             
