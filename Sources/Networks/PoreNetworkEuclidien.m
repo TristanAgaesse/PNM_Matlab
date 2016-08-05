@@ -151,15 +151,15 @@ classdef PoreNetworkEuclidien < PoreNetwork
         end
                 
         
-        function ExportToBabe(network,numInlet,numOutlet)
+        function ExportToPNM_CEAcpp(network,numInlet,numOutlet)
             assert(network.GetDimension==3,'ExportToBabe requires a dimension 3 network');
             
             %input : network,numInlet,numOutlet
             file_name='Geometry';
-            writer=FileWriterBabe(file_name);
+            writer=FileWriterPNM_CEAcpp(file_name);
             tic;
-            disp('G�n�ration du fichier Geometry pour Babe...');
-            donnees_output=network.PrivateBabeOutputStruct(numInlet,numOutlet);
+            disp('G�n�ration du fichier Geometry pour PNM_CEAcpp...');
+            donnees_output=network.PrivateOutputStructPNM_CEAcpp(numInlet,numOutlet);
             writer.Write(donnees_output);
             duree=toc;minutes=floor(duree/60);secondes=duree-60*minutes;
             fprintf('Fichier Geometry genere. Dur�e : %d minutes %f s. \n',minutes,secondes);
@@ -180,8 +180,8 @@ classdef PoreNetworkEuclidien < PoreNetwork
         
         
         function vtk_struct=PrivateVTKOutputStructBallAndStick(network)
-            %cr�ation en m�moire de la structure d'un fichier VTK POLYDATA 
-            %pour afficher le r�seau de pores dans paraview sous forme ball
+            %creation en memoire de la structure d'un fichier VTK POLYDATA 
+            %pour afficher le reseau de pores dans paraview sous forme ball
             %and stick.
             %input : network
             %output :vtk_struct
@@ -309,9 +309,9 @@ classdef PoreNetworkEuclidien < PoreNetwork
         
         
         
-        function babe_struct=PrivateBabeOutputStruct(network,numInlet,numOutlet)
+        function babe_struct=PrivateOutputStructPNM_CEAcpp(network,numInlet,numOutlet)
             %cr�ation en m�moire de la structure d'un fichier Geometry du
-            %code Babe (code PNM C++ du CEA)
+            %code PNM_CEAcpp (code PNM C++ du CEA)
             %input : network,numInlet,numOutlet
             %output :  babe_struct           
             

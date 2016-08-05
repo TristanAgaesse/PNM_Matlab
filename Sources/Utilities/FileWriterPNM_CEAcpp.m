@@ -1,4 +1,4 @@
-classdef FileWriterBabe <handle
+classdef FileWriterPNM_CEAcpp <handle
     %FILEWRITERXML Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -10,7 +10,7 @@ classdef FileWriterBabe <handle
     methods
         % Construct an object and 
         % save the file ID  
-        function file_writer = FileWriterBabe(filename) 
+        function file_writer = FileWriterPNM_CEAcpp(filename) 
             file_writer.FileName=strcat(filename,'.txt');
             a=dir(file_writer.FileName);
             if ~isempty(a)
