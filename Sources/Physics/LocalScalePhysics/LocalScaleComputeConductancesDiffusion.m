@@ -186,7 +186,7 @@ function [in_resistance1,in_resistance2,bound_resistance1,bound_resistance2]=Com
     allLinks=1:nLink;
     CheckLinkDiameter(network)
     linkSurface = network.GetLinkData('Surface');
-    %linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
+    %linkSurface = pi*(network.GetLinkData('CapillaryRadius')).^2;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
     
@@ -279,11 +279,10 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
     allLinks=1:nLink;
     CheckLinkDiameter(network)
     linkRadius = network.GetLinkData('Diameter')/2;
-    %linkRadius = (network.GetLinkData('Surface')/pi).^(1/2); 
+    %linkRadius = network.GetLinkData('CapillaryRadius')
     %poreRadius = (network.GetPoreData('Volume').^(1/3))/2;
     poreRadius = network.GetPoreData('Diameter')/2;
     %poreRadius = network.GetPoreData('InscribedSphereRadius');
-    %linkSurface = pi*(network.GetLinkData('Diameter')/2).^2;
     poreCenter=network.GetPoreCenter(1:nPore);
     linkCenter=network.GetLinkCenter(1:nLink);
     
@@ -315,11 +314,11 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
     lPore(foo)=distance2(foo)/2;
     lLink(foo)=lPore(foo);
     assert(all(lLink>0))
-
+    
     resistanceCubePore = 0.25*lPore./(poreRadius(network.LinkNeighbours(internalLinks)).^2);     
     resistanceCubeLink = 0.25*lLink./(linkRadius(internalLinks).^2); 
     in_resistanceP2 = (resistanceCubePore+resistanceCubeLink)./poreBulkProp(network.LinkNeighbours(internalLinks));
-
+    
         %Boundary links
     lPore = distance1(boundaryLinks)./(1+linkRadius(boundaryLinks)./poreRadius(network.LinkOwners(boundaryLinks)));
     lLink = distance1(boundaryLinks)-lPore;
@@ -331,7 +330,7 @@ function [in_resistanceP1,in_resistanceP2,bound_resistanceP1,bound_resistanceP2]
     resistanceCubePore = 0.25*lPore./(poreRadius(network.LinkOwners(boundaryLinks)).^2);     
     resistanceCubeLink = 0.25*lLink./(linkRadius(boundaryLinks).^2); 
     bound_resistanceP1 = (resistanceCubePore+resistanceCubeLink)./poreBulkProp(network.LinkOwners(boundaryLinks));    
-        
+    
     bound_resistanceP2 = 0;                                            
 end
 
