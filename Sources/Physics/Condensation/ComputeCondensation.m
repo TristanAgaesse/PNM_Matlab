@@ -11,15 +11,15 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 %   de la pression de vapeur sont disponibles dans la fonction
 %   Nucleation, avec des subtilites dans le cas ou il y a plusieurs
 %   points de nucleations simultanes.
-%      - Lors de la seconde etape, la condensation se poursuit sur les 
-%   bords des clusters car de la vapeur d'eau arrive par diffusion. Le
+%      - Lors de la seconde etape, les clusters grossissent car de la   
+%   vapeur d'eau arrive par diffusion sur les bords des clusters. Le
 %   rythme de croissance des clusters est controle par le flux de vapeur
 %   qui arrive par diffusion. On procede donc a un envahissement selon un 
 %   algorithme temporel tenant compte d'un bilan de matiere d'eau. La 
 %   direction de croissance des clusters est controle par les forces
 %   capillaires : les liens ayant la pression capillaire critique la plus
 %   faible sont envahis en premier. Plus de détails dans la fonction 
-%   DiffusionControledCondensation.
+%   ClusterGrowth.
 %   
 %Input : network, options
 %     network : pore network on which the algorithm is run
@@ -42,7 +42,7 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 %     outputInformation : information to analyse the degradation process 
 %   
 %Example :
-%
+%     [condensationInfos,condensationClusters]=ComputeCondensation(network, options)
 %---------------------------------------------------------------------------------------------    
 
     %% Initialisation of the algorithm
@@ -87,7 +87,7 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
 
     %% DiffusionControledCondensation
     disp('DiffusionControledCondensation')
-    [condensationClusters, clusterGrowthInfos] = Condensation_DiffusionControledCondensation(network,...
+    [condensationClusters, clusterGrowthInfos] = Condensation_ClusterGrowth(network,...
                          nucleationClusters, options, diffusionConductances,equilibriumVaporPressure,temperature);
                      
     condensationInfos.ClusterGrowthInfos = clusterGrowthInfos;

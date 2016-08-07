@@ -1,6 +1,6 @@
-function [condensationClusters, condensationInfos] = Condensation_DiffusionControledCondensation(...
+function [condensationClusters, condensationInfos] = Condensation_ClusterGrowth(...
                 network,nucleationClusters,options,diffusionConductances,equilibriumVaporPressure,temperature)
-%CONDENSATION_DIFFUSIONCONTROLEDCONDENSATION Deuxieme partie de l'algorithme 
+%Condensation_ClusterGrowth Deuxieme partie de l'algorithme 
 % de condensation de Marc Prat. 
 %   
 %   Lors de cette seconde etape, la condensation se poursuit sur les 
