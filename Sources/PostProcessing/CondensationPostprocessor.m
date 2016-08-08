@@ -152,7 +152,11 @@ classdef CondensationPostprocessor
             
         end
         
+        %% Plots
         
+        % Global liquid saturation (as a function of anisotropy degree or GDL penetration) 
+        % In-plane and throuugh plane saturation profiles (comme dans la thèse de benjamin)
+        % 3D patterns (cf thèse Benjamin)
         
     end
     
