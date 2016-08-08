@@ -42,7 +42,7 @@ classdef CondensationPostprocessor
             
             nPore = postProcessor.Network.GetNumberOfPores;
             poreLookUpTable = zeros(1,nPore);
-                      
+            
             nRegion=length(geometryRegions);
             poreCenters = postProcessor.Network.GetPoreCenter(1:nPore);
             
@@ -56,7 +56,26 @@ classdef CondensationPostprocessor
             end
             
         end
-                
+         
+        function blockAverage = GetFieldBlockAveraged(postProcessor,field,poreLookUpTable)
+            % Input : postProcessor,field,poreLookUpTable
+            % Output : blockAverage (mean value of field for each block)
+            % Example : field = rand(nPore,1)
+            %           postProcessor.GetFieldBlockAveraged(field,poreLookUpTable) 
+            
+            nBlock = max(poreLookUpTable);
+            blockAverage = zeros(1,nBlock);
+            poreVolume=postProcessor.Network.GetPoreData('Volume');
+            for iBlock=1:nBlock
+                poreFilter = (poreLookUpTable == iBlock);
+                blockVolume = sum(poreVolume(poreFilter));
+                fieldIntegral = sum(field(poreFilter).*poreVolume(poreFilter));
+                blockAverage(iBlock) = fieldIntegral/blockVolume;
+            end
+        end
+        
+        
+        
         function [geometryRegions,geometryRegions3DIndex] = BuildGeometryRegions3DDiscretized(postProcessor,infos_Discretization)
             % Put
             % Input : postProcessor,infos_Discretization
@@ -83,12 +102,15 @@ classdef CondensationPostprocessor
             %   [geometryRegions,geometryRegions2DIndex] = postProcessor.BuildGeometryRegions2DDiscretized(infos_Discretization)
             %   region_x1y2 = geometryRegions{geometryRegions2DIndex(1,2)}
             
-           
+            
             infos_Discretization.Z=[-Inf,+Inf];
             [geometryRegions,geometryRegions3DIndex] = GetGeometryRegions3DDiscretized(postProcessor,infos_Discretization);
             
             geometryRegions2DIndex = geometryRegions3DIndex(:,:,1);
         end
+        
+
+        
         
         %% Cluster evolution tree
         function [tree,treeInfos] = BuildClusterEvolutionTree(postProcessor)
@@ -98,6 +120,11 @@ classdef CondensationPostprocessor
             %Example : [tree,treeInfos] = postProcessor.BuildClusterEvolutionTree
             
             error('Not Implemented')
+            
+            % detect cluster coalescence            
+            
+            %Correler tree a taille d amas, positions, taux de croissance ?
+            
         end
         
         
@@ -109,15 +136,22 @@ classdef CondensationPostprocessor
             nPore = postProcessor.Network.GetNumberOfPores;
             field = zeros(nPore,1);
             
-            %CondensationInfos.
+            %CondensationInfos.     ; separer nucleation et growth ?
+            
+            %put c=c_eq in liquid invaded pores 
             
         end
         
         function field = GetFieldLiquidSaturation(postProcessor,iStep)
-        
+            % saturation : 0 ou 1 pour chaque pore
+            
             nPore = postProcessor.Network.GetNumberOfPores;
             field = zeros(nPore,1);
+            
+            %CondensationInfos.     ; separer nucleation et growth ?
+            
         end
+        
         
         
     end
