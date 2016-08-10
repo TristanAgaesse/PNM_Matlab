@@ -27,7 +27,7 @@ classdef PostProcessorVolumeAverage
             %   infos_Discretization.X = [xmin,xmax];
             %   infos_Discretization.Y = [ymin,ymean,ymax];
             %   infos_Discretization.Z = linspace(zmin,zmax,10);
-            %   [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions_XYZDiscretized(infos_Discretization)
+            %   [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions3DDiscretized(infos_Discretization)
             %   region_x1y2z5 = geometryRegions{geometryRegions3DIndex(1,2,5)}
             %   poreLookUpTable = postProcessor.BuildPoreLookUpTable(geometryRegions)
             %   poresInRegion_x1y2z5 = find(ismember(poreLookUpTable,geometryRegions3DIndex(1,2,5)))
@@ -43,15 +43,14 @@ classdef PostProcessorVolumeAverage
                 
                 xfilter = and(poreCenters(:,1)>=thisRegion.Xmin,poreCenters(:,1)<=thisRegion.Xmax) ;
                 yfilter = and(poreCenters(:,2)>=thisRegion.Ymin,poreCenters(:,2)<=thisRegion.Ymax) ;
-                zfilter = and(poreCenters(:,3)>=thisRegion.Ymin,poreCenters(:,3)<=thisRegion.Ymax) ;
+                zfilter = and(poreCenters(:,3)>=thisRegion.Zmin,poreCenters(:,3)<=thisRegion.Zmax) ;
                 
-                poreLookUpTable(xfilter,yfilter,zfilter)=iRegion;
+                poreLookUpTable(and(and(xfilter,yfilter),zfilter))=iRegion;
             end
             
-            
-            assert(isempty(poreLookUpTable==0))
-            
+            assert(all(poreLookUpTable>0))
         end
+        
         
         function blockAverage = GetFieldBlockAveraged(postProcessor,field,poreLookUpTable)
             % Input : postProcessor,field,poreLookUpTable
@@ -62,6 +61,7 @@ classdef PostProcessorVolumeAverage
             nBlock = max(poreLookUpTable);
             blockAverage = zeros(1,nBlock);
             poreVolume=postProcessor.Network.GetPoreData('Volume');
+            field=field(:);
             for iBlock=1:nBlock
                 poreFilter = (poreLookUpTable == iBlock);
                 blockVolume = sum(poreVolume(poreFilter));
@@ -81,11 +81,34 @@ classdef PostProcessorVolumeAverage
             %   infos_Discretization.X = [xmin,xmax];
             %   infos_Discretization.Y = [ymin,ymean,ymax];
             %   infos_Discretization.Z = linspace(zmin,zmax,10);
-            %   [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions_XYZDiscretized(infos_Discretization)
+            %   [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions3DDiscretized(infos_Discretization)
             %   region_x1y2z5 = geometryRegions{geometryRegions3DIndex(1,2,5)}
             
             
+            nx = length(infos_Discretization.X)-1;
+            ny = length(infos_Discretization.Y)-1;
+            nz = length(infos_Discretization.Z)-1;
+            
+            geometryRegions3DIndex = zeros([nx,ny,nz]);
+            nRegion=nx*ny*nz;
+            geometryRegions=cell(1,nRegion);
+            
+            for iRegion=1:nRegion
+                [i,j,k]=ind2sub([nx,ny,nz],iRegion);
+                geometryRegions3DIndex(i,j,k)=iRegion;
+                
+                thisRegion=struct;
+                thisRegion.Xmin = infos_Discretization.X(i);
+                thisRegion.Xmax = infos_Discretization.X(i+1);
+                thisRegion.Ymin = infos_Discretization.Y(j);
+                thisRegion.Ymax = infos_Discretization.Y(j+1);
+                thisRegion.Zmin = infos_Discretization.Z(k);
+                thisRegion.Zmax = infos_Discretization.Z(k+1);
+                
+                geometryRegions{iRegion}=thisRegion;
+            end
         end
+        
         
         function [geometryRegions,geometryRegions2DIndex] = BuildGeometryRegions2DDiscretized(postProcessor,infos_Discretization)
             % Put
@@ -138,9 +161,8 @@ classdef PostProcessorVolumeAverage
             %Build discretization look up table
             nPore = postProcessor.Network.GetNumberOfPores;
             dimension = postProcessor.Network.GetDimension;
-            poreCenters = GetPoreCenters;
+            poreCenters = postProcessor.Network.GetPoreCenter(1:nPore);
             
-            assert(size(poreCenters)==[nPore,dimension])
             xmin = min(poreCenters(:,1));
             xmax = max(poreCenters(:,1));
             ymin = min(poreCenters(:,2));
@@ -154,10 +176,10 @@ classdef PostProcessorVolumeAverage
             end
             
             infos_Discretization=struct;
-            infos_Discretization.X = linspace(xmin,xmax,nx);
-            infos_Discretization.Y = linspace(ymin,ymax,ny);
-            infos_Discretization.Z = linspace(zmin,zmax,nz);
-            [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions_XYZDiscretized(infos_Discretization);
+            infos_Discretization.X = linspace(xmin,xmax,nx+1);
+            infos_Discretization.Y = linspace(ymin,ymax,ny+1);
+            infos_Discretization.Z = linspace(zmin,zmax,nz+1);
+            [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions3DDiscretized(infos_Discretization);
             poreLookUpTable = postProcessor.BuildPoreLookUpTable(geometryRegions);
             
             
@@ -172,11 +194,11 @@ classdef PostProcessorVolumeAverage
             
             % Plot data
             if isX
-                abscisse = infos_Discretization.X;
+                abscisse = (infos_Discretization.X(1:end-1)+infos_Discretization.X(2:end))/2;
             elseif isY
-                abscisse = infos_Discretization.Y;
+                abscisse = (infos_Discretization.Y(1:end-1)+infos_Discretization.Y(2:end))/2;
             else
-                abscisse = infos_Discretization.Z;
+                abscisse = (infos_Discretization.Z(1:end-1)+infos_Discretization.Z(2:end))/2;
             end
             vname=@(x) inputname(1);
             fieldname = vname(field);
@@ -185,14 +207,12 @@ classdef PostProcessorVolumeAverage
             xlabel(direction)
             ylabel(fieldname)
             mytitle=strcat('Profile of ',fieldname);
-            mytitle=strcat(mytitle,' along direction');
+            mytitle=strcat(mytitle,' along direction ');
             mytitle=strcat(mytitle,direction);
             title(mytitle) 
         end
         
         
     end
-    
-    
 end
 
