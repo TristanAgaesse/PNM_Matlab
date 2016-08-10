@@ -1,6 +1,8 @@
 function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, network, options )
 %COMPUTESATURATION Calcule la saturation totale ou la courbe de saturation
 %d'un reseau de pore envahi par un cluster.
+% REMARK : Use PostprocessorVolumeAverage.PlotProfile for improved service.
+%
 % Input : -cluster
 %         -network
 %         -options : struct with the following (facultative) fields :
@@ -13,6 +15,10 @@ function [ totalSaturation, saturationProfile ] = ComputeSaturation( cluster, ne
 % Output : [ totalSaturation, saturationProfile ]
 
     
+
+
+
+
     %Checking initial state
     [mode,axe,nPointCurve,codeForLiquid,codeForSolid]=ReadCheckInputs( cluster, network, options );
     CheckPoreVolume(network);

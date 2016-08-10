@@ -1,5 +1,6 @@
 function [ totalSaturation, saturationProfile ]=ComputeSaturationOnImage(image,nPointCurve,axe,codeForLiquid,codeForSolid)
 %ComputeSaturationOnImage Computes the saturation profile on a image
+% REMARK : Use PostprocessorVolumeAverage.PlotProfile for improved service.
 %Input : image,nPointCurve,axe,codeForLiquid,codeForSolid
 %       -image
 %       -nPointCurve

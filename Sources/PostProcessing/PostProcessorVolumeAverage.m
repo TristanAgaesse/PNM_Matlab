@@ -37,6 +37,10 @@ classdef PostProcessorVolumeAverage
             
             nRegion=length(geometryRegions);
             poreCenters = postProcessor.Network.GetPoreCenter(1:nPore);
+            if postProcessor.Network.Dimension==2
+                poreCenters=horzcat(poreCenters,zeros(nPore,1));
+            end
+            
             
             for iRegion=1:nRegion
                 thisRegion = geometryRegions{iRegion};
@@ -128,10 +132,10 @@ classdef PostProcessorVolumeAverage
             geometryRegions2DIndex = geometryRegions3DIndex(:,:,1);
         end
         
-
+        
         %% Plots
         
-        function PlotProfile(postProcessor,field,direction, nStep)
+        function [abscisse,profile]=PlotProfile(postProcessor,field,direction, nStep)
             % input : - postProcessor
             %         - field : pore data which profile you want to plot 
             %         - direction : 'x','y' ou 'z' (direction of discretization)
@@ -182,7 +186,6 @@ classdef PostProcessorVolumeAverage
             [geometryRegions,geometryRegions3DIndex] = postProcessor.BuildGeometryRegions3DDiscretized(infos_Discretization);
             poreLookUpTable = postProcessor.BuildPoreLookUpTable(geometryRegions);
             
-            
             %Get data along the profile
             blockAverage = postProcessor.GetFieldBlockAveraged(field,poreLookUpTable);
             profile=zeros(1,nStep);
@@ -190,7 +193,6 @@ classdef PostProcessorVolumeAverage
                 [i,j,k]=ind2sub([nx,ny,nz],iStep);
                 profile(iStep)=blockAverage(geometryRegions3DIndex(i,j,k));
             end
-            
             
             % Plot data
             if isX
@@ -211,6 +213,15 @@ classdef PostProcessorVolumeAverage
             mytitle=strcat(mytitle,direction);
             title(mytitle) 
         end
+        
+        
+        function  Plot2DMap(postProcessor,field,direction1,nStep1,direction2,nStep2)
+            % Averages the field on a 2D discretization and plots the 2D map
+            % of the averaged field
+            
+            
+        end
+        
         
         
     end
