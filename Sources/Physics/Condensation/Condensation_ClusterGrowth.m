@@ -66,10 +66,13 @@ function [condensationClusters, condensationInfos] = Condensation_ClusterGrowth(
                 vaporOutletLinks,options.AirPressure,temperature);
         
         condensationInfos.EffectiveDiffusion{end+1} = effectiveDiffusion;
-        condensationInfos.PartialVaporPressure{end+1} = partialVaporPressure;
-        condensationInfos.WaterConcentration{end+1}=waterConcentration;
         condensationInfos.WaterDiffusionFlux{end+1}=diffusionFlux;
-        
+        invadedPores = horzcat(condensationInfos.InvadedPore{:});
+        partialVaporPressure(invadedPores)=equilibriumVaporPressure(invadedPores); %put RH=1 in invaded pores
+        condensationInfos.PartialVaporPressure{end+1} = partialVaporPressure;
+        waterConcentration(invadedPores)=partialVaporPressure(invadedPores)./(8.314*temperature(invadedPores)); %put RH=1 in invaded pores
+        condensationInfos.WaterConcentration{end+1}=waterConcentration;
+                
         % sum the diffusion flux on the boundary of each cluster
         nCluster = length(condensationClusters);
         totalFlux = zeros(1,nCluster);

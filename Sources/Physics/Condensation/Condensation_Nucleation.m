@@ -39,12 +39,17 @@ function [ nucleationClusters, nucleationInfos ] = Condensation_Nucleation(netwo
                 inletVaporPressure,outletVaporPressure,vaporInletLinks,...
                 vaporOutletLinks,options.AirPressure,temperature);
         
-        nucleationInfos.PartialVaporPressure{step} = partialVaporPressure;
-        nucleationInfos.EffectiveDiffusion{step} = effDiffusion;
-        nucleationInfos.WaterConcentration{step}=waterConcentration;
-        nucleationInfos.WaterDiffusionFlux{step}=diffusionFlux;
-        
         condensationRatio = partialVaporPressure ./ equilibriumVaporPressure ;
+        
+        nucleationInfos.EffectiveDiffusion{step} = effDiffusion;
+        nucleationInfos.WaterDiffusionFlux{step}=diffusionFlux;
+        invadedPores = horzcat(nucleationInfos.InvadedPore{:});
+        partialVaporPressure(invadedPores)=equilibriumVaporPressure(invadedPores); %put RH=1 in invaded pores
+        nucleationInfos.PartialVaporPressure{step} = partialVaporPressure;
+        waterConcentration(invadedPores)=partialVaporPressure(invadedPores)./(8.314*temperature(invadedPores)); %put RH=1 in invaded pores
+        nucleationInfos.WaterConcentration{step}=waterConcentration;
+        
+        
         
         %% invade the pore which has the max partial pressure if > equilibrium
         
