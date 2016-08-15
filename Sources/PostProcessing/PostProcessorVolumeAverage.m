@@ -4,15 +4,21 @@ classdef PostProcessorVolumeAverage
     
     properties
         Network
+        PoreFilter
     end
     
     methods
         
-        function postProcessor = PostProcessorVolumeAverage(network)
+        function postProcessor = PostProcessorVolumeAverage(network,poreFilter)
             % Constructor function
-            % Example : postProcessor = PostProcessorVolumeAverage(network)
+            % Input: -network
+            %        - poreFilter : bool array, poreFilter(iPore)=1 if you
+            %        want iPore to be taken into account in averages
+            % 
+            % Example : postProcessor = PostProcessorVolumeAverage(network,ones(1,network.GetNumberOfPores))
             
             postProcessor.Network = network;
+            postProcessor.PoreFilter = poreFilter;
         end
         
         %% Upscaled regions look up table
@@ -53,6 +59,8 @@ classdef PostProcessorVolumeAverage
             end
             
             assert(all(poreLookUpTable>0))
+            
+            poreLookUpTable(not(postProcessor.PoreFilter))=0;
         end
         
         

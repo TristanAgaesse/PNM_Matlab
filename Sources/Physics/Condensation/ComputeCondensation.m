@@ -66,9 +66,18 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
     %% Compute equilibrum vapor pressure field
 
     %Temperature field
-    [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,...
-            options.TemperatureInlet,options.TemperatureOutlet,...
-            options.TemperatureInletLinks,options.TemperatureOutletLinks,options.TemperatureTransportPores,options.TemperaturePoreHeatConductivity) ;
+    heatOptions = struct;
+    heatOptions.TemperatureInlet = options.TemperatureInlet;
+    heatOptions.TemperatureOutlet = options.TemperatureOutlet;
+    heatOptions.TemperatureInletLinks = options.TemperatureInletLinks;
+    heatOptions.TemperatureOutletLinks = options.TemperatureOutletLinks;
+    heatOptions.TemperatureInletType = options.TemperatureInletType;
+    heatOptions.TemperatureOutletType = options.TemperatureOutletType;
+    heatOptions.TemperatureTransportPores = options.TemperatureTransportPores;
+    heatOptions.TemperaturePoreHeatConductivity = options.TemperaturePoreHeatConductivity;
+    
+    [temperature,heatTransferCoefficient] = Condensation_ComputeTemperatureField(network,heatOptions) ;
+        
     condensationInfos.TemperatureField = temperature;
     condensationInfos.HeatTransferCoefficient = heatTransferCoefficient;
 
@@ -85,8 +94,8 @@ function [condensationInfos,condensationClusters]=ComputeCondensation(network, o
     condensationInfos.NucleationInfos = nucleationInfos;
 
 
-    %% DiffusionControledCondensation
-    disp('DiffusionControledCondensation')
+    %% Cluster Growth
+    disp('Cluster Growth')
     [condensationClusters, clusterGrowthInfos] = Condensation_ClusterGrowth(network,...
                          nucleationClusters, options, diffusionConductances,equilibriumVaporPressure,temperature);
                      

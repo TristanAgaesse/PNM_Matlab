@@ -19,9 +19,15 @@ nPore=network.GetNumberOfPores;
 options.TemperatureTransportPores = 1:network.GetNumberOfPores ;
 options.TemperatureInletLinks = network.GetLinksFrontiere([1 2 3]); % GDL/MPL interface
 options.TemperatureOutletLinks = network.GetLinksFrontiere(5);      % Rib
-options.TemperatureInlet = 90+273;                                  % GDL/MPL interface temperature
-options.TemperatureOutlet = 50+273;                                 % rib temperature
+options.TemperatureInlet = (90+273)*ones(1,length(options.TemperatureInletLinks));  % GDL/MPL interface temperature
+options.TemperatureOutlet = (50+273)*ones(1,length(options.TemperatureOutletLinks));       % rib temperature
+options.TemperatureInletType = 'Dirichlet';
+options.TemperatureOutletType = 'Dirichlet';
 options.TemperaturePoreHeatConductivity=1*ones(nPore,1);
+
+
+
+
 
 options.LiquidWaterOutletLinks = network.GetLinksFrontiere([4 6]);  % channel
 
