@@ -12,6 +12,8 @@ function [partialVaporPressure,waterConcentration,diffusionFlux,effectiveDiffusi
     inletConcentration = inletVaporPressure.*pressureToConcentrationRatioLink(vaporInletLinks) ;   
     outletConcentration = outletVaporPressure.*pressureToConcentrationRatioLink(vaporOutletLinks);
     
+    % Attention si lien inlet bouché par l’eau : reporter le flux sur autres liens.
+    
     %Compute diffusion of vapor
     boundaryConditions=struct;
     boundaryConditions.inletLink = vaporInletLinks;
